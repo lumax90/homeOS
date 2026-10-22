@@ -1,6 +1,6 @@
 # Home — independent media server
 
-- Root: `<REPOSITORY_ROOT>`. This is an independent product with its own architecture, API, database, jobs and frontend.
+- Root: the repository directory containing this file. Resolve project paths relative to it. This is an independent product with its own architecture, API, database, jobs and frontend.
 - Backend: C# / ASP.NET Core on .NET 10 LTS; SQLite for device-local application data. Use a modular monolith with durable, bounded background work.
 - Frontend: React + TypeScript + Vite + HeroUI v3 + Tailwind CSS v4 + Motion. Read current library documentation and installed types before using APIs.
 - Visual direction: Apple-inspired content-first interface, refined typography, restrained glass controls above content, fluid and interruptible motion. Respect reduced-motion preferences and keyboard focus.
@@ -11,6 +11,7 @@
 - Keep authentication, filesystem boundaries, HTTP range streaming, cancellation, restart recovery, and database migrations explicit and verified with meaningful tests.
 - Synthetic or demonstration content must be clearly labeled. Never claim provider integration, transcoding or GPU support without a working implementation and verification.
 - Record decisions, source references, verification dates and implementation status under `docs/`.
+- Public source and documentation must use installation placeholders and environment-derived paths. Keep personal network addresses, workstation usernames, credentials and raw operational receipts out of commits; retain local evidence in ignored directories.
 - Product scope and acceptance criteria are tracked in `docs/product/`. Update the requirement IDs and execution board with each implemented slice; do not label the whole product complete while release gates remain open.
 - The user owns browser/device acceptance testing. Do not run automated browser suites or spend time on repeated screenshot polish unless explicitly requested. Run focused backend/build checks for data, protocol and workflow changes.
 - Runtime screens must use real provider/catalog data. Archive existing synthetic libraries from normal use; synthetic data belongs only in isolated automated tests. Never initiate an internet media download during development verification; acquisition is a user command.

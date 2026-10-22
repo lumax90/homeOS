@@ -11,6 +11,8 @@ The source snapshot includes application code, tests, deployment/build tooling, 
 
 The initial inventory was checked against Git's ignore rules for oversized files, credential/key files and recognizable private-key/token formats. The remote was empty and the authenticated owner had push permission. Publication uses an ordinary upstream-setting push to `main`.
 
+The subsequent [privacy review](repository-privacy.md) found inappropriate developer-specific addresses and profile paths in public text, with no credential findings in the four-commit secret scan. Public documentation and helper defaults were sanitized, and Git/Docker exclusions were strengthened. Published-history cleanup is tracked in that review.
+
 `.gitattributes` keeps source text in LF form and preserves manifest/digest-bound runtime assets byte for byte, including on Windows checkouts.
 
 Container registry publication and GitHub Actions automation are being implemented under [CASAOS-REGISTRY-043](casaos-registry-043.md), following the user's clean-host image-not-found report. Anonymous pull is a required delivery check. A hosted CasaOS store definition remains separate work. Source publication does not change the recorded dependency licences or the project's still-undecided distribution licence. See [dependency inventory](dependencies.md) and [0.43 verification](headless-lan-043.md).

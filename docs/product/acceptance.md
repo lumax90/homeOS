@@ -20,7 +20,7 @@
 - Import your own ROM/BIOS where required; test video/audio, keyboard/touch, physical gamepad when the browser allows it, pause, save/exit and relaunch. One native game session owns the host at a time. Another device should receive an explanatory busy response rather than replace the active game.
 - Restart/recreate the CasaOS container with its existing `/data` volume and verify real preferences, ROM identities, saves and queues. The automatic protocol gate already covered seven **original isolated** systems, HTTP range/HLS, normal shutdown save and volume recreation; it does not establish every game's or TV model's compatibility.
 - Plain IP HTTP is the initial access path. Trusted HTTPS is required for browser-restricted Gamepad/PWA/offline/microphone/camera features on affected devices. IP-SAN certificates are possible; mDNS/local-domain setup is not part of this slice.
-- Existing Windows preview is **0.43.0**, accessible on its current network at `http://SERVER-IP:5080`. It keeps the previous Windows host/core identities; the Linux SNES/MD AV-reporting fix is not a Windows host-binary upgrade.
+- Windows **0.43.0** was verified through its configured LAN address. Each installation uses its own server address. It keeps the previous Windows host/core identities; the Linux SNES/MD AV-reporting fix is not a Windows host-binary upgrade.
 
 ### Canlı TV — LIVE-TV-042 / EXT-05
 

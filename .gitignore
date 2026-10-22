@@ -9,6 +9,16 @@ server/HomeServer.Api/wwwroot/
 .env.*
 !.env.example
 !.env.*.example
+*.pfx
+*.p12
+*.key
+*.pem
+*.db
+*.db-*
+*.sqlite
+*.sqlite-*
+*.sqlite3
+*.sqlite3-*
 __pycache__/
 *.py[cod]
 *.user
