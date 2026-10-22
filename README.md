@@ -8,9 +8,9 @@ Kendi sunucunda çalışan, kendi mimarisine sahip bütünleşik medya uygulamas
 
 Music/Games/Live TV arayüzü, kişisel kütüphane, IPTV ve sunucuda ROM yürütme desteği. Home'u kendi sunucuna kurar, ev ağındaki cihazlardan sunucunun adresiyle kullanırsın.
 
-**CasaOS / Intel-AMD x64:** Docker ve CasaOS kurulum tanımları mevcuttur. Public container imajı henüz yayımlanmadı; yayın durumu ve kurulum adımları [CasaOS kılavuzunda](deploy/casaos/README.md) izlenir. Ekransız sunucu kullanımı hedeflenir.
+**CasaOS / Intel-AMD x64:** [Compose dosyasını](https://raw.githubusercontent.com/lumax90/homeOS/main/deploy/casaos/docker-compose.yml) CasaOS **Custom Install → Import** ekranına aktar. **`ghcr.io/lumax90/homeos:0.43.0`** imajı otomatik indirilir ve veri klasörü hazırlanır. Kurulumdan sonra kendi sunucunun adresiyle **`http://SUNUCU-IP:5080`** üzerinden bağlan. [Kurulum kılavuzu](deploy/casaos/README.md).
 
-**109 backend +68 Node**, yedi özgün sistemle gerçek LAN WebRTC görüntü/ses/kumanda ve kayıt, read-only medya range/HLS, container kapanış/yeniden oluşturma ve mevcut verinin korunumu doğrulandı. [Kanıt ve kapsam](docs/headless-lan-043.md). Fiziksel cihaz/gerçek oyun kabulü, ARM64 native, Umbrel mağaza paketi ve public dağıtım/lisans kapıları açık. Gamepad/PWA gibi tarayıcı özellikleri bazı cihazlarda güvenilir HTTPS ister.
+**109 backend +68 Node**, yedi özgün sistemle gerçek LAN WebRTC görüntü/ses/kumanda ve kayıt, read-only medya range/HLS, container kapanış/yeniden oluşturma ve mevcut verinin korunumu doğrulandı. [Kanıt ve kapsam](docs/headless-lan-043.md). **Public imajın hesapsız indirme ve temiz kurulum kontrolleri geçti.** Fiziksel cihaz/gerçek oyun kabulü, ARM64 native, Umbrel mağaza paketi ve nihai dağıtım lisansı açık konulardır. Gamepad/PWA gibi tarayıcı özellikleri bazı cihazlarda güvenilir HTTPS ister.
 
 ## 0.27 geliştirme birleşimi — tarihsel kayıt
 

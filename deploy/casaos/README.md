@@ -2,7 +2,9 @@
 
 ## Install from the registry
 
-**The public image is not available yet.** The first publication was stopped for a repository privacy review. **CASAOS-REGISTRY-043** tracks completion and anonymous-pull verification; its intended image is **`ghcr.io/lumax90/homeos:0.43.0`**. The following registry-install steps apply after that image is published and verified.
+**Published and verified 2026-10-22:** **`ghcr.io/lumax90/homeos:0.43.0`**, Linux **amd64**. Anonymous image pull, automatic data-directory preparation, healthy startup and data-preserving recreation passed. [Package page](https://github.com/users/lumax90/packages/container/package/homeos).
+
+Registry digest: `sha256:017e90f2860d2f76d1a787ee7476f5c6244da4aef351f94c733f965bde9bdba0`. Verification and source identity are recorded in [CASAOS-REGISTRY-043](../../docs/casaos-registry-043.md).
 
 1. Open **CasaOS → App Store → Custom Install → Import**.
 2. Import the contents of [docker-compose.yml](https://raw.githubusercontent.com/lumax90/homeOS/main/deploy/casaos/docker-compose.yml).
