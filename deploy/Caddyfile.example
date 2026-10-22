@@ -1,0 +1,4 @@
+# Replace this with a domain whose DNS reaches this reverse proxy.
+home.example.com {
+    reverse_proxy 127.0.0.1:5080
+}

@@ -1,0 +1,16 @@
+[Unit]
+Description=Home personal media server
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+ExecStart=%h/.local/share/home/start-home.sh
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=180
+KillMode=mixed
+NoNewPrivileges=true
+
+[Install]
+WantedBy=default.target

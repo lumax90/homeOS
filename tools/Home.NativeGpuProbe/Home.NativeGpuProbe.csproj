@@ -1,0 +1,6 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup><OutputType>Exe</OutputType></PropertyGroup>
+  <ItemGroup><ProjectReference Include="../../server/HomeServer.Api/HomeServer.Api.csproj" /></ItemGroup>
+  <ItemGroup><Compile Include="../../tests/native/SyntheticWhep.cs" Link="SyntheticWhep.cs" /></ItemGroup>
+  <ItemGroup><Compile Include="../../tests/native/EncodedVideoTiming.cs" Link="EncodedVideoTiming.cs" /></ItemGroup>
+</Project>

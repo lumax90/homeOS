@@ -1,0 +1,11 @@
+[
+  "Home", "home", "HomePlayer", "English", "Türkçe", "EN", "TR", "ABC", "A / ✕", "B / ○", "OK", "Start", "Gamepad", "Chapters",
+  "TMDB", "TVmaze", "Google Cast", "AirPlay", "DLNA", "OpenSubtitles.com", "MusicBrainz", "ReplayGain", "Release-group",
+  "RSS", "Atom", "M3U", "XMLTV", "JSON", "HTTP", "HTTPS", "TLS", "STARTTLS", "SMTP", "SOCKS", "HMAC-SHA256",
+  "NVENC", "NVIDIA NVENC", "H.264", "H.265", "SDR", "HDR10", "HLG", "Dolby Vision", "AAC", "PCM", "FLAC", "MP3", "MP4", "WAV", "Ogg", "Opus",
+  "PDF", "EPUB", "PAR2", "PGS", "SRT", "ASS", "WebVTT", "ELRC", "LRC", "CRC", "MBID", "UTF-8", "Torznab", "Newznab",
+  "Digital Media", "CD", "Vinyl", "Stereo", "Mono", "Bitrate", "dB", "fps", "ms", "Mbps", "kbps", "GiB", "MiB", "HTTP(S)", "API", "DASH", "HLS",
+  "· S{{v0}} E{{v1}}", "S{{v0}} E{{v1}} →", "· S{{v0}}", "E{{v0}}", "1:1 @ 0-1320 1:2 @ 1320-2640", "· {{v0}} bit",
+  "flac,alac,mp3,aac", "TR, GB, US", "https://musicbrainz.org/collection/…", "https://home.example.com", "(?:PROPER|REPACK)", "hevc,av1", "web-dl,bluray",
+  "http://192.168.1.10:5080", "socks5://127.0.0.1:1080", "tr,en", "web-dl,bluray,remux", "torrent,usenet", "? seeder", "{{v0}} seeder", "magnet:?xt=urn:btih:…", "qwertyuıopğüasdfghjklşizxcvbnmöç"
+]

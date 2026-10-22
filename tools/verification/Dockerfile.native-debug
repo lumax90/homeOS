@@ -1,0 +1,4 @@
+FROM home-native-build:0.43.0
+RUN apt-get update && apt-get install -y --no-install-recommends gdb && rm -rf /var/lib/apt/lists/*
+COPY --from=home-build:0.43.0 /native-probe/ /native-probe/
+USER 1654:1654

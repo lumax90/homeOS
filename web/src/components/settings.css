@@ -1,0 +1,28 @@
+.home-modal-container.settings-container { --settings-height: min(800px,calc(100dvh - 64px)); width: min(1040px,calc(100vw - 48px)); min-width: min(1040px,calc(100vw - 48px)); max-width: 1040px; height: var(--settings-height); flex: 0 0 auto; }
+.settings-container>.home-dialog-frame { width: 100%; min-width: 0; height: 100%; min-height: 0; flex: 1 1 100%; }
+.settings-container .home-dialog { width: 100%; min-width: 0; height: 100%; min-height: 100%; max-height: 100%; overflow: hidden; }
+.settings-container .dialog-close { position: absolute; right: 15px; top: 15px; margin: 0; z-index: 5; }
+.settings-shell { display: grid; grid-template-columns: 270px minmax(0,1fr); grid-template-rows: minmax(0,1fr); width: 100%; height: 100%; min-width: 0; min-height: 0; }
+.settings-container .home-dialog>div { height: 100%; }
+.settings-sidebar { display: flex; flex-direction: column; min-height: 0; padding: 27px 17px 17px; border-right: 1px solid #ffffff12; background: #11192370; }
+.settings-sidebar>header { padding: 0 10px 18px; }.settings-sidebar h2 { font-size: 24px; font-weight: 550; letter-spacing: -.03em; }.settings-sidebar header p { font-size: 12px; color: #8fa4b6; margin-top: 7px; }
+.settings-mobile-select { display: none; }
+.settings-search { display: flex; align-items: center; gap: 8px; border: 1px solid #ffffff16; border-radius: 10px; background: #ffffff04; padding: 10px; color: #92a7b9; margin-bottom: 16px; }
+.settings-search input { min-width: 0; width: 100%; outline: none; background: transparent; color: #e1eaf1; font-size: 12px; }.settings-search button { flex: none; color: #8fa4b6; }
+.settings-navigation { overflow: auto; min-height: 0; scrollbar-width: thin; }.settings-navigation section+section { margin-top: 17px; }.settings-navigation h3 { font-size: 10px; font-weight: 550; color: #8197a9; letter-spacing: .04em; padding: 0 10px 8px; }
+.settings-navigation button { display: flex; align-items: center; gap: 10px; width: 100%; min-height: 40px; padding: 10px; border-radius: 10px; color: #afc0cd; text-align: left; font-size: 12px; transition: background-color .15s,color .15s; }.settings-navigation button>span { flex: 1; }.settings-navigation button>svg:last-child { opacity: .35; }.settings-navigation button:hover { background: #ffffff06; }.settings-navigation button[aria-selected=true] { color: #e6f1eb; background: #c0dfcf13; box-shadow: inset 0 1px 0 #ffffff08; }
+.settings-sidebar>footer { margin-top: auto; padding: 16px 10px 0; border-top: 1px solid #ffffff0d; display: flex; flex-direction: column; align-items: start; gap: 9px; }.settings-sidebar>footer>span { font-size: 10px; color: #71889b; }.settings-sidebar>footer button { font-size: 11px; padding-left: 0; color: #9fb7aa; }
+.settings-pane { overflow: auto; min-width: 0; min-height: 0; padding: 36px 34px; scrollbar-width: thin; scrollbar-gutter: stable; }.settings-pane-heading { margin-bottom: 28px; padding-right: 25px; }.settings-pane-heading>p { font-size: 9px; letter-spacing: .08em; color: #8ca89b; }.settings-pane-heading h2 { font-size: 28px; font-weight: 550; letter-spacing: -.035em; margin: 9px 0; }.settings-pane-heading>span { font-size: 12px; line-height: 1.6; color: #92a9b9; }
+.settings-panel h3 { font-size: 15px; font-weight: 500; }.settings-panel .home-form { margin-top: 16px; }.settings-panel .account-security { margin: 0; padding: 0; border: 0; }.settings-identity { display: flex; align-items: center; gap: 15px; margin-bottom: 26px; padding-bottom: 24px; border-bottom: 1px solid #ffffff10; }.settings-identity strong { display: block; font-size: 17px; font-weight: 500; }.settings-identity span { display: block; font-size: 11px; color: #8ca397; margin-top: 5px; }
+.settings-panel-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 18px; }.settings-panel-toolbar>span { font-size: 12px; color: #8fa6b7; }.settings-empty { font-size: 12px; line-height: 1.7; color: #839bac; padding: 12px; }
+@media(max-width:720px) {
+  .settings-backdrop { padding: 12px; }
+  .home-modal-container.settings-container { --settings-height: calc(100dvh - 32px); width: calc(100vw - 24px); min-width: calc(100vw - 24px); }
+  .settings-shell { grid-template-columns: 1fr; grid-template-rows: auto minmax(0,1fr); }
+  .settings-sidebar { padding: 19px 16px 12px; border-right: 0; border-bottom: 1px solid #ffffff12; }
+  .settings-sidebar>header { padding: 0 38px 12px 0; }
+  .settings-sidebar header p,.settings-sidebar>footer,.settings-navigation { display: none; }
+  .settings-sidebar h2 { font-size: 21px; }.settings-search { margin-bottom: 10px; }
+  .settings-mobile-select { display: block; }.settings-mobile-select>.home-select { width: 100%; }
+  .settings-pane { padding: 24px 20px; }.settings-pane-heading h2 { font-size: 24px; }
+}

@@ -1,0 +1,3 @@
+import { useQueryClient } from '@tanstack/react-query';
+export const catalogKeys = ['content', 'content-details', 'content-entry', 'content-files', 'catalog', 'media', 'versions', 'continue', 'discovery-personal', 'episodes', 'calendar', 'requests', 'catalog-identity', 'episode-numbering', 'movie-editions', 'automation', 'automation-rule', 'automation-jobs', 'personal-content', 'collections', 'collection-items', 'episode-catalog', 'episode-orders', 'episode-boundaries'];
+export function useRefreshCatalog() { const client = useQueryClient(); return () => client.invalidateQueries({ predicate: query => catalogKeys.includes(String(query.queryKey[0])) }); }

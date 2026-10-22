@@ -1,0 +1,15 @@
+namespace HomeServer.Core;
+public sealed record DeviceLinkStart(string DeviceName);
+public sealed record DeviceLinkPoll(string Id,string Secret);
+public sealed record DeviceLinkApproval(string Code);
+public sealed record DeviceLinkChallenge(string Id,string Secret,string Code,string ExpiresAt);
+public sealed record RenderDevice(string Id,string Udn,string Name,string Address,string TransportUrl,string TransportType,string? RenderUrl,string? RenderType,string Protocols,string LastSeen);
+public sealed record ReceiverSettings(string? PublicBaseUrl=null);
+public sealed record ReceiverStart(string MediaId,string Kind,string? TargetId=null,string? Name=null,double PositionSeconds=0,string? SubtitleId=null);
+public sealed record ReceiverView(string Id,string PlaybackId,string Url,string ContentType,string Name,string Mode,double PositionSeconds,double DurationSeconds,string? TargetId,double StreamStartSeconds=0,string Kind="cast",int Revision=1,string? MediaId=null);
+public sealed record ReceiverGrant(string Id,string UserId,string LoginId,string PlaybackId,string? TargetId,string TargetName,string Mode,string ExpiresAt,bool Closed,string Kind="cast",int Revision=1,ReceiverCopy? Artifact=null,RenderDevice? Device=null,ReceiverObservation? Observation=null);
+public sealed record ReceiverControl(string Action,double? PositionSeconds=null,double? Volume=null,bool? Paused=null,string? CommandId=null,int? ExpectedRevision=null);
+public sealed record ReceiverObservation(double? PositionSeconds,double? DurationSeconds,bool? Paused,double? Volume,string State,string ObservedAt,string? Error=null,long Sequence=0);
+public sealed record ReceiverStatus(string Id,int Revision,bool Closed,double PositionSeconds,double DurationSeconds,bool Paused,double? Volume,string State,string? ObservedAt,string? Message=null);
+public sealed record ReceiverLeaseStart(string MediaId,string ClientId,long ClientRevision=1);
+public sealed record ReceiverCopy(string MediaId,string Fingerprint,int MatchRevision,string Path,long SizeBytes,string? ArtifactFingerprint=null,string? Sha256=null);

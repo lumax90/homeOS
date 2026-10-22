@@ -1,0 +1,99 @@
+﻿{
+    "id":  "tiny-crate",
+    "title":  "Tiny Crate Classic",
+    "publisher":  "Harmony Monroe",
+    "sourceUrl":  "https://harmonymonroe.itch.io/tinycrate",
+    "sourceRepository":  "https://github.com/HarmonyHoney/tiny_crate",
+    "sourceCommit":  "c9b835c46ac5a98cf2aaaa0ee824378af14ff003",
+    "sourceArchiveSha256":  "013a613787d319f9ddae194bf91c0517fa922e51c18f0414d97faa9d1788fb7b",
+    "version":  "classic-home.1",
+    "homeRuntimeRevision":  2,
+    "engine":  "Godot 3.6.1",
+    "license":  "Unlicense",
+    "kind":  "web",
+    "aspect":  "16/9",
+    "genres":  [
+                   "platformer",
+                   "puzzle"
+               ],
+    "savePaths":  [
+                      "save/0/box.save",
+                      "save/1/box.save",
+                      "save/2/box.save",
+                      "save/3/box.save",
+                      "save/4/box.save",
+                      "save/5/box.save"
+                  ],
+    "files":  [
+                  {
+                      "path":  "backdrop.png",
+                      "size":  8355,
+                      "sha256":  "069bca80818e0117b2ddb2085ab51cea1f46e901f590da4744c83b714e978e3b"
+                  },
+                  {
+                      "path":  "cover.png",
+                      "size":  46997,
+                      "sha256":  "f9bb76fb4215077f05a7587cadfb2e9fdf02e2876e866c7c65083da61cf0f022"
+                  },
+                  {
+                      "path":  "home-game.css",
+                      "size":  153,
+                      "sha256":  "13a53f3befd47e4a1944a5520ad084bbb17be26b2aced9c88000b8b5008e51b5"
+                  },
+                  {
+                      "path":  "home-game.js",
+                      "size":  3047,
+                      "sha256":  "3350ff2263ea1283182eaf9910b2b9aa5b696a297818ceabfa299c05c458d051"
+                  },
+                  {
+                      "path":  "index.audio.worklet.js",
+                      "size":  7153,
+                      "sha256":  "8b3e52c1f0806bc623f174cfa2989ba1d6f63e44022d7923580579a1b88cab37"
+                  },
+                  {
+                      "path":  "index.html",
+                      "size":  342,
+                      "sha256":  "90f1bde229fa50f1b8399767861ede1fccbe88274ba479cf463d63a468b552f6"
+                  },
+                  {
+                      "path":  "index.js",
+                      "size":  338490,
+                      "sha256":  "942ca131eff83d2dd4ec22a36c55ed2d57f471fc3ac37dee0e9e5dcb3aa8be72"
+                  },
+                  {
+                      "path":  "index.pck",
+                      "size":  9932800,
+                      "sha256":  "c7e6d8c7fbb04865eaa7403cb4d31e3e4e87f8abf1d6fdb7628d98876248d44e"
+                  },
+                  {
+                      "path":  "index.png",
+                      "size":  59861,
+                      "sha256":  "17c714cd5e82d5f869da8d10083662807181977c066cc5768a95a241948356cb"
+                  },
+                  {
+                      "path":  "index.wasm",
+                      "size":  19721321,
+                      "sha256":  "b52d3fe7d715532af66034b27182fa6bcfd0402d913bb3695c14f977d30796ee"
+                  },
+                  {
+                      "path":  "licenses/Game.txt",
+                      "size":  1210,
+                      "sha256":  "ca2abdf695884c77ea4b4a5b64ca7b732d9d9dbade4eebc1c2e76c53e9e3bc83"
+                  },
+                  {
+                      "path":  "licenses/Godot-third-party.txt",
+                      "size":  70362,
+                      "sha256":  "99fe137bab2c1f182fed0d6bf8ca5eef5261a3fd600b85ee1a3ae157aba16971"
+                  },
+                  {
+                      "path":  "licenses/Godot.txt",
+                      "size":  1149,
+                      "sha256":  "b0435e3b3e4e55238f05f4b306f30524a1b2e20147810d436eaa554fa6855c80"
+                  },
+                  {
+                      "path":  "licenses/Roboto.txt",
+                      "size":  11357,
+                      "sha256":  "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4"
+                  }
+              ]
+}

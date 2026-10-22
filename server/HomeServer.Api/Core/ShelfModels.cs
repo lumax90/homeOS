@@ -1,0 +1,12 @@
+using System.Text.Json;
+namespace HomeServer.Core;
+public sealed record ShelfAsset(string Id,string LibraryId,string RelativePath,string Title,string Folder,string Kind,string Mime,long SizeBytes,string ModifiedAt,string Fingerprint,bool Available,int? MinimumAge,bool Favorite=false);
+public sealed record ShelfPage(ShelfAsset[] Items,int Total,int Offset,int Limit);
+public sealed record ShelfPosition(int Page=1,int Chapter=0,double Fraction=0,double Seconds=0);
+public sealed record ShelfProgressInput(string Fingerprint,ShelfPosition Position,string ClientId,long Sequence);
+public sealed record BookChapter(string Key,string Title);
+public sealed record BookInfo(string Kind,string Title,BookChapter[] Chapters,int Pages);
+public sealed record PodcastFeed(string Id,string Title,string Description,string? ImageUrl,bool Enabled,int Revision,string? LastError);
+public sealed record PodcastEpisode(string Id,string FeedId,string Title,string Description,string? PublishedAt,double? DurationSeconds,string Mime,long? SizeBytes,bool Explicit,double PositionSeconds=0);
+public sealed record PodcastSession(string Id,string UserId,string LoginId,string DeviceId,string EpisodeId,string UrlHash,string Status,string CreatedAt,string LastSeen);
+public sealed record PodcastProgressInput(double PositionSeconds,double? DurationSeconds,string ClientId,long Sequence);

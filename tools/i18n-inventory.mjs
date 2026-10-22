@@ -1,0 +1,13 @@
+import { parseSync, traverse } from '@babel/core';
+import { readFile, readdir, writeFile } from 'node:fs/promises';
+import { join, relative } from 'node:path';
+
+const root=new URL('../web/src/',import.meta.url);const rows=new Map();
+function normalize(value){return value.replace(/\s+/g,' ').trim();}
+function add(text,file,kind){const value=normalize(text);if(!value||!/[A-Za-zÇĞİÖŞÜçğıöşü]/.test(value)||value.length>3000)return;if(!rows.has(value))rows.set(value,{text:value,files:[],kind});const row=rows.get(value);if(!row.files.includes(file))row.files.push(file);}
+function sourceLiteral(path){if(path.parentPath.isImportDeclaration()||path.parentPath.isExportNamedDeclaration()||path.parentPath.isExportAllDeclaration()||path.findParent(parent=>parent.type.startsWith('TS')&&!['TSAsExpression','TSSatisfiesExpression','TSNonNullExpression'].includes(parent.type)))return false;if(path.parentPath.isObjectProperty()&&path.key==='key')return false;if(path.parentPath.isJSXAttribute()&&!['title','label','placeholder','aria-label','alt','description'].includes(path.parent.name.name))return false;return true;}
+async function walk(dir){for(const entry of await readdir(dir,{withFileTypes:true})){const path=join(dir,entry.name);if(entry.isDirectory()){if(entry.name!=='i18n')await walk(path);continue;}if(!/\.(tsx|ts)$/.test(entry.name))continue;const code=await readFile(path,'utf8');const file=relative(new URL('../',import.meta.url).pathname.replace(/^\/(?=[A-Za-z]:)/,''),path).replaceAll('\\','/');const ast=parseSync(code,{filename:path,babelrc:false,configFile:false,parserOpts:{plugins:['typescript',...(entry.name.endsWith('.tsx')?['jsx']:[])]}});traverse(ast,{JSXText(path){add(path.node.value,file,'jsx');},StringLiteral(path){if(!sourceLiteral(path))return;const text=path.node.value;if(/[ÇĞİÖŞÜçğıöşü]/.test(text)||/^[A-Z][A-Za-z]+(?:[ .·/].*)?$/.test(text)||/[a-zA-Z] [a-zA-Z]/.test(text))add(text,file,'literal');},TemplateLiteral(path){const text=path.node.quasis.map((part,index)=>part.value.cooked+(index<path.node.expressions.length?`{{v${index}}}`:'')).join('');if(/[ÇĞİÖŞÜçğıöşü]/.test(text)||/[a-zA-Z] [a-zA-Z]/.test(text))add(text,file,'template');}});}}
+await walk(root.pathname.replace(/^\/(?=[A-Za-z]:)/,''));const sorted=[...rows.values()].sort((a,b)=>a.text.localeCompare(b.text,'tr'));
+await writeFile(new URL('../artifacts/i18n-inventory.json',import.meta.url),JSON.stringify(sorted,null,2)+'\n');
+await writeFile(new URL('../artifacts/i18n-source-lines.txt',import.meta.url),sorted.map((value,index)=>`${index}\t${value.text}`).join('\n')+'\n');
+console.log(JSON.stringify({strings:sorted.length,files:new Set(sorted.flatMap(value=>value.files)).size,characters:sorted.reduce((sum,value)=>sum+value.text.length,0)}));

@@ -1,0 +1,33 @@
+name: home
+services:
+  home:
+    build: .
+    image: home:0.43.0
+    init: true
+    user: "1654:1654"
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    tmpfs:
+      - /tmp:rw,nosuid,size=512m
+    ports:
+      - "${HOME_BIND:-0.0.0.0}:${HOME_PORT:-5080}:8080/tcp"
+      - "${HOME_BIND:-0.0.0.0}:62405:62405/udp"
+      - "${HOME_BIND:-0.0.0.0}:62405:62405/tcp"
+    environment:
+      Home__Gaming__PublicHost: "${HOME_SERVER_IP:-}"
+      HOME: /data
+      XDG_CACHE_HOME: /data/cache
+      MESA_SHADER_CACHE_MAX_SIZE: 128M
+    volumes:
+      - home-data:/data
+    restart: unless-stopped
+    stop_grace_period: 3m
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+volumes:
+  home-data:

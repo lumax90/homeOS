@@ -1,0 +1,9 @@
+services:
+  home:
+    volumes:
+      - type: bind
+        source: ${HOME_MEDIA_PATH:?Set HOME_MEDIA_PATH to your actual media directory}
+        target: /media
+        read_only: true
+        bind:
+          create_host_path: false

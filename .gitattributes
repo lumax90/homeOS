@@ -1,0 +1,8 @@
+* text=auto eol=lf
+
+# Runtime files are checked against byte-level manifests or upstream digests.
+server/HomeServer.Api/GamePacks/** -text
+server/HomeServer.Api/Assets/Models/** -text
+server/HomeServer.Api/Gaming/Store/artwork/** -text
+web/public/native/reader.js -text
+tests/HomeServer.Tests/Fixtures/archives/** -text

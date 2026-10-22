@@ -1,0 +1,29 @@
+/* Dormant in pointer/ordinary typing mode. No layout or global scale changes. */
+html[data-home-input="controller"] :is(button,a,input,textarea,select,summary,[role=option],[role^=menuitem],[role=slider],[tabindex]):focus {
+  outline: 2px solid #e4f5ee !important;
+  outline-offset: -2px !important;
+  box-shadow: 0 0 0 4px #c9ecdc12;
+}
+html[data-home-input="controller"] :is(.media-card,.game-card):focus { outline:none!important;box-shadow:none;border-radius:14px;position:relative;z-index:2; }
+html[data-home-input="controller"] :is(.media-card,.game-card) :is(.poster,.game-card-art){transition:transform .2s ease,box-shadow .2s ease;transform-origin:center;}
+html[data-home-input="controller"] :is(.media-card,.game-card):focus :is(.poster,.game-card-art){transform:translateY(-2px) scale(1.025);box-shadow:0 9px 28px #0007;content-visibility:visible;}
+html[data-home-input="controller"] :is(.media-card,.game-card):focus :is(.poster,.game-card-art)::after{content:'';position:absolute;inset:2px;border:2px solid #f3f8f5;border-radius:inherit;pointer-events:none;z-index:9;box-shadow:inset 0 0 0 1px #07151b66,0 0 12px #d1ece82a;}
+html[data-home-input="controller"] .media-card:focus .media-card-title,html[data-home-input="controller"] .game-card:focus .game-card-copy>strong{color:#fff;}
+html[data-home-input="controller"] .media-card:focus .poster-play{opacity:1;transform:translateY(0) scale(1);}
+html[data-home-input="controller"] .media-card:focus .poster>img{transform:scale(1.04);}
+@media(prefers-reduced-motion:reduce){html[data-home-input="controller"] :is(.media-card,.game-card) :is(.poster,.game-card-art){transition:none;transform:none!important;}html[data-home-input="controller"] .media-card:focus .poster>img{transform:none;}}
+html[data-home-input="controller"] select[multiple] option[data-controller-cursor="true"] { outline: 2px solid #c9ecdc; background: #c9ecdc25; }
+.controller-hints { position: fixed; bottom: max(18px,env(safe-area-inset-bottom)); right: 24px; display: flex; align-items: center; gap: 18px; padding: 11px 16px; background: #17212cec; backdrop-filter: blur(20px); border: 1px solid #ffffff20; border-radius: 13px; color: #d9e9e1; z-index: 390; pointer-events: none; font-size: 12px; }
+.controller-hints span { display: flex; align-items: center; gap: 7px; }.controller-hints small { color: #a7b9c6; font-size: 11px; }
+.controller-hints .controller-player-hint{display:none}
+body:has([data-controller-player-dock]):not(:has([aria-modal="true"])) .controller-hints .controller-player-hint{display:flex}
+html[data-home-input="controller"] body:has([data-controller-player-dock]) .workspace :is(button,a[href],input,select,[tabindex="0"]){scroll-margin-top:22px;scroll-margin-bottom:130px}
+@media(max-width:720px){html[data-home-input="controller"] body:has([data-controller-player-dock]) .workspace :is(button,a[href],input,select,[tabindex="0"]){scroll-margin-bottom:205px}.controller-hints{max-width:calc(100vw - 24px);flex-wrap:wrap}}
+.controller-settings { margin: 20px 0; }.controller-settings>summary { display: flex; align-items: center; gap: 8px; font-size: 13px; color: #c1d5cf; cursor: pointer; }.controller-settings>.home-form { margin-top: 16px; }
+.controller-device { border: 1px solid #ffffff15; border-radius: 12px; padding: 14px; }.controller-device h4 { font-size: 13px; }.controller-device details { margin-top: 12px; }.controller-device summary { font-size: 12px; cursor: pointer; }
+.controller-bindings { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 8px; margin: 12px 0; }.controller-bindings button { justify-content: space-between; }.controller-bindings small { color: #8ea99b; }
+.controller-binding-status { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px; border: 1px solid #c9ecdc40; border-radius: 10px; font-size: 12px; }
+.controller-keyboard-backdrop { z-index: 360; }.controller-keyboard-container { width: min(760px,calc(100vw - 32px)); max-height: calc(100dvh - 32px); }.controller-keyboard { padding: 26px; border: 1px solid #ffffff24; border-radius: 20px; background: #18212dfa; color: #e6eff3; max-height: calc(100dvh - 32px); overflow: auto; outline: none; }
+.controller-keyboard header,.controller-keyboard footer { display: flex; align-items: center; justify-content: space-between; gap: 16px; }.controller-keyboard h2 { font-size: 21px; font-weight: 550; }.controller-keyboard header p { color: #9eafbf; font-size: 12px; margin-top: 7px; }.controller-keyboard-preview { width: 100%; margin: 20px 0; min-height: 46px; border: 1px solid #ffffff20; border-radius: 10px; padding: 10px 14px; background: #101923; color: #e2ecee; font-size: 18px; }
+.controller-keyboard-keys { display: grid; grid-template-columns: repeat(10,minmax(0,1fr)); gap: 9px; }.controller-keyboard-keys button,.controller-keyboard-tools button { min-height: 44px; padding: 8px; border: 1px solid #ffffff16; border-radius: 9px; background: #ffffff07; color: #e0ebe9; font-size: 17px; }.controller-keyboard-tools { display: flex; gap: 9px; margin-top: 12px; flex-wrap: wrap; }.controller-keyboard-tools button { min-width: 55px; display: grid; place-items: center; }.controller-keyboard-tools button[aria-pressed=true] { background: #c9ecdc20; }.controller-keyboard footer { margin-top: 22px; }
+@media(max-width:720px) { .controller-hints { right: 12px; bottom: max(100px,env(safe-area-inset-bottom)); gap: 12px; padding: 9px 12px; }.controller-keyboard { padding: 20px; }.controller-keyboard-keys { grid-template-columns: repeat(8,minmax(0,1fr)); gap: 7px; } }

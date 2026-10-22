@@ -1,0 +1,32 @@
+import { useState } from 'react';
+import { Button, Modal } from '@heroui/react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { AudioLines, Heart, Play, Tags } from 'lucide-react';
+import { date, mutate, request, type MediaItem, type MusicSuggestion, type MusicTagPreview, type MusicTask } from '../api';
+import { Dialog } from './Dialogs';
+import { MusicSwitch } from './MusicAutomation';
+
+export function MusicRecommendations({ onPlay }: { onPlay: (items: MediaItem[], index?: number) => void }) {
+  const data = useQuery({ queryKey: ['music-recommendations'], queryFn: () => request<MusicSuggestion[]>('/music/recommendations') });
+  return <><p className="field-hint">Favori ve son dinlediğin parçalardan, bu sunucuda ölçülen ses rengi benzerliği.</p>{data.data?.map((item, index) => <div className="session-row" key={item.media.id}><AudioLines size={23} /><div><strong>{item.media.title}</strong><span>{item.artist} · %{Math.round(item.similarity * 100)} ses benzerliği</span></div><Button variant="ghost" onPress={() => onPlay(data.data!.map(value => value.media), index)}><Play size={15} /> Çal</Button></div>)}{!data.isPending && !data.data?.length && <div className="search-empty"><AudioLines size={32} /><h2>Müziğinin izini çıkar.</h2><p>Albüm ayrıntısında ses analizini başlat. Analiz edilen favorilerin ve dinlediklerin, kütüphanenden önerilere dönüşür.</p></div>}{data.error && <p className="form-error">{data.error.message}</p>}</>;
+}
+export function MusicFavorite({ mediaId }: { mediaId: string }) {
+  const client = useQueryClient(); const query = useQuery({ queryKey: ['music-favorite', mediaId], queryFn: () => request<{ favorite: boolean }>(`/music/media/${mediaId}/favorite`) });
+  const change = useMutation({ mutationFn: () => mutate(`/music/media/${mediaId}/favorite`, { favorite: !query.data?.favorite }, 'PUT'), onSuccess: () => { client.invalidateQueries({ queryKey: ['music-favorite', mediaId] }); client.invalidateQueries({ queryKey: ['music-recommendations'] }); client.invalidateQueries({ queryKey: ['music-library-tracks'] }); } });
+  return <><Button variant="ghost" isIconOnly aria-label={query.data?.favorite ? 'Favorilerimden çıkar' : 'Favorilerime ekle'} aria-pressed={query.data?.favorite ?? false} isDisabled={change.isPending} onPress={() => change.mutate()}><Heart size={17} fill={query.data?.favorite ? 'currentColor' : 'none'} /></Button>{change.error && <span className="form-error">{change.error.message}</span>}</>;
+}
+export function MusicTagDialog({ mediaId, onClose }: { mediaId: string | null; onClose: () => void }) {
+  const [rename, setRename] = useState(true); const [artwork, setArtwork] = useState(false); const client = useQueryClient();
+  const preview = useQuery({ queryKey: ['music-tag-preview', mediaId, rename], queryFn: () => request<MusicTagPreview>(`/music/media/${mediaId}/tags/preview?rename=${rename}`), enabled: !!mediaId });
+  const save = useMutation({ mutationFn: () => mutate(`/music/media/${mediaId}/tags`, { fingerprint: preview.data!.fingerprint, rename, artwork, expectedMetadataHash: preview.data!.metadataHash }), onSuccess: () => { client.invalidateQueries({ queryKey: ['music-tasks'] }); onClose(); } });
+  return <Dialog open={!!mediaId} onClose={onClose} title="Yönetilen müzik etiketleri"><div className="dialog-content home-form"><p className="eyebrow">MÜZİK DOSYASI</p><Modal.Heading className="dialog-title"><Tags size={23} /> Etiketleri düzenle</Modal.Heading>
+    {preview.data && <><p>{preview.data.proposed.artist} · {preview.data.proposed.album}</p><strong>{preview.data.proposed.disc}.{preview.data.proposed.track} · {preview.data.proposed.title}</strong><code className="path-preview">{preview.data.currentPath}</code><MusicSwitch value={rename} onChange={setRename}>Disc/parça ve başlığa göre adlandır</MusicSwitch><code className="path-preview">{preview.data.proposedPath}</code><MusicSwitch value={artwork} onChange={setArtwork}>Yayın kapağını dosyaya ekle</MusicSwitch><p className="field-hint">Eşleştirilmiş MusicBrainz bilgileri yazılır. Ses payload'ı doğrulanır; önceki dosya İşler ekranından geri alınabilir.</p>{preview.data.reason && <p className="field-hint">{preview.data.reason}</p>}<Button className="primary-button" isDisabled={!preview.data.writable || save.isPending} onPress={() => save.mutate()}>Etiket yazımını sıraya al</Button></>}
+    {(preview.error || save.error) && <p className="form-error">{preview.error?.message || save.error?.message}</p>}
+  </div></Dialog>;
+}
+export function MusicTasksPanel() {
+  const client = useQueryClient(); const tasks = useQuery({ queryKey: ['music-tasks'], queryFn: () => request<MusicTask[]>('/music/tasks'), refetchInterval: 5000 });
+  const action = useMutation({ mutationFn: ({ id, command }: { id: string; command: string }) => mutate(`/music/tasks/${id}/${command}`, undefined, command === 'tag-history' ? 'DELETE' : 'POST'), onSuccess: () => client.invalidateQueries({ queryKey: ['music-tasks'] }) });
+  const labels: Record<string, string> = { queued: 'Sırada', running: 'İşleniyor', publishing: 'Yayımlanıyor', completed: 'Tamamlandı', failed: 'Sorun var', cancelled: 'İptal' };
+  return <>{tasks.data?.map(task => <article className="request-card" key={task.id}><div className="request-summary"><strong>{task.kind === 'sonic' ? 'Ses analizi' : task.kind === 'tags' ? 'Etiket yazımı' : 'Etiket geri alma'}</strong><span>{labels[task.status]}</span></div><p className="request-note">{task.message || 'İş sırası bekleniyor.'}</p><p className="field-hint">{date(task.createdAt)}</p>{['queued', 'running'].includes(task.status) && <Button size="sm" variant="ghost" isDisabled={action.isPending} onPress={() => action.mutate({ id: task.id, command: 'cancel' })}>İptal et</Button>}{task.historyAvailable && <><Button size="sm" variant="ghost" isDisabled={action.isPending} onPress={() => action.mutate({ id: task.id, command: 'restore-tags' })}>Önceki dosyayı geri al</Button><Button size="sm" variant="ghost" isDisabled={action.isPending} onPress={() => action.mutate({ id: task.id, command: 'tag-history' })}>Geri alma kopyasını temizle</Button></>}</article>)}{!tasks.isPending && !tasks.data?.length && <p className="field-hint">Albümden ses analizi veya bir parçadan yönetilen etiket yazımı başlatabilirsin.</p>}{(tasks.error || action.error) && <p className="form-error">{tasks.error?.message || action.error?.message}</p>}</>;
+}

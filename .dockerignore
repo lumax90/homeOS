@@ -1,0 +1,11 @@
+.data
+artifacts
+node_modules
+**/node_modules
+**/bin
+**/obj
+**/wwwroot
+tests/*
+!tests/native
+.git
+**/*.log

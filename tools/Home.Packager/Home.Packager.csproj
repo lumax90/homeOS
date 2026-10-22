@@ -1,0 +1,4 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup><OutputType>Exe</OutputType><AssemblyName>Home.Packager</AssemblyName></PropertyGroup>
+  <ItemGroup><ProjectReference Include="../../server/HomeServer.Api/HomeServer.Api.csproj" /></ItemGroup>
+</Project>

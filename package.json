@@ -1,0 +1,38 @@
+{
+  "name": "home-media-server",
+  "version": "0.43.0",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "web"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspace web",
+    "build": "npm run build --workspace web",
+    "typecheck": "npm run typecheck --workspace web",
+    "test:e2e": "playwright test",
+    "test:server": "dotnet test HomeServer.slnx",
+    "test:audio": "node --test tests/unit/music-audio.test.ts",
+    "test:push": "node --test tests/unit/push-worker.test.mjs",
+    "test:offline": "node --test tests/unit/offline.test.ts tests/unit/offline-manager.test.mjs",
+    "test:rooms": "node --test tests/unit/watch-room.test.ts",
+    "test:lyrics": "node --test tests/unit/lyrics.test.ts",
+    "test:i18n": "node --test tests/unit/localization.test.mjs",
+    "test:playback-transport": "node --test tests/unit/playback-transport.test.ts",
+    "test:player": "node --test tests/unit/home-media-bridge.test.ts",
+    "test:navigation": "node --test tests/unit/navigation.test.ts",
+    "test:discovery": "node --test tests/unit/discovery-feed.test.ts",
+    "test:controls": "node --test tests/unit/home-select.test.mjs",
+    "test:controller": "node --test tests/unit/controller.test.ts tests/unit/controller-runtime.test.mjs",
+    "test:games": "node --test tests/unit/games.test.ts tests/unit/game-packages.test.mjs tests/unit/game-startup.test.mjs tests/unit/game-store.test.mjs tests/unit/native-games.test.ts tests/unit/native-driver-scripts.test.mjs tests/unit/native-frontend-build.test.mjs tests/unit/native-home-setup.test.mjs tests/unit/native-transport.test.ts tests/unit/native-input.test.ts tests/unit/native-video.test.ts",
+    "test:settings-navigation": "node --test tests/unit/settings-navigation.test.mjs",
+    "server": "dotnet run --project server/HomeServer.Api --no-launch-profile"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.64.0",
+    "fake-indexeddb": "6.2.5"
+  },
+  "engines": {
+    "node": ">=24.0.0"
+  }
+}

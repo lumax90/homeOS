@@ -1,0 +1,11 @@
+.music-vinyl-record{position:relative;width:100%;aspect-ratio:1;flex:none;border-radius:50%;font-size:clamp(12px,1.7vw,22px);isolation:isolate;box-shadow:14px 28px 60px #0007,inset 0 0 0 1px #baccc91a}
+.music-vinyl-platter{position:absolute;inset:0;border-radius:inherit;background:repeating-radial-gradient(circle,#091116 0 2px,#28353a 3px,#0e1a1d 4px);animation:home-vinyl-turn 16s linear infinite;animation-play-state:paused}
+.music-vinyl-record.is-spinning .music-vinyl-platter{animation-play-state:running}
+.music-vinyl-label{position:absolute;inset:32%;border-radius:50%;overflow:hidden;background:linear-gradient(125deg,#8b9c8d,#557773);color:#172c25;display:flex;align-items:center;justify-content:center;flex-direction:column;padding-bottom:23%;border:1px solid #adbfad40}
+.music-vinyl-label>span{position:absolute;top:11%;font-size:1.2em;font-weight:660;line-height:1;letter-spacing:-.07em}.music-vinyl-label>i{position:absolute;bottom:19%;height:1px;width:34%;background:#1a35295c}.music-vinyl-label>small{position:absolute;bottom:7%;font-size:.26em;font-weight:600;letter-spacing:.17em;line-height:1}
+.music-vinyl-spindle{position:absolute;inset:48.5%;border-radius:50%;background:#091217;box-shadow:0 0 0 2px #213e3455}
+.music-vinyl-reflection{position:absolute;inset:0;border-radius:inherit;pointer-events:none;background:conic-gradient(from 10deg,transparent 10%,#d3e4df0f 17%,transparent 27%,transparent 55%,#d1e4df0c 66%,transparent 76%);border:1px solid #b0c6c113}
+.music-vinyl-backdrop{position:absolute;inset:0;display:grid;place-items:center;background:radial-gradient(ellipse at 45% 40%,#294037b8,transparent 64%),linear-gradient(135deg,#0f1a1b,#070f15)}
+.music-vinyl-backdrop>.music-vinyl-record{width:min(70vw,58dvh,620px);font-size:clamp(20px,3.2vw,44px)}
+@keyframes home-vinyl-turn{from{transform:rotate(-18deg)}to{transform:rotate(342deg)}}
+@media(prefers-reduced-motion:reduce){.music-vinyl-platter{animation:none!important;transform:rotate(-18deg)}}

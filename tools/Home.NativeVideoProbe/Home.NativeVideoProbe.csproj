@@ -1,0 +1,4 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup><OutputType>Exe</OutputType><AssemblyName>Home.NativeVideoProbe</AssemblyName></PropertyGroup>
+  <ItemGroup><ProjectReference Include="../../server/HomeServer.Api/HomeServer.Api.csproj"/><Compile Include="../../tests/native/SyntheticGba.cs" Link="SyntheticGba.cs"/><Compile Include="../../tests/native/EncodedVideoTiming.cs" Link="EncodedVideoTiming.cs"/></ItemGroup>
+</Project>

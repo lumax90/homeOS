@@ -1,0 +1,16 @@
+{
+  "format": 1,
+  "reviewedAt": "2026-10-22",
+  "platform": "linux-x64",
+  "sources": [
+    { "id": "retroarch", "repository": "libretro/RetroArch", "commit": "69a4f0ea1e8aaf442ae4858f2e7f2b31a1776576", "version": "1.22.2", "license": "GPL-3.0", "cache": "retroarch-source-1222" },
+    { "id": "mgba", "repository": "mgba-emu/mgba", "commit": "26b7884bc25a5933960f3cdcd98bac1ae14d42e2", "version": "0.10.5", "license": "MPL-2.0", "cache": "mgba-source-0105" },
+    { "id": "fceumm", "repository": "libretro/libretro-fceumm", "commit": "ac0d00a7fc01166f84c7bac01d1084ebfd2b865e", "version": "2026-10-11", "license": "GPL-2.0" },
+    { "id": "snes9x", "repository": "libretro/snes9x", "commit": "fae2fea08f74180759ef540ee94259213f503480", "version": "2026-09-19", "license": "Snes9x non-commercial" },
+    { "id": "genesis_plus_gx", "repository": "libretro/Genesis-Plus-GX", "commit": "aa74d79634cd230f65cce4180e92688e53883d2f", "version": "2026-10-16", "license": "Genesis Plus GX non-commercial" },
+    { "id": "pcsx_rearmed", "repository": "libretro/pcsx_rearmed", "commit": "c8816799b50388e61cfe237fe2cdbb7d8175f20a", "version": "2026-10-01", "license": "GPL-2.0" },
+    { "id": "pcsx_rearmed/frontend/libpicofe", "repository": "notaz/libpicofe", "commit": "a2697389e76744cfa0c56c13a172845c45ede719", "version": "parent-pinned", "license": "Various upstream notices" }
+  ],
+  "inputFix": { "commit": "cfb1204314dd6b061a7b1cda77221735939bf5ba", "sha256": "558cc50291b96e5319a44891e2c36af427ca4b60e05d0ed9e2af2733fa94ff0e" },
+  "mediamtx": { "version": "1.21.2", "url": "https://github.com/bluenviron/mediamtx/releases/download/v1.21.2/mediamtx_v1.21.2_linux_amd64.tar.gz", "sha256": "121be6e00397e473a95d83c75f4fcd3819a6af3b0e1a50889cba43ab4fab6a27", "license": "MIT" }
+}

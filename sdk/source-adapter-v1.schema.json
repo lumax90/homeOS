@@ -1,0 +1,11 @@
+{
+ "$schema":"https://json-schema.org/draft/2020-12/schema",
+ "$id":"https://home.local/sdk/source-adapter-v1.schema.json",
+ "title":"Home source adapter v1","type":"object","additionalProperties":false,
+ "required":["schemaVersion","id","name","version","license","homepage","format","protocol","searchPath","fields"],
+ "properties":{
+  "schemaVersion":{"const":1},"id":{"type":"string","pattern":"^[A-Za-z0-9.-]{1,60}$"},"name":{"type":"string","minLength":1,"maxLength":100},"version":{"type":"string","pattern":"^[0-9]+\\.[0-9]+\\.[0-9]+$"},"license":{"type":"string","minLength":1,"maxLength":500},"homepage":{"type":"string","format":"uri","pattern":"^https://"},
+   "format":{"enum":["json","rss"]},"protocol":{"enum":["torrent","usenet"]},"searchPath":{"type":"string","pattern":"^/(?:[^/\\\\?#][^\\\\?#]*)?$","maxLength":300},"queryParameter":{"type":"string","default":"q"},"offsetParameter":{"type":"string","default":"offset"},"limitParameter":{"type":"string","default":"limit"},"itemsPath":{"type":"string","maxLength":200},
+  "fields":{"type":"object","maxProperties":20,"required":["id","title"],"additionalProperties":{"type":"string","maxLength":200}},"parameters":{"type":"object","maxProperties":20,"additionalProperties":{"type":"string"}},"downloadTemplate":{"type":["string","null"]},"authentication":{"enum":["none","query","bearer","header"],"default":"none"},"credentialName":{"type":"string","default":"apikey"},"pageSize":{"type":"integer","minimum":1,"maximum":100,"default":50}
+ }
+}

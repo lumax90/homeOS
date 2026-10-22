@@ -1,0 +1,113 @@
+/* One material for selection popovers and navigation menus, independent of native OS menus. */
+:root {
+  --home-menu-background: #19232def;
+  --home-menu-foreground: #e5edf3;
+  --home-menu-border: #ffffff1e;
+  --home-menu-highlight: #bcdaca13;
+  --home-menu-selected: #edf6f1;
+  --home-menu-radius: 16px;
+  --home-menu-item-radius: 9px;
+  --home-menu-blur: blur(24px) saturate(140%);
+  --home-menu-shadow: 0 16px 48px #0006;
+}
+.home-menu-surface {
+  color: var(--home-menu-foreground);
+  background: var(--home-menu-background);
+  border: 1px solid var(--home-menu-border);
+  border-radius: var(--home-menu-radius);
+  padding: 7px;
+  box-shadow: var(--home-menu-shadow), inset 0 1px 0 #ffffff08;
+  backdrop-filter: var(--home-menu-blur);
+  -webkit-backdrop-filter: var(--home-menu-blur);
+  max-width: calc(100vw - 28px);
+  max-height: min(520px, 70dvh);
+  overflow: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+}
+.home-menu-item {
+  border-radius: var(--home-menu-item-radius);
+  color: #c9d7e1;
+  cursor: pointer;
+}
+.home-menu-item[data-focused], .home-menu-item[data-hovered], .home-menu-item[data-selected] {
+  background: var(--home-menu-highlight);
+  color: var(--home-menu-selected);
+}
+.home-select { display: inline-flex; flex-direction: column; min-width: 0; max-width: 100%; vertical-align: middle; }
+.home-select .home-select-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  width: 100%;
+  min-width: 0;
+  min-height: 40px;
+  padding: 9px 12px;
+  border: 1px solid #ffffff1b;
+  border-radius: 11px;
+  background: #17212cbd;
+  color: #d4e1e9;
+  box-shadow: inset 0 1px 0 #ffffff06;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.4;
+  text-align: start;
+  cursor: pointer;
+  transition: background-color .16s, border-color .16s;
+}
+.home-select .home-select-trigger[data-hovered], .home-select .home-select-trigger[data-pressed] { background: #22303ed9; border-color: #ffffff2b; }
+.home-select .home-select-trigger[data-focus-visible] { outline: 2px solid #b9e6d2; outline-offset: 3px; }
+.home-select .home-select-trigger[data-disabled] { opacity: .45; cursor: not-allowed; }
+.home-select .home-select-value { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: inherit; }
+.home-select .home-select-indicator { width: 14px; height: 14px; flex: none; color: #97acae; }
+.home-select-popover { z-index: 320; width: max(var(--trigger-width), 220px); }
+.home-select-list { outline: none; padding: 2px; }
+.home-select-option { display: flex; align-items: center; gap: 14px; min-height: 38px; padding: 9px 11px; font-size: 12px; font-weight: 500; line-height: 1.45; }
+.home-select-option-label { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.home-select-option-indicator { flex: none; width: 16px; height: 16px; color: #bfdfcd; }
+.home-select-option[data-disabled] { opacity: .4; cursor: not-allowed; }
+/* Layout only: the legacy select skin never styles a visible HomeSelect root. */
+.field > .home-select, .player-settings label > .home-select, .watch-inspector .home-select, .music-match-row > .home-select { width: 100%; }
+.field > .home-select .home-select-trigger { min-height: 45px; font-size: 13px; }
+.search-box > .home-select { flex: none; max-width: 160px; }
+.discovery-browse-controls > .home-select, .discovery-browse-filters > .home-select { max-width: 240px; }
+.release-controls > .home-select { flex: 1; }
+.library-filter .home-select { max-width: 240px; }
+.episode-change-row > .home-select { max-width: 50%; }
+.personal-rating > .home-select { max-width: 135px; }
+.personal-collection > .home-select { max-width: 210px; }
+.personal-content--hero .home-select .home-select-trigger { border: 0; background: transparent; box-shadow: none; min-height: 38px; padding: 8px 2px; color: inherit; }
+.personal-content--hero .personal-collection > button { min-width: 30px; }
+.subtitle-upload > .home-select { max-width: 120px; }
+.catalog-segment-row .home-select { max-width: 100%; }
+.catalog-map-row select[multiple] { color: #d4e1e9; background: #17212cbd; scrollbar-width: thin; }
+.catalog-map-row select[multiple] option { padding: 8px; border-radius: 7px; }
+.catalog-map-row select[multiple] option:checked { background: #bcdaca26; color: #edf6f1; }
+/* Video.js keeps its tested store/controls; only its menu-scoped theme tokens change. */
+.home-video-skin .media-menu-popup {
+  --media-popover: var(--home-menu-background);
+  --media-popover-foreground: var(--home-menu-foreground);
+  --media-accent: var(--home-menu-highlight);
+  --media-accent-foreground: var(--home-menu-selected);
+  --media-border: var(--home-menu-border);
+  --media-surface-border: var(--home-menu-border);
+  --media-ring: #b9e6d2;
+  --media-menu-item-radius: var(--home-menu-item-radius);
+  --media-popup-radius: var(--home-menu-radius);
+  --media-backdrop-filter-surface: var(--home-menu-blur);
+  --media-shadow-surface: var(--home-menu-shadow);
+  font-size: 12px;
+}
+@media (max-width: 720px) {
+  .home-menu-surface { max-height: 65dvh; }
+  .home-select .home-select-trigger, .home-select-option { min-height: 44px; }
+  .home-select-option { font-size: 13px; }
+  .discovery-browse-filters > .home-select { max-width: 100%; }
+  .release-controls > .home-select { min-width: 100%; }
+  .episode-change-row > .home-select { max-width: 100%; }
+  .personal-collection > .home-select { max-width: 160px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .home-select-trigger, .home-select-indicator, .home-menu-surface { transition: none !important; animation: none !important; }
+}

@@ -1,0 +1,2279 @@
+{
+  "format": 1,
+  "reviewedAt": "2026-10-19",
+  "games": [
+    {
+      "id": "2048",
+      "title": "2048",
+      "publisher": "Gabriele Cirulli",
+      "repository": "gabrielecirulli/2048",
+      "commit": "478b6ec346e3787f589e4af751378d06ded4cbbc",
+      "license": "MIT",
+      "licensePath": "LICENSE.txt",
+      "sourceUrl": "https://play2048.co/",
+      "image": "meta/apple-touch-icon.png",
+      "genres": [
+        "puzzle"
+      ],
+      "adapter": "2048",
+      "input": "digital",
+      "estimatedBytes": 2000000,
+      "version": "web-478b6ec346e3-home.1",
+      "archiveUrl": "https://codeload.github.com/gabrielecirulli/2048/zip/478b6ec346e3787f589e4af751378d06ded4cbbc",
+      "archiveRoot": "2048-478b6ec346e3787f589e4af751378d06ded4cbbc/",
+      "scripts": [
+        "js/bind_polyfill.js",
+        "js/classlist_polyfill.js",
+        "js/animframe_polyfill.js",
+        "js/keyboard_input_manager.js",
+        "js/html_actuator.js",
+        "js/grid.js",
+        "js/tile.js",
+        "js/local_storage_manager.js",
+        "js/game_manager.js",
+        "js/application.js"
+      ],
+      "sourceFiles": [
+        {
+          "path": "CONTRIBUTING.md",
+          "size": 1970,
+          "gitBlobSha1": "8b269ae253af2441f697ddf5d4db7b180ac14430"
+        },
+        {
+          "path": "LICENSE.txt",
+          "size": 1083,
+          "gitBlobSha1": "b0dbfa4d7526587bcc21a4883222b20805d5c065"
+        },
+        {
+          "path": "README.md",
+          "size": 2350,
+          "gitBlobSha1": "c947a03d4c63822e2ae79fd26de00fc4565e1292"
+        },
+        {
+          "path": "favicon.ico",
+          "size": 4286,
+          "gitBlobSha1": "22109e04a9f44bde18ec7b7a4b7410d0246521bc"
+        },
+        {
+          "path": "index.html",
+          "size": 3988,
+          "gitBlobSha1": "0da0ee0e1b142d886c9752fe9477058d3b4b5e83"
+        },
+        {
+          "path": "js/animframe_polyfill.js",
+          "size": 890,
+          "gitBlobSha1": "c524a994a92103b6b5dc51af82ca8041884b6eea"
+        },
+        {
+          "path": "js/application.js",
+          "size": 197,
+          "gitBlobSha1": "2c1108e757a0e49af7b9ee48dcc45bd8e61cb806"
+        },
+        {
+          "path": "js/bind_polyfill.js",
+          "size": 220,
+          "gitBlobSha1": "8d9c4a4886dd1b0b9ae857ab0cf947c697b125b5"
+        },
+        {
+          "path": "js/classlist_polyfill.js",
+          "size": 1794,
+          "gitBlobSha1": "1789ae788939fa86560a96f376400b7069f4d093"
+        },
+        {
+          "path": "js/game_manager.js",
+          "size": 7627,
+          "gitBlobSha1": "1c13d15bd667afe06f95316942324885c45d8e6d"
+        },
+        {
+          "path": "js/grid.js",
+          "size": 2526,
+          "gitBlobSha1": "29f0821e505b0440db8ba23c6ae88f4b5f44180a"
+        },
+        {
+          "path": "js/html_actuator.js",
+          "size": 4040,
+          "gitBlobSha1": "6b31f2d10785a7149e1b2aa3123b06adc1d166c7"
+        },
+        {
+          "path": "js/keyboard_input_manager.js",
+          "size": 4005,
+          "gitBlobSha1": "ca01b3ce8995a5a20ac50219712d1ef95297ed99"
+        },
+        {
+          "path": "js/local_storage_manager.js",
+          "size": 1588,
+          "gitBlobSha1": "2ca9cc3006eb0f24c4921725eba34a99a3457dee"
+        },
+        {
+          "path": "js/tile.js",
+          "size": 594,
+          "gitBlobSha1": "92a670a5a60507bae99f333f0d3a9e23706f629f"
+        },
+        {
+          "path": "meta/apple-touch-icon.png",
+          "size": 5808,
+          "gitBlobSha1": "3fd20f6092338ef464e440ec84a34c8850fd5d33"
+        },
+        {
+          "path": "meta/apple-touch-startup-image-640x1096.png",
+          "size": 70707,
+          "gitBlobSha1": "5a68ba0bcbae90bfe65e5fd936fd391f5f37a1b2"
+        },
+        {
+          "path": "meta/apple-touch-startup-image-640x920.png",
+          "size": 42020,
+          "gitBlobSha1": "17bc9d8322bd3787aee5020f61a4844aae7ca11a"
+        },
+        {
+          "path": "style/fonts/ClearSans-Bold-webfont.svg",
+          "size": 79206,
+          "gitBlobSha1": "aa985aebfd05b42b42b5d42b40cdb197cef55c1e"
+        },
+        {
+          "path": "style/fonts/ClearSans-Light-webfont.svg",
+          "size": 96271,
+          "gitBlobSha1": "1d5d2ecebbff2e50a1f18f79ea72aadab4aa3eac"
+        },
+        {
+          "path": "style/fonts/ClearSans-Regular-webfont.svg",
+          "size": 82674,
+          "gitBlobSha1": "1e2cffdc2fab3eea43e67a4cf135881e1a67a782"
+        },
+        {
+          "path": "style/fonts/clear-sans.css",
+          "size": 1078,
+          "gitBlobSha1": "de2811db8b5ef12fe4f243fab6c4809363562c29"
+        },
+        {
+          "path": "style/main.css",
+          "size": 20647,
+          "gitBlobSha1": "ea3cb19fcaf62b95379376216f643fe5e297c4b7"
+        }
+      ],
+      "artworkSha256": "d7b9d5872e420480a4b93134b095dbbe8f035fdf9ec2154971bc28e0a4d897b2",
+      "expandedBytes": 435569
+    },
+    {
+      "id": "a-dark-room",
+      "title": "A Dark Room",
+      "publisher": "doublespeak games",
+      "repository": "doublespeakgames/adarkroom",
+      "commit": "1fada4620b6c66bd07bf15a3f1eb8223df8bc1d7",
+      "license": "MPL-2.0",
+      "licensePath": "LICENSE.md",
+      "sourceUrl": "https://adarkroom.doublespeakgames.com/",
+      "image": "img/adr.png",
+      "genres": [
+        "adventure",
+        "strategy"
+      ],
+      "adapter": "a-dark-room",
+      "input": "cursor",
+      "estimatedBytes": 50000000,
+      "version": "web-1fada4620b6c-home.1",
+      "archiveUrl": "https://codeload.github.com/doublespeakgames/adarkroom/zip/1fada4620b6c66bd07bf15a3f1eb8223df8bc1d7",
+      "archiveRoot": "adarkroom-1fada4620b6c66bd07bf15a3f1eb8223df8bc1d7/",
+      "scripts": [
+        "lib/jquery.min.js",
+        "lib/jquery.color-2.1.2.min.js",
+        "lib/jquery.event.move.js",
+        "lib/jquery.event.swipe.js",
+        "lib/base64.js",
+        "lib/translate.js",
+        "lang/langs.js",
+        "script/Button.js",
+        "script/audioLibrary.js",
+        "script/audio.js",
+        "script/engine.js",
+        "script/state_manager.js",
+        "script/header.js",
+        "script/notifications.js",
+        "script/events.js",
+        "script/room.js",
+        "script/outside.js",
+        "script/world.js",
+        "script/path.js",
+        "script/ship.js",
+        "script/space.js",
+        "script/fabricator.js",
+        "script/prestige.js",
+        "script/scoring.js",
+        "script/events/global.js",
+        "script/events/room.js",
+        "script/events/outside.js",
+        "script/events/encounters.js",
+        "script/events/setpieces.js",
+        "script/events/marketing.js",
+        "script/events/executioner.js",
+        "script/localization.js"
+      ],
+      "sourceFiles": [
+        {
+          "path": "LICENSE.md",
+          "size": 16734,
+          "gitBlobSha1": "be424ff791a6122e08620d7eb356d6cb1bd29d18"
+        },
+        {
+          "path": "README.md",
+          "size": 2663,
+          "gitBlobSha1": "5042605ede50d7ef5f501914ae11e3ee46e721d0"
+        },
+        {
+          "path": "browserWarning.html",
+          "size": 1497,
+          "gitBlobSha1": "087463e769bdc235921d2b986cac7828ba4f5082"
+        },
+        {
+          "path": "contributing.md",
+          "size": 1220,
+          "gitBlobSha1": "7ff5fd386aa36ef49573a894bb82cf42c02ce60a"
+        },
+        {
+          "path": "css/dark.css",
+          "size": 2895,
+          "gitBlobSha1": "d77de77dcbf64718cce32672bb9d7e12ade02f34"
+        },
+        {
+          "path": "css/fabricator.css",
+          "size": 517,
+          "gitBlobSha1": "f68ac8df7637e098811c4cf6d86c36257d635b73"
+        },
+        {
+          "path": "css/main.css",
+          "size": 9899,
+          "gitBlobSha1": "f39e3928a3549eb9c9683e602f995fc0cd9538f1"
+        },
+        {
+          "path": "css/outside.css",
+          "size": 855,
+          "gitBlobSha1": "59c3cbd98452df7064a95cef8ae1e16488ea515c"
+        },
+        {
+          "path": "css/path.css",
+          "size": 1025,
+          "gitBlobSha1": "13a13ddaf988c5eab7cf96239c387e9ed57547dc"
+        },
+        {
+          "path": "css/room.css",
+          "size": 848,
+          "gitBlobSha1": "ac256c204880b584ebf0f289add7933feb436a93"
+        },
+        {
+          "path": "css/ship.css",
+          "size": 85,
+          "gitBlobSha1": "88b85c858a55424ddfe2910ab4166c1680223fc9"
+        },
+        {
+          "path": "css/space.css",
+          "size": 2809,
+          "gitBlobSha1": "e52658d279154308a93543344395a7d4bb4e45fa"
+        },
+        {
+          "path": "css/world.css",
+          "size": 1265,
+          "gitBlobSha1": "1d4c0db8c3b50218352b67b5a9b93a251da32043"
+        },
+        {
+          "path": "dev-server.js",
+          "size": 172,
+          "gitBlobSha1": "0f3693d27e2b636949dea8c88a080b94d310272c"
+        },
+        {
+          "path": "doc/Zones.txt",
+          "size": 205,
+          "gitBlobSha1": "03621a2a4fb1906aac4efeb17c183646ce8ea381"
+        },
+        {
+          "path": "doc/translation.txt",
+          "size": 3781,
+          "gitBlobSha1": "d99d7e2039fc63afdfd38882525d18c845ca4f80"
+        },
+        {
+          "path": "favicon.ico",
+          "size": 318,
+          "gitBlobSha1": "19ecf1ac78ea9df5381498d311b3cc1750278028"
+        },
+        {
+          "path": "img/Logo1.jpg",
+          "size": 36459,
+          "gitBlobSha1": "f7e8b5943b80595d97c4bd6898436f407ea73f52"
+        },
+        {
+          "path": "img/adr.png",
+          "size": 5648,
+          "gitBlobSha1": "61d02141a3eb75593cd797ee2ae80b36ac2c2a0b"
+        },
+        {
+          "path": "img/chrome.png",
+          "size": 122169,
+          "gitBlobSha1": "40b579b323133b82175c30ac0b164ed31b0f7689"
+        },
+        {
+          "path": "img/firefox.png",
+          "size": 195147,
+          "gitBlobSha1": "5be2db96c71306513fd8516bbed00ceac9e091e1"
+        },
+        {
+          "path": "img/ie.png",
+          "size": 21010,
+          "gitBlobSha1": "d3e3d8fee2502270243eeeb962edb84a07b2cdf5"
+        },
+        {
+          "path": "img/opera.png",
+          "size": 44441,
+          "gitBlobSha1": "f459482562ed914705010ac06cdeaeddb08bb1d4"
+        },
+        {
+          "path": "img/safari.png",
+          "size": 89216,
+          "gitBlobSha1": "abf6c14b63302635e86f1b96ce4974c0123bea36"
+        },
+        {
+          "path": "index.html",
+          "size": 5211,
+          "gitBlobSha1": "244f8e4044efe014f226c1f5b84d38a7d984723c"
+        },
+        {
+          "path": "lang/cs/main.css",
+          "size": 128,
+          "gitBlobSha1": "cd90cbda8d679cef3637cd004551df137c029a1a"
+        },
+        {
+          "path": "lang/cs/strings.js",
+          "size": 63017,
+          "gitBlobSha1": "6f376b7eb1b13e511c4cb5fc2d49f0e25d90a727"
+        },
+        {
+          "path": "lang/de/main.css",
+          "size": 128,
+          "gitBlobSha1": "cd90cbda8d679cef3637cd004551df137c029a1a"
+        },
+        {
+          "path": "lang/de/strings.js",
+          "size": 53870,
+          "gitBlobSha1": "6086e6546d706bd8591394bfd59cc3545cdf37b7"
+        },
+        {
+          "path": "lang/el/main.css",
+          "size": 128,
+          "gitBlobSha1": "cd90cbda8d679cef3637cd004551df137c029a1a"
+        },
+        {
+          "path": "lang/el/strings.js",
+          "size": 153896,
+          "gitBlobSha1": "279ca2999a12138477d6306501467e08ffb0eb99"
+        },
+        {
+          "path": "lang/eo/main.css",
+          "size": 128,
+          "gitBlobSha1": "cd90cbda8d679cef3637cd004551df137c029a1a"
+        },
+        {
+          "path": "lang/eo/strings.js",
+          "size": 52836,
+          "gitBlobSha1": "a1fcc4b81db4e813296ebb20f8733cdc5e07943b"
+        },
+        {
+          "path": "lang/es/main.css",
+          "size": 128,
+          "gitBlobSha1": "cd90cbda8d679cef3637cd004551df137c029a1a"
+        },
+        {
+          "path": "lang/es/strings.js",
+          "size": 55409,
+          "gitBlobSha1": "b3432861480ce1909551a7a5e4984a1fff1ef39e"
+        },
+        {
+          "path": "lang/fr/main.css",
+          "size": 382,
+          "gitBlobSha1": "f7a3afb1e1056b080c0b59a18e1bb4bc43691a70"
+        },
+        {
+          "path": "lang/fr/strings.js",
+          "size": 57814,
+          "gitBlobSha1": "805478ccacee90a5f8e4d41de772a6558586233b"
+        },
+        {
+          "path": "lang/gl/main.css",
+          "size": 128,
+          "gitBlobSha1": "cd90cbda8d679cef3637cd004551df137c029a1a"
+        },
+        {
+          "path": "lang/gl/strings.js",
+          "size": 54164,
+          "gitBlobSha1": "56cfd4e221d66cfa6aaf2e16eb52595919e71ed5"
+        },
+        {
+          "path": "lang/id/main.css",
+          "size": 128,
+          "gitBlobSha1": "cd90cbda8d679cef3637cd004551df137c029a1a"
+        },
+        {
+          "path": "lang/id/strings.js",
+          "size": 50328,
+          "gitBlobSha1": "2310a8a968c503ad30962a7658c397c7613e718b"
+        },
+        {
+          "path": "lang/it/main.css",
+          "size": 129,
+          "gitBlobSha1": "4ae12c8f2d0f85b2ca3ae84b3e0acbb186092d24"
+        },
+        {
+          "path": "lang/it/strings.js",
+          "size": 55649,
+          "gitBlobSha1": "305bd9877396030a186ed3595102eda80753e80a"
+        },
+        {
+          "path": "lang/ja/main.css",
+          "size": 130,
+          "gitBlobSha1": "2c016c2ab69e9d6126819c3cab538c71da4480e5"
+        },
+        {
+          "path": "lang/ja/strings.js",
+          "size": 80654,
+          "gitBlobSha1": "462b1d3b42448d83814e997a06afd4d4b3b0be2c"
+        },
+        {
+          "path": "lang/ko/main.css",
+          "size": 128,
+          "gitBlobSha1": "cd90cbda8d679cef3637cd004551df137c029a1a"
+        },
+        {
+          "path": "lang/ko/strings.js",
+          "size": 78908,
+          "gitBlobSha1": "6f420277ad4bdf2c1275fadd6266491971d690c4"
+        },
+        {
+          "path": "lang/langs.js",
+          "size": 558,
+          "gitBlobSha1": "47e3d2a309c8824131af350f97fa24e38eb3268f"
+        },
+        {
+          "path": "lang/lt_LT/main.css",
+          "size": 130,
+          "gitBlobSha1": "c0c04ceb978ff4139c00b095dd6d73aee7601760"
+        },
+        {
+          "path": "lang/lt_LT/strings.js",
+          "size": 56413,
+          "gitBlobSha1": "109bafe4f52ddd361c9275205b9d6edfd381c04c"
+        },
+        {
+          "path": "lang/lv/strings.js",
+          "size": 60491,
+          "gitBlobSha1": "cf680786cf1c8a5ad567783ad393f057556e6731"
+        },
+        {
+          "path": "lang/main.css",
+          "size": 128,
+          "gitBlobSha1": "cd90cbda8d679cef3637cd004551df137c029a1a"
+        },
+        {
+          "path": "lang/nb/main.css",
+          "size": 130,
+          "gitBlobSha1": "2c016c2ab69e9d6126819c3cab538c71da4480e5"
+        },
+        {
+          "path": "lang/nb/strings.js",
+          "size": 50626,
+          "gitBlobSha1": "b18208676fc814092567d7a3b3c0b3c748ccf359"
+        },
+        {
+          "path": "lang/pl/main.css",
+          "size": 129,
+          "gitBlobSha1": "4ae12c8f2d0f85b2ca3ae84b3e0acbb186092d24"
+        },
+        {
+          "path": "lang/pl/strings.js",
+          "size": 58909,
+          "gitBlobSha1": "5f602e9d496df4efbd95109917844c98cd6ced94"
+        },
+        {
+          "path": "lang/pt/main.css",
+          "size": 128,
+          "gitBlobSha1": "cd90cbda8d679cef3637cd004551df137c029a1a"
+        },
+        {
+          "path": "lang/pt/strings.js",
+          "size": 52567,
+          "gitBlobSha1": "c7ca3dca8b6cdfc320f9671529a5685de35c3e57"
+        },
+        {
+          "path": "lang/pt_br/main.css",
+          "size": 129,
+          "gitBlobSha1": "4ae12c8f2d0f85b2ca3ae84b3e0acbb186092d24"
+        },
+        {
+          "path": "lang/pt_br/strings.js",
+          "size": 54609,
+          "gitBlobSha1": "cd20489dc1f16df4770004636882d956471f7a2e"
+        },
+        {
+          "path": "lang/ru/main.css",
+          "size": 280,
+          "gitBlobSha1": "899c2168cbe7e6b5cc9e474cbf55e7b2c6d180e8"
+        },
+        {
+          "path": "lang/ru/strings.js",
+          "size": 84290,
+          "gitBlobSha1": "b1e276bf686714384af83452116724bd50c614ee"
+        },
+        {
+          "path": "lang/sv/main.css",
+          "size": 130,
+          "gitBlobSha1": "2c016c2ab69e9d6126819c3cab538c71da4480e5"
+        },
+        {
+          "path": "lang/sv/strings.js",
+          "size": 37795,
+          "gitBlobSha1": "87a16f744f626add5ab7146c6f0bf6a16b686d97"
+        },
+        {
+          "path": "lang/th/main.css",
+          "size": 129,
+          "gitBlobSha1": "ca783af32f10ccae8b4471023cf454ce5e812ec5"
+        },
+        {
+          "path": "lang/th/strings.js",
+          "size": 84937,
+          "gitBlobSha1": "8d537fe44675b6eaee41f178dace0cd85c16d165"
+        },
+        {
+          "path": "lang/tr/main.css",
+          "size": 128,
+          "gitBlobSha1": "cd90cbda8d679cef3637cd004551df137c029a1a"
+        },
+        {
+          "path": "lang/tr/strings.js",
+          "size": 37685,
+          "gitBlobSha1": "419c1b4629ee0c9131b79b9c628396802ad0130d"
+        },
+        {
+          "path": "lang/uk/main.css",
+          "size": 173,
+          "gitBlobSha1": "38dae6edac9a63ebde2a8265b26e0a0c4a18a253"
+        },
+        {
+          "path": "lang/uk/strings.js",
+          "size": 84791,
+          "gitBlobSha1": "c25b6cc24fc4134cc8ce7daf2280b1a858ddfd29"
+        },
+        {
+          "path": "lang/vi/main.css",
+          "size": 128,
+          "gitBlobSha1": "665099ff7287ef973905baf2306816a943b11d1c"
+        },
+        {
+          "path": "lang/vi/strings.js",
+          "size": 73051,
+          "gitBlobSha1": "5db6da17870873668c05082a57810838c4c4c7dc"
+        },
+        {
+          "path": "lang/zh_cn/main.css",
+          "size": 129,
+          "gitBlobSha1": "4ae12c8f2d0f85b2ca3ae84b3e0acbb186092d24"
+        },
+        {
+          "path": "lang/zh_cn/strings.js",
+          "size": 67429,
+          "gitBlobSha1": "715d1285c19fd6e68d3e7218464a1103e8565a60"
+        },
+        {
+          "path": "lang/zh_tw/main.css",
+          "size": 129,
+          "gitBlobSha1": "4ae12c8f2d0f85b2ca3ae84b3e0acbb186092d24"
+        },
+        {
+          "path": "lang/zh_tw/strings.js",
+          "size": 40559,
+          "gitBlobSha1": "b0b6331ac06d1c5fd0e2d928e6b993e835305314"
+        },
+        {
+          "path": "lib/base64.js",
+          "size": 2963,
+          "gitBlobSha1": "d4c40c31a33aa9e373a5495e350e4c31c0ddbcc7"
+        },
+        {
+          "path": "lib/icu.js",
+          "size": 3213,
+          "gitBlobSha1": "a719c7e74b11db9558a3e4f15000ca460ec6d0d0"
+        },
+        {
+          "path": "lib/jquery.color-2.1.2.min.js",
+          "size": 6604,
+          "gitBlobSha1": "d77c42234e0b1d1bdb9deb8db51b0780826e5324"
+        },
+        {
+          "path": "lib/jquery.event.move.js",
+          "size": 14595,
+          "gitBlobSha1": "a69242edd9dba815797ed246135a5313e7cc19cb"
+        },
+        {
+          "path": "lib/jquery.event.swipe.js",
+          "size": 3236,
+          "gitBlobSha1": "d078cffb3ca23c6e0a3c67a5ac12b7e635e986f8"
+        },
+        {
+          "path": "lib/jquery.min.js",
+          "size": 93057,
+          "gitBlobSha1": "263af9c37bc3923a89270b8494745a9cdaa0b270"
+        },
+        {
+          "path": "lib/translate.js",
+          "size": 1649,
+          "gitBlobSha1": "8c1395b5f2c6ef9d9006b330b72ae88f20dee929"
+        },
+        {
+          "path": "mobileWarning.html",
+          "size": 1354,
+          "gitBlobSha1": "b647610fa9217f422119175c40c86625102ffd28"
+        },
+        {
+          "path": "package.json",
+          "size": 446,
+          "gitBlobSha1": "f1e0619944d96b67f82fd9fa9fa6dc543cb095ab"
+        },
+        {
+          "path": "script/Button.js",
+          "size": 3466,
+          "gitBlobSha1": "4261caf074297e34b1019a4878d8a22e5e3f16d9"
+        },
+        {
+          "path": "script/audio.js",
+          "size": 12163,
+          "gitBlobSha1": "09f75a76d312d68f24cda3dceed24f1a02469743"
+        },
+        {
+          "path": "script/audioLibrary.js",
+          "size": 4261,
+          "gitBlobSha1": "6a7e028b37c4a570388fc2b817f8b7c332be233c"
+        },
+        {
+          "path": "script/dropbox.js",
+          "size": 10361,
+          "gitBlobSha1": "95d7c915e9abc02cb058dbded9b378da821dc711"
+        },
+        {
+          "path": "script/engine.js",
+          "size": 27168,
+          "gitBlobSha1": "e3bf19671854be0ea5eec5833de9cd0d88b118b4"
+        },
+        {
+          "path": "script/events.js",
+          "size": 39078,
+          "gitBlobSha1": "c087cd8f2bde2dae633c185e75a78e3dd517219d"
+        },
+        {
+          "path": "script/events/encounters.js",
+          "size": 8356,
+          "gitBlobSha1": "b31b41296019cc2791eebb2f73a98649d540fb90"
+        },
+        {
+          "path": "script/events/executioner.js",
+          "size": 58104,
+          "gitBlobSha1": "43f708702d9617b86378980aa462ff1f7abe5368"
+        },
+        {
+          "path": "script/events/global.js",
+          "size": 1636,
+          "gitBlobSha1": "8cefbf811c95f86f41ec47631ff90b4ea05c4b3a"
+        },
+        {
+          "path": "script/events/marketing.js",
+          "size": 994,
+          "gitBlobSha1": "f826ae47d83c52bca12276735613bc0fcccc3fac"
+        },
+        {
+          "path": "script/events/outside.js",
+          "size": 7298,
+          "gitBlobSha1": "b0b5b15d759d3db95bc1e1491fbc390586ba0428"
+        },
+        {
+          "path": "script/events/room.js",
+          "size": 16140,
+          "gitBlobSha1": "6879458479c2985759db8b7f4a1f452253f40b23"
+        },
+        {
+          "path": "script/events/setpieces.js",
+          "size": 67718,
+          "gitBlobSha1": "dadf91ebbdd90f8ef94421291e37503881451b43"
+        },
+        {
+          "path": "script/fabricator.js",
+          "size": 7162,
+          "gitBlobSha1": "84662f9106650fd8865074991553d7562e11ce8e"
+        },
+        {
+          "path": "script/header.js",
+          "size": 707,
+          "gitBlobSha1": "f87580e5c817febf3232b667accb96222fe51ad5"
+        },
+        {
+          "path": "script/localization.js",
+          "size": 1371,
+          "gitBlobSha1": "5e9c3d4cdfe865c6d4fbf0b9ef930e1ffecfbf03"
+        },
+        {
+          "path": "script/notifications.js",
+          "size": 2015,
+          "gitBlobSha1": "777c6b3737afb10a7c6d3ccc24708f024cf2494c"
+        },
+        {
+          "path": "script/outside.js",
+          "size": 18489,
+          "gitBlobSha1": "4ecbd5eba62e32d3348dd9825f624c8eadba5ef0"
+        },
+        {
+          "path": "script/path.js",
+          "size": 10780,
+          "gitBlobSha1": "1cbfaae8a6b3b1db35f89d31dd5a33e748904de1"
+        },
+        {
+          "path": "script/prestige.js",
+          "size": 2369,
+          "gitBlobSha1": "13e9c61a4c864660ad44f6c5bca5e4d69eb8f360"
+        },
+        {
+          "path": "script/room.js",
+          "size": 33594,
+          "gitBlobSha1": "49802b4a9b70cda977f29819147438669fdbb4dd"
+        },
+        {
+          "path": "script/scoring.js",
+          "size": 849,
+          "gitBlobSha1": "cc67f280c3fc34ae74bd8d374c223b3f96525e5b"
+        },
+        {
+          "path": "script/ship.js",
+          "size": 4798,
+          "gitBlobSha1": "3cfd1bcc6620d82bb8d5976aea52b3eb217fae51"
+        },
+        {
+          "path": "script/space.js",
+          "size": 16115,
+          "gitBlobSha1": "4b07c6d75e89fa96adc758911a70fbf0bfe06277"
+        },
+        {
+          "path": "script/state_manager.js",
+          "size": 12672,
+          "gitBlobSha1": "94624ae949295869c89788617c3e5a2fef19af4a"
+        },
+        {
+          "path": "script/world.js",
+          "size": 33825,
+          "gitBlobSha1": "9787d10cfa427b73e4e6fb131922f98576a188a7"
+        }
+      ],
+      "artworkSha256": "40608090deee30737626d6d28f5ca41a091029ef4690d20f122269b345d01557",
+      "expandedBytes": 2699615
+    },
+    {
+      "id": "hexgl",
+      "title": "HexGL",
+      "publisher": "Thibaut Despoulain (BKcore)",
+      "repository": "BKcore/HexGL",
+      "commit": "6addc95a2fce3bf05f4d751823cc054c61a16d68",
+      "license": "MIT",
+      "licensePath": "LICENSE",
+      "sourceUrl": "https://hexgl.bkcore.com/",
+      "image": "icon_256.png",
+      "genres": [
+        "racing"
+      ],
+      "adapter": "hexgl",
+      "input": "native",
+      "estimatedBytes": 100000000,
+      "version": "web-6addc95a2fce-home.1",
+      "archiveUrl": "https://codeload.github.com/BKcore/HexGL/zip/6addc95a2fce3bf05f4d751823cc054c61a16d68",
+      "archiveRoot": "HexGL-6addc95a2fce3bf05f4d751823cc054c61a16d68/",
+      "scripts": [
+        "libs/leap-0.4.1.min.js",
+        "libs/Three.dev.js",
+        "libs/ShaderExtras.js",
+        "libs/postprocessing/EffectComposer.js",
+        "libs/postprocessing/RenderPass.js",
+        "libs/postprocessing/BloomPass.js",
+        "libs/postprocessing/ShaderPass.js",
+        "libs/postprocessing/MaskPass.js",
+        "libs/Detector.js",
+        "libs/Stats.js",
+        "libs/DAT.GUI.min.js",
+        "bkcore.coffee/controllers/TouchController.js",
+        "bkcore.coffee/controllers/OrientationController.js",
+        "bkcore.coffee/controllers/GamepadController.js",
+        "bkcore.coffee/Timer.js",
+        "bkcore.coffee/ImageData.js",
+        "bkcore.coffee/Utils.js",
+        "bkcore/threejs/RenderManager.js",
+        "bkcore/threejs/Shaders.js",
+        "bkcore/threejs/Particles.js",
+        "bkcore/threejs/Loader.js",
+        "bkcore/Audio.js",
+        "bkcore/hexgl/HUD.js",
+        "bkcore/hexgl/RaceData.js",
+        "bkcore/hexgl/ShipControls.js",
+        "bkcore/hexgl/ShipEffects.js",
+        "bkcore/hexgl/CameraChase.js",
+        "bkcore/hexgl/Gameplay.js",
+        "bkcore/hexgl/tracks/Cityscape.js",
+        "bkcore/hexgl/HexGL.js",
+        "launch.js"
+      ],
+      "sourceFiles": [
+        {
+          "path": "LICENSE",
+          "size": 1085,
+          "gitBlobSha1": "ccdfb1cae9a9ad9b248d830d70d52e7f3456634c"
+        },
+        {
+          "path": "README.md",
+          "size": 792,
+          "gitBlobSha1": "8c5c63e4174386407d15053109c3d76c996d03af"
+        },
+        {
+          "path": "audio/bg.ogg",
+          "size": 1546870,
+          "gitBlobSha1": "bcb0d27d0c6c9441cee3a59ac61ed19976aff243"
+        },
+        {
+          "path": "audio/boost.ogg",
+          "size": 30388,
+          "gitBlobSha1": "bcbf20c50276ab4e35d7c4b981618c4bfb3b96fd"
+        },
+        {
+          "path": "audio/crash.ogg",
+          "size": 12447,
+          "gitBlobSha1": "8ff0301c71c670d7bf10c1c8a1a117bb73db9114"
+        },
+        {
+          "path": "audio/destroyed.ogg",
+          "size": 145937,
+          "gitBlobSha1": "4918b1a02ea26165579e6a8e15bac90a916ad888"
+        },
+        {
+          "path": "audio/wind.ogg",
+          "size": 402462,
+          "gitBlobSha1": "812077e71d07d5170ef788adc5daa40134c95262"
+        },
+        {
+          "path": "bkcore.coffee/ImageData.js",
+          "size": 4193,
+          "gitBlobSha1": "a24ee84936e7ac0a182c5b92e1baaa9bee43eaad"
+        },
+        {
+          "path": "bkcore.coffee/Timer.js",
+          "size": 3181,
+          "gitBlobSha1": "1de825bd4c3a12d6253432940e6c2a55e2381915"
+        },
+        {
+          "path": "bkcore.coffee/Utils.js",
+          "size": 6688,
+          "gitBlobSha1": "2f2314e66441f40398816d11d313a09196a51eb7"
+        },
+        {
+          "path": "bkcore.coffee/controllers/GamepadController.js",
+          "size": 1952,
+          "gitBlobSha1": "5e776315a2ca5a23ba7b400fa135bc8830019849"
+        },
+        {
+          "path": "bkcore.coffee/controllers/OrientationController.js",
+          "size": 3338,
+          "gitBlobSha1": "9484a33e33e986cf365732ce6bf51cdaaae64e47"
+        },
+        {
+          "path": "bkcore.coffee/controllers/TouchController.js",
+          "size": 4665,
+          "gitBlobSha1": "d8e7f1578b0021d81663622645ebe7a410b0a2cb"
+        },
+        {
+          "path": "bkcore.coffee/tests.html",
+          "size": 206,
+          "gitBlobSha1": "43f8204519023c56d1a80355b2add7215d74227c"
+        },
+        {
+          "path": "bkcore.coffee/threejs/Particles.js",
+          "size": 6819,
+          "gitBlobSha1": "4208e22c4c7bcfb1b13379fc46f14c18ed87bf9f"
+        },
+        {
+          "path": "bkcore/Audio.js",
+          "size": 3166,
+          "gitBlobSha1": "41400f1c12b762f5e00f8a1bd06bb8e9c3a736e1"
+        },
+        {
+          "path": "bkcore/hexgl/CameraChase.js",
+          "size": 2270,
+          "gitBlobSha1": "69a55c7487278b495f64ba7480a075f269022306"
+        },
+        {
+          "path": "bkcore/hexgl/Gameplay.js",
+          "size": 5742,
+          "gitBlobSha1": "9827deeff8713d4679b85d304d89ac3ea9da6324"
+        },
+        {
+          "path": "bkcore/hexgl/HUD.js",
+          "size": 7227,
+          "gitBlobSha1": "068e123d9aa4afc3c5e8d04dcbe46737064831c4"
+        },
+        {
+          "path": "bkcore/hexgl/HexGL.js",
+          "size": 12665,
+          "gitBlobSha1": "4da8e46ec7c180bac5245564f02da46cc0a80f1b"
+        },
+        {
+          "path": "bkcore/hexgl/Ladder.js",
+          "size": 1376,
+          "gitBlobSha1": "8dbfd8fdb480e59647781348472f9f5bb6b88121"
+        },
+        {
+          "path": "bkcore/hexgl/RaceData.js",
+          "size": 2233,
+          "gitBlobSha1": "9d983c01b71c9496188396848ea02476537f3683"
+        },
+        {
+          "path": "bkcore/hexgl/ShipControls.js",
+          "size": 21576,
+          "gitBlobSha1": "685475181bbabed23a42eb556cadfb07fa0739be"
+        },
+        {
+          "path": "bkcore/hexgl/ShipEffects.js",
+          "size": 5235,
+          "gitBlobSha1": "1be292059203c4bd0c068872c860df4b4a466428"
+        },
+        {
+          "path": "bkcore/hexgl/tracks/Cityscape.js",
+          "size": 18010,
+          "gitBlobSha1": "585ca4b10f03bbefccb9a99e7096755b1ff2ed4e"
+        },
+        {
+          "path": "bkcore/threejs/Loader.js",
+          "size": 5559,
+          "gitBlobSha1": "9744d66e69dda34f9f5db948f660fdbf44cc6a59"
+        },
+        {
+          "path": "bkcore/threejs/Particles.js",
+          "size": 5167,
+          "gitBlobSha1": "afb7bd4ff62d44a5563e50933dfcf40cdda4ef09"
+        },
+        {
+          "path": "bkcore/threejs/Preloader.js",
+          "size": 3599,
+          "gitBlobSha1": "68b37622a797ad222588830247cff0766a84c3e1"
+        },
+        {
+          "path": "bkcore/threejs/RenderManager.js",
+          "size": 3167,
+          "gitBlobSha1": "f847896f419f8b43127c17408352991376a136ac"
+        },
+        {
+          "path": "bkcore/threejs/Shaders.js",
+          "size": 25563,
+          "gitBlobSha1": "4fe93fbd0b3963479498dc5b1d856842ccd95c62"
+        },
+        {
+          "path": "css/BebasNeue-webfont.svg",
+          "size": 40456,
+          "gitBlobSha1": "df90beb838913393abe545b6ce22e100a4dfbeb5"
+        },
+        {
+          "path": "css/bg.jpg",
+          "size": 83997,
+          "gitBlobSha1": "dbf5ed2493f6dd0f649131a3f2d0d9334e78088b"
+        },
+        {
+          "path": "css/fonts.css",
+          "size": 511,
+          "gitBlobSha1": "f6a6361100bcea733a8a31bdbe198efcb8726327"
+        },
+        {
+          "path": "css/help-0.png",
+          "size": 31972,
+          "gitBlobSha1": "27c37352670c256e892e292a9dd8fb79163bff5d"
+        },
+        {
+          "path": "css/help-1.png",
+          "size": 33539,
+          "gitBlobSha1": "28d36d2f15a50012b521a24a10a4f01b10bfd620"
+        },
+        {
+          "path": "css/help-2.png",
+          "size": 40214,
+          "gitBlobSha1": "97910f059b48b62fa742bc6e18fcb40dc9fc8efc"
+        },
+        {
+          "path": "css/help-3.png",
+          "size": 39917,
+          "gitBlobSha1": "40adbb7ebe098c4a7941fb9871613938cab95d15"
+        },
+        {
+          "path": "css/mobile-controls-1.jpg",
+          "size": 190883,
+          "gitBlobSha1": "ec1ad87063fe745afe8fd1f5ff5c9a4335a2790c"
+        },
+        {
+          "path": "css/mobile-controls-2.jpg",
+          "size": 204535,
+          "gitBlobSha1": "8aa9008661b2671ec0cca915352365a2d478eaeb"
+        },
+        {
+          "path": "css/mobile-over.jpg",
+          "size": 178381,
+          "gitBlobSha1": "67cd9bb87e347775eb67766cb8c3454c04291a4d"
+        },
+        {
+          "path": "css/mobile.jpg",
+          "size": 251974,
+          "gitBlobSha1": "e51887287b599ff7ede873ce91f00cbc0e04e1b0"
+        },
+        {
+          "path": "css/multi.css",
+          "size": 7150,
+          "gitBlobSha1": "173f27bde11aa3fc8cb0cc3e4166cb880b478db0"
+        },
+        {
+          "path": "css/title.png",
+          "size": 484372,
+          "gitBlobSha1": "9a3a509207efa4834a78aab61ca98a329be77f83"
+        },
+        {
+          "path": "css/touchcontroller.css",
+          "size": 432,
+          "gitBlobSha1": "f6212649d72c3cefd2cacb77e092e8904fe2b494"
+        },
+        {
+          "path": "favicon.png",
+          "size": 1459,
+          "gitBlobSha1": "d7e74ff343b559ca5534709ac207b54b45b23f9d"
+        },
+        {
+          "path": "geometries/bonus/base/base.js",
+          "size": 12141,
+          "gitBlobSha1": "a9d2d78ba76f5b28be7275b112d3ac0ee0f362fa"
+        },
+        {
+          "path": "geometries/booster/booster.js",
+          "size": 6427,
+          "gitBlobSha1": "746a236aa1b5fbe00e6a62173381be089aa542ff"
+        },
+        {
+          "path": "geometries/ships/feisar/feisar.js",
+          "size": 139136,
+          "gitBlobSha1": "0a53910b98e6c05d9758458d90ed3d89d055de3b"
+        },
+        {
+          "path": "geometries/tracks/cityscape/bonus/speed.js",
+          "size": 15257,
+          "gitBlobSha1": "c1eeddadb1fbe8ae183410db190cdda317407d59"
+        },
+        {
+          "path": "geometries/tracks/cityscape/scrapers1.js",
+          "size": 9864,
+          "gitBlobSha1": "9a0adfd3cfb2d5f43aebc0d0c96b71b564adce21"
+        },
+        {
+          "path": "geometries/tracks/cityscape/scrapers2.js",
+          "size": 9689,
+          "gitBlobSha1": "b530e64df86f00fe3a498474730c66bfb559125e"
+        },
+        {
+          "path": "geometries/tracks/cityscape/start.js",
+          "size": 11515,
+          "gitBlobSha1": "438f4e999ba6872f618acb14b51377920d5d3f62"
+        },
+        {
+          "path": "geometries/tracks/cityscape/startbanner.js",
+          "size": 1679,
+          "gitBlobSha1": "ca10f64b69856b2455f5a6f173ca9102df910d5b"
+        },
+        {
+          "path": "geometries/tracks/cityscape/track.js",
+          "size": 739195,
+          "gitBlobSha1": "5c1fad14fc9eec36186b2d113a054291245f0084"
+        },
+        {
+          "path": "geometries/tracks/edge/track.js",
+          "size": 387450,
+          "gitBlobSha1": "020c51f143f96f3de7db48fe49e9092c90e76678"
+        },
+        {
+          "path": "icon_128.png",
+          "size": 19903,
+          "gitBlobSha1": "bfb50edba6731212dcb7579471d987a8fd8858aa"
+        },
+        {
+          "path": "icon_256.png",
+          "size": 52713,
+          "gitBlobSha1": "edfecf319446483b5be4152952170d87a26fc154"
+        },
+        {
+          "path": "icon_32.png",
+          "size": 2699,
+          "gitBlobSha1": "3319df9af3fd6b0df99bb57447f051115cfbd612"
+        },
+        {
+          "path": "icon_64.png",
+          "size": 6730,
+          "gitBlobSha1": "c0921359ba217c60d2c4ecd1e4e80c2846d3bc87"
+        },
+        {
+          "path": "index.html",
+          "size": 5145,
+          "gitBlobSha1": "c162c224a01cf06165735f37b626184b084ebce5"
+        },
+        {
+          "path": "launch.js",
+          "size": 3336,
+          "gitBlobSha1": "92611d2de87ce81e683f9493a0d2c168ee431bcc"
+        },
+        {
+          "path": "libs/DAT.GUI.min.js",
+          "size": 20183,
+          "gitBlobSha1": "8ed2120323ce7366b3a0397dcacc47b957e5d8a4"
+        },
+        {
+          "path": "libs/Detector.js",
+          "size": 1907,
+          "gitBlobSha1": "4f34bf112e05074a650dec0d751ac4030138ea9b"
+        },
+        {
+          "path": "libs/Editor.html",
+          "size": 44149,
+          "gitBlobSha1": "a5ea659db216be9e01f46849f225b78744501a5b"
+        },
+        {
+          "path": "libs/Editor_files/App.js",
+          "size": 4538,
+          "gitBlobSha1": "59244726eb83edddcea67b026564a4e356744d65"
+        },
+        {
+          "path": "libs/Editor_files/CanvasRenderer.js",
+          "size": 7842,
+          "gitBlobSha1": "6d86dfe9b3b7907ed850bb996214facaade654e9"
+        },
+        {
+          "path": "libs/Editor_files/Diagram.js",
+          "size": 3057,
+          "gitBlobSha1": "704b6f921d222367a2779f85114a7f75747a2656"
+        },
+        {
+          "path": "libs/Editor_files/Iterator.js",
+          "size": 1645,
+          "gitBlobSha1": "066631c05e87a7a7d326ded80fad0de7a8f88551"
+        },
+        {
+          "path": "libs/Editor_files/Links.js",
+          "size": 1155,
+          "gitBlobSha1": "a6278a028667728fcc345408c6ccc2928ec6a35a"
+        },
+        {
+          "path": "libs/Editor_files/ModuleList.js",
+          "size": 1199,
+          "gitBlobSha1": "8874d7892553d7453e2163aaa492bc4b1729b021"
+        },
+        {
+          "path": "libs/Editor_files/Node.js",
+          "size": 2406,
+          "gitBlobSha1": "6da558ea65f58c7658c6ceb3e6d78fc73ecd7dfa"
+        },
+        {
+          "path": "libs/Editor_files/Parser.js",
+          "size": 2826,
+          "gitBlobSha1": "d20fcec3d2960c3f737e8c6911165f09b7076350"
+        },
+        {
+          "path": "libs/Editor_files/Project.js",
+          "size": 2832,
+          "gitBlobSha1": "c777b75db2e645c8ab40834459823d1f4691ec67"
+        },
+        {
+          "path": "libs/Editor_files/Timer.js",
+          "size": 3010,
+          "gitBlobSha1": "de2aa4b5c2441b463323d0654e0410997302d9d8"
+        },
+        {
+          "path": "libs/Editor_files/ace.js",
+          "size": 277697,
+          "gitBlobSha1": "bdd9a2452c41856fd8611ef26d5c875f43411cd0"
+        },
+        {
+          "path": "libs/Editor_files/class.js",
+          "size": 35829,
+          "gitBlobSha1": "e07344745b51a5cd2f634d011cc4db4ccee5d8a6"
+        },
+        {
+          "path": "libs/Editor_files/editor.css",
+          "size": 249,
+          "gitBlobSha1": "f90e74f66317fabff30b879cbbfeacf7b0611b10"
+        },
+        {
+          "path": "libs/Editor_files/font.css",
+          "size": 737,
+          "gitBlobSha1": "e6df5ac5f9c36084d9ab1e21f626b2b94967a94b"
+        },
+        {
+          "path": "libs/Editor_files/gamecore.js",
+          "size": 3217,
+          "gitBlobSha1": "eef1b035ccda4e7c6c8e07684f2a1d434e494900"
+        },
+        {
+          "path": "libs/Editor_files/hashlist.js",
+          "size": 1026,
+          "gitBlobSha1": "34cc37e36e5abc9bba91a6d6dd0289823f606743"
+        },
+        {
+          "path": "libs/Editor_files/jhashtable.js",
+          "size": 14196,
+          "gitBlobSha1": "e7947d3fea37323e88b72eb1eae97142a9889a5f"
+        },
+        {
+          "path": "libs/Editor_files/jquery-1.8.js",
+          "size": 93436,
+          "gitBlobSha1": "f65cf1dc4573c51e54d7cf3772d06caf96726616"
+        },
+        {
+          "path": "libs/Editor_files/kinetic.js",
+          "size": 68851,
+          "gitBlobSha1": "c7ba0f3f7c0b4b738863482bc8cb40db060dbc17"
+        },
+        {
+          "path": "libs/Editor_files/main.css",
+          "size": 3820,
+          "gitBlobSha1": "217ad800637e3a4758e86300556963aa59385850"
+        },
+        {
+          "path": "libs/Editor_files/mode-json.js",
+          "size": 8311,
+          "gitBlobSha1": "7119cdbd38757c4967a24eaa1709f8f247e1f815"
+        },
+        {
+          "path": "libs/Editor_files/pooled.js",
+          "size": 15536,
+          "gitBlobSha1": "a5a51e622f1e4b73fbec10c6d14b7d94d4bdf658"
+        },
+        {
+          "path": "libs/Editor_files/theme-monokai.js",
+          "size": 2681,
+          "gitBlobSha1": "bb4aacc3a86df78a386d652adec9ef7891be786d"
+        },
+        {
+          "path": "libs/ShaderExtras.js",
+          "size": 45027,
+          "gitBlobSha1": "93478400567b033812da4ce5ec4ee911f20dcae3"
+        },
+        {
+          "path": "libs/Stats.js",
+          "size": 2243,
+          "gitBlobSha1": "bd4e440d8ae78a2b73cc2aed8fc1eb7eae4d89e4"
+        },
+        {
+          "path": "libs/Three.dev.js",
+          "size": 382352,
+          "gitBlobSha1": "941fd22bd62f6bb8c544ef9284c4c7ca3e26079e"
+        },
+        {
+          "path": "libs/Three.r53.js",
+          "size": 392908,
+          "gitBlobSha1": "103e921d84cbd20886764bf26c79df35550fc13c"
+        },
+        {
+          "path": "libs/leap-0.4.1.min.js",
+          "size": 83438,
+          "gitBlobSha1": "6de41001d4570589d237996de61a0922fdf77e39"
+        },
+        {
+          "path": "libs/postprocessing/BloomPass.js",
+          "size": 3214,
+          "gitBlobSha1": "78abc058fc8209d735d58b57d2413a32cd3ec445"
+        },
+        {
+          "path": "libs/postprocessing/DotScreenPass.js",
+          "size": 1206,
+          "gitBlobSha1": "0edcb8fc1e432908352a3c2e1f2b83d0c8286425"
+        },
+        {
+          "path": "libs/postprocessing/EffectComposer.js",
+          "size": 3637,
+          "gitBlobSha1": "ef07dd1f1b81dca3f0aa65f18eecaa4cc4c6317d"
+        },
+        {
+          "path": "libs/postprocessing/FilmPass.js",
+          "size": 1320,
+          "gitBlobSha1": "be6acb262c4df06d86017784d407a043d6a2ef59"
+        },
+        {
+          "path": "libs/postprocessing/MaskPass.js",
+          "size": 1622,
+          "gitBlobSha1": "23238b086db7883a45bfc6abaac63e9170d490fd"
+        },
+        {
+          "path": "libs/postprocessing/RenderPass.js",
+          "size": 1235,
+          "gitBlobSha1": "c1596e5beeed68044c829f0b69b68a71866e06cf"
+        },
+        {
+          "path": "libs/postprocessing/SavePass.js",
+          "size": 1201,
+          "gitBlobSha1": "b604d142b72883d8ee60575aac54f9e3343591c2"
+        },
+        {
+          "path": "libs/postprocessing/ShaderPass.js",
+          "size": 1009,
+          "gitBlobSha1": "8817bf1ac60ebe940d191ecdbce44e46541800d0"
+        },
+        {
+          "path": "libs/postprocessing/TexturePass.js",
+          "size": 811,
+          "gitBlobSha1": "6d104de4b68643a35bde07658701a0753f62b8bb"
+        },
+        {
+          "path": "replays/cityscape-casual/bkcore.replay.json",
+          "size": 615416,
+          "gitBlobSha1": "7adc5bb25ad658ec2369f295bbbd3047269bdee6"
+        },
+        {
+          "path": "textures.full/bonus/base/diffuse.jpg",
+          "size": 102448,
+          "gitBlobSha1": "0b7ae964d1d8842eb7aa52af4c417e91b8ccb5de"
+        },
+        {
+          "path": "textures.full/bonus/base/normal.jpg",
+          "size": 48284,
+          "gitBlobSha1": "93a330e80c523eabf01f29c65fbcde71cfbc6f3e"
+        },
+        {
+          "path": "textures.full/bonus/base/specular.jpg",
+          "size": 112338,
+          "gitBlobSha1": "890c4d1f4c8a4ef0e3a9b74e6284cfc75033072e"
+        },
+        {
+          "path": "textures.full/checker.png",
+          "size": 340,
+          "gitBlobSha1": "232039e9647f5cbda7b6153f5d8a417998d91b93"
+        },
+        {
+          "path": "textures.full/hud/hex.jpg",
+          "size": 53410,
+          "gitBlobSha1": "f8dcc2901902abcf3c5a4502540ba808c2e53a47"
+        },
+        {
+          "path": "textures.full/hud/hud-bg.png",
+          "size": 83435,
+          "gitBlobSha1": "1ff2522c98239e72fedbcb1e57b1d7cbdc8d6c5c"
+        },
+        {
+          "path": "textures.full/hud/hud-fg-shield.png",
+          "size": 30092,
+          "gitBlobSha1": "f94999a3b123a4d47a510705c4214e8881fb71ef"
+        },
+        {
+          "path": "textures.full/hud/hud-fg-speed.png",
+          "size": 77277,
+          "gitBlobSha1": "4306683d5288672d7b2165bfeb822a4d3a5f3997"
+        },
+        {
+          "path": "textures.full/particles/cloud - Copie.png",
+          "size": 60512,
+          "gitBlobSha1": "6568f228f85569a06241a8d72c865620222dcd8c"
+        },
+        {
+          "path": "textures.full/particles/cloud.png",
+          "size": 60512,
+          "gitBlobSha1": "cc893f1975b1dfc2f05ae6de53f8ced1e8a52b13"
+        },
+        {
+          "path": "textures.full/particles/damage.png",
+          "size": 25050,
+          "gitBlobSha1": "e24217a106437a685947909ac3bc5739cf2646af"
+        },
+        {
+          "path": "textures.full/particles/spark - Copie.png",
+          "size": 3472,
+          "gitBlobSha1": "3aa04effdd7cc2e4aa72e16b52ee4ea593e55757"
+        },
+        {
+          "path": "textures.full/particles/spark.png",
+          "size": 2882,
+          "gitBlobSha1": "1101da2c798e92c8f24ca035ec31e452d2c34a67"
+        },
+        {
+          "path": "textures.full/ships/feisar/booster/booster.png",
+          "size": 428605,
+          "gitBlobSha1": "62d366a13d089287b06ec744432f7c01a5927814"
+        },
+        {
+          "path": "textures.full/ships/feisar/booster/boostersprite.jpg",
+          "size": 16055,
+          "gitBlobSha1": "8939b8c16d76bb89ca94af3928b70e25d6421acc"
+        },
+        {
+          "path": "textures.full/ships/feisar/diffuse.jpg",
+          "size": 294683,
+          "gitBlobSha1": "4cefffb604b0b899eb9610813e48ca5e42f6e5e0"
+        },
+        {
+          "path": "textures.full/ships/feisar/normal.jpg",
+          "size": 314506,
+          "gitBlobSha1": "3ac3777887bc8c8e64528dd83e08f310dc7893c1"
+        },
+        {
+          "path": "textures.full/ships/feisar/specular.jpg",
+          "size": 335448,
+          "gitBlobSha1": "cb57135aeba2c27473122c3442635f0ffd9cd77d"
+        },
+        {
+          "path": "textures.full/skybox/dawnclouds/nx.jpg",
+          "size": 55756,
+          "gitBlobSha1": "1cae307a60b90353ccc2b1ff95b7edcb4506f383"
+        },
+        {
+          "path": "textures.full/skybox/dawnclouds/ny.jpg",
+          "size": 52198,
+          "gitBlobSha1": "fa7a975d349aa8a45fd1f891e8a11ab2da36effa"
+        },
+        {
+          "path": "textures.full/skybox/dawnclouds/nz.jpg",
+          "size": 54574,
+          "gitBlobSha1": "1e9c54ef26c720d1247750bfa9adb120bf14a5ae"
+        },
+        {
+          "path": "textures.full/skybox/dawnclouds/px.jpg",
+          "size": 60050,
+          "gitBlobSha1": "0ad2eeaf0498edb2d5758c4a29356d1709a0ec00"
+        },
+        {
+          "path": "textures.full/skybox/dawnclouds/py.jpg",
+          "size": 19634,
+          "gitBlobSha1": "de7e5ccada20846d5f100f4d92c2b8f3f7db4c32"
+        },
+        {
+          "path": "textures.full/skybox/dawnclouds/pz.jpg",
+          "size": 58868,
+          "gitBlobSha1": "836cdb4a32c31dec3052184044753d51eac474e7"
+        },
+        {
+          "path": "textures.full/tracks/cityscape/collision.png",
+          "size": 146459,
+          "gitBlobSha1": "d17e4c9fd16b9b4b863bf38de01f242b1d545530"
+        },
+        {
+          "path": "textures.full/tracks/cityscape/diffuse.jpg",
+          "size": 394118,
+          "gitBlobSha1": "36e9614160c52fd4b16c86a932c4fc4ca6383654"
+        },
+        {
+          "path": "textures.full/tracks/cityscape/height.png",
+          "size": 209516,
+          "gitBlobSha1": "6747c9da97efe04f6f8f9c81dfc2acb3747e8949"
+        },
+        {
+          "path": "textures.full/tracks/cityscape/normal.jpg",
+          "size": 648304,
+          "gitBlobSha1": "14a923b5af8683dca5a665b184f755b7c991b4a7"
+        },
+        {
+          "path": "textures.full/tracks/cityscape/scrapers1/diffuse.jpg",
+          "size": 87923,
+          "gitBlobSha1": "93691022bd9b98e44ba7bf8b49a48a187602bce2"
+        },
+        {
+          "path": "textures.full/tracks/cityscape/scrapers1/normal.jpg",
+          "size": 112111,
+          "gitBlobSha1": "f7f1b73f497595445688b08165031263458c47af"
+        },
+        {
+          "path": "textures.full/tracks/cityscape/scrapers1/specular.jpg",
+          "size": 315830,
+          "gitBlobSha1": "4364748724eb82e7dbb8e6cc9a49fa191fd34ced"
+        },
+        {
+          "path": "textures.full/tracks/cityscape/scrapers2/diffuse.jpg",
+          "size": 120659,
+          "gitBlobSha1": "bc1b34e224dd820fb59d6c96ee482ad4d854ca7e"
+        },
+        {
+          "path": "textures.full/tracks/cityscape/scrapers2/normal.jpg",
+          "size": 59219,
+          "gitBlobSha1": "653aa6cd31e9cb86e78348dff00a2a3bfc003dc7"
+        },
+        {
+          "path": "textures.full/tracks/cityscape/scrapers2/specular.jpg",
+          "size": 207975,
+          "gitBlobSha1": "2bbb34cd75f1dc232a9607ff75ebacf7e89e1718"
+        },
+        {
+          "path": "textures.full/tracks/cityscape/specular.jpg",
+          "size": 444304,
+          "gitBlobSha1": "76532ded5c89d0e61eb2b38cde74e50ebdabcc69"
+        },
+        {
+          "path": "textures.full/tracks/cityscape/start/diffuse.jpg",
+          "size": 75560,
+          "gitBlobSha1": "e047eb941481ee52e8074c550b634312996f9771"
+        },
+        {
+          "path": "textures.full/tracks/cityscape/start/normal.jpg",
+          "size": 111293,
+          "gitBlobSha1": "029ecbabefd919c629b593103997cf3bd08beed2"
+        },
+        {
+          "path": "textures.full/tracks/cityscape/start/specular.jpg",
+          "size": 80452,
+          "gitBlobSha1": "235a2ae3be91d7a2f767463322e53b4d3e213734"
+        },
+        {
+          "path": "textures.full/tracks/cityscape/start/start.jpg",
+          "size": 32273,
+          "gitBlobSha1": "56c9cb27f3e5ff7902fea7c1c8ba5eb37ce5931c"
+        },
+        {
+          "path": "textures/bonus/base/diffuse.jpg",
+          "size": 35098,
+          "gitBlobSha1": "0ea0fcbc477e7e643fe047a0ffb4dffc01095a0b"
+        },
+        {
+          "path": "textures/bonus/base/normal.jpg",
+          "size": 48284,
+          "gitBlobSha1": "93a330e80c523eabf01f29c65fbcde71cfbc6f3e"
+        },
+        {
+          "path": "textures/bonus/base/specular.jpg",
+          "size": 112338,
+          "gitBlobSha1": "890c4d1f4c8a4ef0e3a9b74e6284cfc75033072e"
+        },
+        {
+          "path": "textures/checker.png",
+          "size": 340,
+          "gitBlobSha1": "232039e9647f5cbda7b6153f5d8a417998d91b93"
+        },
+        {
+          "path": "textures/hud/hex.jpg",
+          "size": 53410,
+          "gitBlobSha1": "f8dcc2901902abcf3c5a4502540ba808c2e53a47"
+        },
+        {
+          "path": "textures/hud/hud-bg.png",
+          "size": 83435,
+          "gitBlobSha1": "1ff2522c98239e72fedbcb1e57b1d7cbdc8d6c5c"
+        },
+        {
+          "path": "textures/hud/hud-fg-shield.png",
+          "size": 30092,
+          "gitBlobSha1": "f94999a3b123a4d47a510705c4214e8881fb71ef"
+        },
+        {
+          "path": "textures/hud/hud-fg-speed.png",
+          "size": 77277,
+          "gitBlobSha1": "4306683d5288672d7b2165bfeb822a4d3a5f3997"
+        },
+        {
+          "path": "textures/particles/cloud - Copie.png",
+          "size": 60512,
+          "gitBlobSha1": "6568f228f85569a06241a8d72c865620222dcd8c"
+        },
+        {
+          "path": "textures/particles/cloud.png",
+          "size": 60512,
+          "gitBlobSha1": "cc893f1975b1dfc2f05ae6de53f8ced1e8a52b13"
+        },
+        {
+          "path": "textures/particles/damage.png",
+          "size": 25050,
+          "gitBlobSha1": "e24217a106437a685947909ac3bc5739cf2646af"
+        },
+        {
+          "path": "textures/particles/spark - Copie.png",
+          "size": 3472,
+          "gitBlobSha1": "3aa04effdd7cc2e4aa72e16b52ee4ea593e55757"
+        },
+        {
+          "path": "textures/particles/spark.png",
+          "size": 2882,
+          "gitBlobSha1": "1101da2c798e92c8f24ca035ec31e452d2c34a67"
+        },
+        {
+          "path": "textures/ships/feisar/booster/booster.png",
+          "size": 81100,
+          "gitBlobSha1": "e5550c85c9898a4ae109aba514b56dd040e29f9b"
+        },
+        {
+          "path": "textures/ships/feisar/booster/boostersprite.jpg",
+          "size": 13234,
+          "gitBlobSha1": "aabfd84dd7fbb2c9a46006d42e728d46a202a408"
+        },
+        {
+          "path": "textures/ships/feisar/diffuse.jpg",
+          "size": 115601,
+          "gitBlobSha1": "ed075113b4ed2872813afbbc75e43c780e796b75"
+        },
+        {
+          "path": "textures/ships/feisar/normal.jpg",
+          "size": 314506,
+          "gitBlobSha1": "3ac3777887bc8c8e64528dd83e08f310dc7893c1"
+        },
+        {
+          "path": "textures/ships/feisar/specular.jpg",
+          "size": 335448,
+          "gitBlobSha1": "cb57135aeba2c27473122c3442635f0ffd9cd77d"
+        },
+        {
+          "path": "textures/skybox/dawnclouds/nx.jpg",
+          "size": 35046,
+          "gitBlobSha1": "3fffa1f036c411a754dff74c15c935b5d0f84a49"
+        },
+        {
+          "path": "textures/skybox/dawnclouds/ny.jpg",
+          "size": 34726,
+          "gitBlobSha1": "c2e17d63c7e12246f2f95787295a6547fd40e8ed"
+        },
+        {
+          "path": "textures/skybox/dawnclouds/nz.jpg",
+          "size": 34537,
+          "gitBlobSha1": "31bfcea959c8c2f0e1dbe7a87d1535a4e9f87481"
+        },
+        {
+          "path": "textures/skybox/dawnclouds/px.jpg",
+          "size": 36766,
+          "gitBlobSha1": "180ff872217c492f26c740de7069f9e615150979"
+        },
+        {
+          "path": "textures/skybox/dawnclouds/py.jpg",
+          "size": 20815,
+          "gitBlobSha1": "7e18c57b50962bd8c14ef6e30a7ad0c2815ba0c2"
+        },
+        {
+          "path": "textures/skybox/dawnclouds/pz.jpg",
+          "size": 36546,
+          "gitBlobSha1": "558922b1d88e4c363c26b1cd87c962f0e30b61d9"
+        },
+        {
+          "path": "textures/tracks/cityscape/collision.png",
+          "size": 146459,
+          "gitBlobSha1": "d17e4c9fd16b9b4b863bf38de01f242b1d545530"
+        },
+        {
+          "path": "textures/tracks/cityscape/diffuse.jpg",
+          "size": 63186,
+          "gitBlobSha1": "95a4be3b5488017bf6561abbd0a3c4e16026f8cd"
+        },
+        {
+          "path": "textures/tracks/cityscape/height.png",
+          "size": 209516,
+          "gitBlobSha1": "6747c9da97efe04f6f8f9c81dfc2acb3747e8949"
+        },
+        {
+          "path": "textures/tracks/cityscape/normal.jpg",
+          "size": 648304,
+          "gitBlobSha1": "14a923b5af8683dca5a665b184f755b7c991b4a7"
+        },
+        {
+          "path": "textures/tracks/cityscape/scrapers1/diffuse.jpg",
+          "size": 60434,
+          "gitBlobSha1": "09af2ab8f7d3e29cc3788bcf8784955479651781"
+        },
+        {
+          "path": "textures/tracks/cityscape/scrapers1/normal.jpg",
+          "size": 112111,
+          "gitBlobSha1": "f7f1b73f497595445688b08165031263458c47af"
+        },
+        {
+          "path": "textures/tracks/cityscape/scrapers1/specular.jpg",
+          "size": 315830,
+          "gitBlobSha1": "4364748724eb82e7dbb8e6cc9a49fa191fd34ced"
+        },
+        {
+          "path": "textures/tracks/cityscape/scrapers2/diffuse.jpg",
+          "size": 65749,
+          "gitBlobSha1": "2795916dfc2ccf695185df3098032dd5145b5aac"
+        },
+        {
+          "path": "textures/tracks/cityscape/scrapers2/normal.jpg",
+          "size": 59219,
+          "gitBlobSha1": "653aa6cd31e9cb86e78348dff00a2a3bfc003dc7"
+        },
+        {
+          "path": "textures/tracks/cityscape/scrapers2/specular.jpg",
+          "size": 207975,
+          "gitBlobSha1": "2bbb34cd75f1dc232a9607ff75ebacf7e89e1718"
+        },
+        {
+          "path": "textures/tracks/cityscape/specular.jpg",
+          "size": 444304,
+          "gitBlobSha1": "76532ded5c89d0e61eb2b38cde74e50ebdabcc69"
+        },
+        {
+          "path": "textures/tracks/cityscape/start/diffuse.jpg",
+          "size": 75560,
+          "gitBlobSha1": "e047eb941481ee52e8074c550b634312996f9771"
+        },
+        {
+          "path": "textures/tracks/cityscape/start/normal.jpg",
+          "size": 111293,
+          "gitBlobSha1": "029ecbabefd919c629b593103997cf3bd08beed2"
+        },
+        {
+          "path": "textures/tracks/cityscape/start/specular.jpg",
+          "size": 80452,
+          "gitBlobSha1": "235a2ae3be91d7a2f767463322e53b4d3e213734"
+        },
+        {
+          "path": "textures/tracks/cityscape/start/start.jpg",
+          "size": 32273,
+          "gitBlobSha1": "56c9cb27f3e5ff7902fea7c1c8ba5eb37ce5931c"
+        }
+      ],
+      "artworkSha256": "6280caad320dbb9f193f61131a76e62a173dfad1a08db264d9d771e78e3f1046",
+      "expandedBytes": 17145340
+    },
+    {
+      "id": "hextris",
+      "title": "Hextris",
+      "publisher": "Logan Engstrom, Garrett Finucane, Noah Moroze, Michael Yang",
+      "repository": "Hextris/hextris",
+      "commit": "3f4847dc8fd7dab3d1c87e6324b9159d92fbd396",
+      "license": "GPL-3.0-or-later",
+      "licensePath": "LICENSE.md",
+      "sourceUrl": "https://hextris.github.io/hextris/",
+      "image": "images/icons/apple-touch-512.png",
+      "genres": [
+        "arcade",
+        "puzzle"
+      ],
+      "adapter": "hextris",
+      "input": "digital",
+      "estimatedBytes": 5000000,
+      "version": "web-3f4847dc8fd7-home.1",
+      "archiveUrl": "https://codeload.github.com/Hextris/hextris/zip/3f4847dc8fd7dab3d1c87e6324b9159d92fbd396",
+      "archiveRoot": "hextris-3f4847dc8fd7dab3d1c87e6324b9159d92fbd396/",
+      "scripts": [
+        "vendor/hammer.min.js",
+        "vendor/js.cookie.js",
+        "vendor/jsonfn.min.js",
+        "vendor/keypress.min.js",
+        "vendor/jquery.js",
+        "js/save-state.js",
+        "js/view.js",
+        "js/wavegen.js",
+        "js/math.js",
+        "js/Block.js",
+        "js/Hex.js",
+        "js/Text.js",
+        "js/comboTimer.js",
+        "js/checking.js",
+        "js/update.js",
+        "js/render.js",
+        "js/input.js",
+        "js/main.js",
+        "js/initialization.js",
+        "vendor/sweet-alert.min.js",
+        "vendor/rrssb.min.js"
+      ],
+      "sourceFiles": [
+        {
+          "path": "LICENSE.md",
+          "size": 35178,
+          "gitBlobSha1": "16d89e0a34c0bc274e1939e28a3f98ee2b380858"
+        },
+        {
+          "path": "README.md",
+          "size": 1802,
+          "gitBlobSha1": "271c5601e3abcdd6bf0567eb6d88417dea45cbee"
+        },
+        {
+          "path": "a.js",
+          "size": 1,
+          "gitBlobSha1": "8b137891791fe96927ad78e64b0aad7bded08bdc"
+        },
+        {
+          "path": "favicon.ico",
+          "size": 99678,
+          "gitBlobSha1": "74ac8ae9152e0c17b20d7d8330f41957eef56eae"
+        },
+        {
+          "path": "images/android.png",
+          "size": 9614,
+          "gitBlobSha1": "9a50affda395c98ed77c3dff9321d00bd6bf32e7"
+        },
+        {
+          "path": "images/appstore.svg",
+          "size": 12353,
+          "gitBlobSha1": "ac111e597468639d8b15841555758351c62cecd7"
+        },
+        {
+          "path": "images/btn_back.svg",
+          "size": 1210,
+          "gitBlobSha1": "b0f77f0107aceb7fe1950d0f4df055f47f288c7b"
+        },
+        {
+          "path": "images/btn_facebook.svg",
+          "size": 1630,
+          "gitBlobSha1": "7e68661458b6360100b6232d0e3ffd194042737c"
+        },
+        {
+          "path": "images/btn_help.svg",
+          "size": 3174,
+          "gitBlobSha1": "26a452f62b14f7737d9c9d6f607e7619511e4377"
+        },
+        {
+          "path": "images/btn_pause.svg",
+          "size": 1179,
+          "gitBlobSha1": "dd9470add341e1dca7bd8509668572f35934ac1b"
+        },
+        {
+          "path": "images/btn_restart.svg",
+          "size": 1579,
+          "gitBlobSha1": "efc6b01388c84ce4c362cfee222d4deb070b276f"
+        },
+        {
+          "path": "images/btn_resume.svg",
+          "size": 1119,
+          "gitBlobSha1": "2fdb66e60db493f7fc4ee5959868bed9c0b24e4d"
+        },
+        {
+          "path": "images/btn_share.svg",
+          "size": 1253,
+          "gitBlobSha1": "0622e81c40f29288c624b7b3417d119c3fb128d1"
+        },
+        {
+          "path": "images/btn_twitter.svg",
+          "size": 2526,
+          "gitBlobSha1": "96db7202b091832266ab96ad0dc9147f0e343d4f"
+        },
+        {
+          "path": "images/facebook-opengraph.png",
+          "size": 18133,
+          "gitBlobSha1": "6f4303326b34c3f55d8e5495dd55cb4d706fc0f0"
+        },
+        {
+          "path": "images/icon_arrows.svg",
+          "size": 1110,
+          "gitBlobSha1": "88341d899b5e05d92ac726f7ae98bd8c1945a72b"
+        },
+        {
+          "path": "images/icons/apple-touch-120.png",
+          "size": 1879,
+          "gitBlobSha1": "d347855b90bd95d9e6d1555e59afbe7ef7ffe92f"
+        },
+        {
+          "path": "images/icons/apple-touch-152.png",
+          "size": 2546,
+          "gitBlobSha1": "db72a1385a486f721845e42629937a59cca698e2"
+        },
+        {
+          "path": "images/icons/apple-touch-167.png",
+          "size": 2625,
+          "gitBlobSha1": "bfcdde6b343aa39814fe97d59744a2512946c6f0"
+        },
+        {
+          "path": "images/icons/apple-touch-180.png",
+          "size": 3023,
+          "gitBlobSha1": "9fcbe4a43f115c64cbcbee444262181564771784"
+        },
+        {
+          "path": "images/icons/apple-touch-512.png",
+          "size": 9820,
+          "gitBlobSha1": "4762d7d11c161d8e4ca93845c64f7d2796056df4"
+        },
+        {
+          "path": "images/icons/apple-touch.svg",
+          "size": 685,
+          "gitBlobSha1": "7dff7eddf9a077b888e59bca5f218f8b0887fe3d"
+        },
+        {
+          "path": "images/icons/maskable-192.png",
+          "size": 2376,
+          "gitBlobSha1": "31a703a438fe117f762470bfee99dc5be4045cfc"
+        },
+        {
+          "path": "images/icons/maskable-192.webp",
+          "size": 1614,
+          "gitBlobSha1": "63736677adb11e1ca2858c262ac2b60769e77300"
+        },
+        {
+          "path": "images/icons/maskable-512.png",
+          "size": 8416,
+          "gitBlobSha1": "31ed1805c74a9ede53b20181b1a3d9b3426b3d09"
+        },
+        {
+          "path": "images/icons/maskable-512.webp",
+          "size": 4418,
+          "gitBlobSha1": "6cfe8a7355642488680b73a2ac567dc4108dd46b"
+        },
+        {
+          "path": "images/icons/maskable.svg",
+          "size": 693,
+          "gitBlobSha1": "df759094d86515648a81467ca6f0f6785b2e105d"
+        },
+        {
+          "path": "images/icons/transparent-192.png",
+          "size": 4091,
+          "gitBlobSha1": "848d57ccc624e940ed68ea8774a69d8c7ca5dac6"
+        },
+        {
+          "path": "images/icons/transparent-192.webp",
+          "size": 2830,
+          "gitBlobSha1": "790d3473ba13d12c83952b955fcfa907daced910"
+        },
+        {
+          "path": "images/icons/transparent-512.png",
+          "size": 13320,
+          "gitBlobSha1": "4ed4299fd97c728c7bf25b1030d93d90bea1eb78"
+        },
+        {
+          "path": "images/icons/transparent-512.webp",
+          "size": 6352,
+          "gitBlobSha1": "9b35a14bec231a9576765d6b59a17fcf640e7335"
+        },
+        {
+          "path": "images/icons/transparent.svg",
+          "size": 618,
+          "gitBlobSha1": "523049ae1eb9398de8d98c7ad9a2439f8d2eae9f"
+        },
+        {
+          "path": "images/twitter-opengraph.png",
+          "size": 17258,
+          "gitBlobSha1": "ce78a935b4a9bd8c66675bae3660f013a401c78a"
+        },
+        {
+          "path": "index.html",
+          "size": 11710,
+          "gitBlobSha1": "30c7be64dbd0d55772fc41d799e69e85cb3bfd35"
+        },
+        {
+          "path": "js/Block.js",
+          "size": 5951,
+          "gitBlobSha1": "a7f21c962e5492a3a0a83454de5897ed6e526fbc"
+        },
+        {
+          "path": "js/Hex.js",
+          "size": 5005,
+          "gitBlobSha1": "1705efdc201a2a1206744678d2824758211cdace"
+        },
+        {
+          "path": "js/Text.js",
+          "size": 600,
+          "gitBlobSha1": "dfc08cb646f844ca5acbb83d643bf0c15c2fe170"
+        },
+        {
+          "path": "js/checking.js",
+          "size": 2894,
+          "gitBlobSha1": "800013709ce62a37fb4e666089b25827082ba12e"
+        },
+        {
+          "path": "js/comboTimer.js",
+          "size": 2230,
+          "gitBlobSha1": "b514906bc27d254019343871883a602811465d63"
+        },
+        {
+          "path": "js/initialization.js",
+          "size": 6898,
+          "gitBlobSha1": "a22adf86fc5da17c5461429ac38640d2192c8bfc"
+        },
+        {
+          "path": "js/input.js",
+          "size": 4952,
+          "gitBlobSha1": "190f66f1c0892135086c5e41a53b9fbc61aba9d4"
+        },
+        {
+          "path": "js/main.js",
+          "size": 9891,
+          "gitBlobSha1": "5d8aae3659ddb4b979611a19df539311b0c9afc4"
+        },
+        {
+          "path": "js/math.js",
+          "size": 318,
+          "gitBlobSha1": "3946bb463fcf11bdafba7b6fc83b08c714f1dcaa"
+        },
+        {
+          "path": "js/render.js",
+          "size": 3525,
+          "gitBlobSha1": "7aafb33537cce71dead7a659a631f307172a7b12"
+        },
+        {
+          "path": "js/save-state.js",
+          "size": 1343,
+          "gitBlobSha1": "2a3f36ccaa2d590c468ebefd8b0ef7b294033354"
+        },
+        {
+          "path": "js/update.js",
+          "size": 1840,
+          "gitBlobSha1": "ab57878450e57976a41b03267de065035f714214"
+        },
+        {
+          "path": "js/view.js",
+          "size": 7422,
+          "gitBlobSha1": "91a772f088342ba3f3fb051d842b181538f61816"
+        },
+        {
+          "path": "js/wavegen.js",
+          "size": 5391,
+          "gitBlobSha1": "a4e85ff77c84676339c41f7024625364b34abb4c"
+        },
+        {
+          "path": "style/fa/css/font-awesome.css",
+          "size": 25167,
+          "gitBlobSha1": "78f1021045356cba68c3c7c6e022e4b9060e0bc8"
+        },
+        {
+          "path": "style/fa/css/font-awesome.min.css",
+          "size": 20734,
+          "gitBlobSha1": "2ed777e6e126d3401af2934d89f0e567aae86ac9"
+        },
+        {
+          "path": "style/fa/fonts/fontawesome-webfont.svg",
+          "size": 253487,
+          "gitBlobSha1": "a9f84695031139c2542f582e9312310f2186ff58"
+        },
+        {
+          "path": "style/rrssb.css",
+          "size": 10978,
+          "gitBlobSha1": "e7499d96521be2304f9e344226916a5fd98d4082"
+        },
+        {
+          "path": "style/style.css",
+          "size": 7978,
+          "gitBlobSha1": "b57f23e858e90018e602dcb4e2766ab8c635a73b"
+        },
+        {
+          "path": "vendor/hammer.min.js",
+          "size": 13710,
+          "gitBlobSha1": "11af03140859cb43e75b217dd792194f87069f58"
+        },
+        {
+          "path": "vendor/jquery.js",
+          "size": 92593,
+          "gitBlobSha1": "a6107ab22b762c3ca5a8f1f535441d919885833f"
+        },
+        {
+          "path": "vendor/js.cookie.js",
+          "size": 3242,
+          "gitBlobSha1": "116e62d8cb621ea3cedcfd465e4ca7df61725be4"
+        },
+        {
+          "path": "vendor/jsonfn.min.js",
+          "size": 809,
+          "gitBlobSha1": "59a0ea1cda450d82472488ff909d4620b0b59031"
+        },
+        {
+          "path": "vendor/keypress.min.js",
+          "size": 9985,
+          "gitBlobSha1": "e004f6a9186d27371473c931b19c13859cb6d061"
+        },
+        {
+          "path": "vendor/rrssb.min.js",
+          "size": 4972,
+          "gitBlobSha1": "45c021d2191725e63b3b48429992a71bbb508f24"
+        },
+        {
+          "path": "vendor/sweet-alert.min.js",
+          "size": 10424,
+          "gitBlobSha1": "a0c8c3ce5a28b7ecb2f88256d70423721b246837"
+        }
+      ],
+      "artworkSha256": "0e33c91dae8043c95d944cd20c8103bcd17de6653b055f1a92f4397190b45bf8",
+      "expandedBytes": 798152
+    },
+    {
+      "id": "oh-hi",
+      "title": "0h h1 Classic",
+      "publisher": "Q42 / Martin Kool",
+      "repository": "florisluiten/0hh1",
+      "commit": "25910e580d6ea6bc1dfbfd29b2637e47844a96f9",
+      "license": "MIT",
+      "licensePath": "LICENSE",
+      "sourceUrl": "https://0hh1.com/",
+      "image": "img/icon-512.png",
+      "genres": [
+        "puzzle"
+      ],
+      "adapter": "oh-hi",
+      "input": "cursor",
+      "estimatedBytes": 2000000,
+      "version": "web-25910e580d6e-home.1",
+      "archiveUrl": "https://codeload.github.com/florisluiten/0hh1/zip/25910e580d6ea6bc1dfbfd29b2637e47844a96f9",
+      "archiveRoot": "0hh1-25910e580d6ea6bc1dfbfd29b2637e47844a96f9/",
+      "scripts": [
+        "config.js",
+        "js/index.js",
+        "js/jquery-2.1.0.min.js",
+        "js/utils.js",
+        "js/state.js",
+        "js/game.js",
+        "js/grid.js",
+        "js/tile.js",
+        "js/hint.js",
+        "js/tutorial.js",
+        "js/levels.js",
+        "js/backgroundservice.js"
+      ],
+      "sourceFiles": [
+        {
+          "path": "LICENSE",
+          "size": 1071,
+          "gitBlobSha1": "b7f00b7a259c480aae3b80bface9ed92e476366d"
+        },
+        {
+          "path": "README.md",
+          "size": 46,
+          "gitBlobSha1": "f6b4a0f4d62f1513a8a502d6ca0bc44aad632d76"
+        },
+        {
+          "path": "config.js",
+          "size": 68,
+          "gitBlobSha1": "946aa352fdce57430d5a3347caab9d2657a7adba"
+        },
+        {
+          "path": "css/style.css",
+          "size": 12334,
+          "gitBlobSha1": "9b07bb28bf72737091333bc2f79ea2702ad87229"
+        },
+        {
+          "path": "fonts/fonts.css",
+          "size": 292,
+          "gitBlobSha1": "a44f968b20aa38d185d47084ba71abe865139b1e"
+        },
+        {
+          "path": "img/arrow-right.png",
+          "size": 229,
+          "gitBlobSha1": "a57e780287c130df2ad2cd9f0ea51d2c82881ed9"
+        },
+        {
+          "path": "img/close.png",
+          "size": 389,
+          "gitBlobSha1": "9e82204528f3b74a4907f4703a9106366a15a3af"
+        },
+        {
+          "path": "img/eye.png",
+          "size": 668,
+          "gitBlobSha1": "be93b6dc00446e0550bf461f7aa54b064d5856cc"
+        },
+        {
+          "path": "img/history.png",
+          "size": 621,
+          "gitBlobSha1": "c4c8eb6646f0a13d6b597884e4991aeff6ad8c8d"
+        },
+        {
+          "path": "img/icon-1024.png",
+          "size": 5280,
+          "gitBlobSha1": "3c93bbf264f099de512d7e5acd983025d63480d4"
+        },
+        {
+          "path": "img/icon-120.png",
+          "size": 1274,
+          "gitBlobSha1": "9c6753476b81e2b93deab0a766cc48dec2c77f9f"
+        },
+        {
+          "path": "img/icon-152.png",
+          "size": 1725,
+          "gitBlobSha1": "be03725e29075e77007da53289f60338d9a10ec3"
+        },
+        {
+          "path": "img/icon-180.png",
+          "size": 1882,
+          "gitBlobSha1": "182d04ca08f317d9e9179db743f11f92749d5c92"
+        },
+        {
+          "path": "img/icon-512.png",
+          "size": 5955,
+          "gitBlobSha1": "8763e428187bac3adf4f139ace7904130fa638ee"
+        },
+        {
+          "path": "img/icon-76.png",
+          "size": 907,
+          "gitBlobSha1": "d41aa0024c239ccab4b9fb94f395b579ac26304f"
+        },
+        {
+          "path": "img/loop.png",
+          "size": 554,
+          "gitBlobSha1": "952319bae3a1bb4b8ee0328046f657367d2a0e21"
+        },
+        {
+          "path": "img/question.png",
+          "size": 713,
+          "gitBlobSha1": "7851d9484309d395a6330c1c847d550e07a315a5"
+        },
+        {
+          "path": "img/spinner.png",
+          "size": 625,
+          "gitBlobSha1": "ebf9f7b52f5ecadd8d79db8280cfa8ccfcfb23a1"
+        },
+        {
+          "path": "img/trophy.png",
+          "size": 400,
+          "gitBlobSha1": "60543979a8f875b2f6a22f29473b158bce5336b3"
+        },
+        {
+          "path": "img/twitter.png",
+          "size": 543,
+          "gitBlobSha1": "98f5f608933519a8c920882986186b1806b88ba7"
+        },
+        {
+          "path": "index.html",
+          "size": 6255,
+          "gitBlobSha1": "fccea2f4799a0d86194da7ee0e82c1554ced2dbd"
+        },
+        {
+          "path": "js/backgroundservice.js",
+          "size": 2253,
+          "gitBlobSha1": "708b852f0858dc058d0842b10769070c184539ce"
+        },
+        {
+          "path": "js/game.js",
+          "size": 18150,
+          "gitBlobSha1": "019228ce5d6ceb9fcb47edcf6d48fc5dc67af64b"
+        },
+        {
+          "path": "js/grid.js",
+          "size": 19403,
+          "gitBlobSha1": "569326cf41e476e413cfdef8efcca8d5ff92b86e"
+        },
+        {
+          "path": "js/hint.js",
+          "size": 3568,
+          "gitBlobSha1": "e96624d46531d9410afedb145c9b877ba0c2db54"
+        },
+        {
+          "path": "js/index.js",
+          "size": 2022,
+          "gitBlobSha1": "28580870776f78ba90ecc5ca2f514cddf97a6b2e"
+        },
+        {
+          "path": "js/jquery-2.1.0.min.js",
+          "size": 83615,
+          "gitBlobSha1": "cbe6abe59a8150d1d5deb196915fa636aea44a61"
+        },
+        {
+          "path": "js/levels.js",
+          "size": 3048,
+          "gitBlobSha1": "7424ddaa83d33a527e649a0b310ea0d70ba2e94d"
+        },
+        {
+          "path": "js/state.js",
+          "size": 2197,
+          "gitBlobSha1": "93dfb2cbf3d4a3a7b6c99444cc70b634ca7d8e3b"
+        },
+        {
+          "path": "js/tile.js",
+          "size": 6387,
+          "gitBlobSha1": "715eefd29b7702b7f3886d9125ebe6a1e064d26d"
+        },
+        {
+          "path": "js/tutorial.js",
+          "size": 4343,
+          "gitBlobSha1": "08f6fc71e99df0e0015ec448edd09a1d89bcb791"
+        },
+        {
+          "path": "js/utils.js",
+          "size": 10912,
+          "gitBlobSha1": "19ec0b68f05eb0fdc22ca4e0438ad3296d24229e"
+        },
+        {
+          "path": "js/webfont.js",
+          "size": 17698,
+          "gitBlobSha1": "27f647090a64ca08084617de46c2bfa5afc8018c"
+        }
+      ],
+      "artworkSha256": "9314f56b7676e0613603a0c3a5240b88b22354c5d4e9c870009b7f160053b805",
+      "expandedBytes": 215427
+    }
+  ]
+}

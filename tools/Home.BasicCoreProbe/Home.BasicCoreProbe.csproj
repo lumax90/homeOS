@@ -1,0 +1,4 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup><OutputType>Exe</OutputType><AssemblyName>Home.BasicCoreProbe</AssemblyName></PropertyGroup>
+  <ItemGroup><ProjectReference Include="../../server/HomeServer.Api/HomeServer.Api.csproj"/><Compile Include="../../tests/native/SyntheticCartridges.cs" Link="SyntheticCartridges.cs"/><Compile Include="../../tests/native/SyntheticGba.cs" Link="SyntheticGba.cs"/><Compile Include="../../tests/native/SyntheticWhep.cs" Link="SyntheticWhep.cs"/></ItemGroup>
+</Project>

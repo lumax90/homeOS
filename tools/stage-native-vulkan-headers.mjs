@@ -1,0 +1,10 @@
+import {mkdir,readFile,writeFile} from 'node:fs/promises';
+import {join,dirname} from 'node:path';
+import {createHash} from 'node:crypto';
+const root=process.argv[2];if(!root)throw new Error('Use <approved review root>');
+const commit='acbb9391c0a597272800cd3f4363661c00a27c77',repository='KhronosGroup/Vulkan-Headers';
+const response=await fetch(`https://api.github.com/repos/${repository}/git/trees/${commit}?recursive=1`);if(!response.ok)throw new Error('Pinned headers unavailable.');const tree=await response.json();if(tree.truncated)throw new Error('Complete header tree required.');
+const entries=tree.tree.filter(entry=>entry.type==='blob'&&entry.mode==='100644'&&(/^(include\/(?:vulkan|vk_video)\/.*\.h)$/.test(entry.path)||/^(LICENSE.*|LICENSES\/.*)$/.test(entry.path)));if(entries.length>200||entries.reduce((sum,entry)=>sum+entry.size,0)>32*1024*1024)throw new Error('Header boundary exceeded.');
+const folder=join(root,'vulkan-headers');await mkdir(folder,{recursive:true});const files=[];let next=0;
+await Promise.all(Array.from({length:6},async()=>{while(next<entries.length){const entry=entries[next++],path=join(folder,entry.path);let bytes;try{bytes=await readFile(path);}catch(error){if(error.code!=='ENOENT')throw error;const result=await fetch(`https://raw.githubusercontent.com/${repository}/${commit}/${entry.path}`,{signal:AbortSignal.timeout(30000)});if(!result.ok)throw new Error('Header download failed.');bytes=Buffer.from(await result.arrayBuffer());await mkdir(dirname(path),{recursive:true});await writeFile(path,bytes,{flag:'wx'});}if(bytes.length!==entry.size||createHash('sha1').update(`blob ${bytes.length}\0`).update(bytes).digest('hex')!==entry.sha)throw new Error('Header source mismatch.');files.push({path:entry.path,bytes:bytes.length,sha256:createHash('sha256').update(bytes).digest('hex')});}}));
+const receipt={repository,commit,license:'Apache-2.0 OR MIT (per file)',files:files.sort((a,b)=>a.path.localeCompare(b.path)),downloadedRomOrBios:false};await writeFile(join(folder,'review.json'),JSON.stringify(receipt,null,2),{flag:'wx'});console.log(JSON.stringify({repository,commit,files:files.length,installedDriver:false}));

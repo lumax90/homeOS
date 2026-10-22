@@ -1,0 +1,67 @@
+name: home
+services:
+  home:
+    image: home:0.43.0
+    pull_policy: never
+    restart: unless-stopped
+    init: true
+    user: "1654:1654"
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    tmpfs:
+      - /tmp:rw,nosuid,size=512m
+    ports:
+      - "5080:8080/tcp"
+      - "62405:62405/udp"
+      - "62405:62405/tcp"
+    environment:
+      TZ: Europe/Istanbul
+      HOME: /data
+      XDG_CACHE_HOME: /data/cache
+      MESA_SHADER_CACHE_MAX_SIZE: 128M
+    volumes:
+      - home-data:/data
+    stop_grace_period: 3m
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    x-casaos:
+      ports:
+        - container: "8080"
+          description:
+            en_US: Home web interface and API
+            tr_TR: Home arayüzü ve API
+        - container: "62405"
+          description:
+            en_US: Encrypted game streaming (TCP and UDP, keep the same host port)
+            tr_TR: Şifreli oyun yayını (TCP ve UDP; sunucuda aynı port)
+      volumes:
+        - container: /data
+          description:
+            en_US: Persistent accounts, library, downloads, ROMs and saves
+            tr_TR: Kalıcı hesaplar, kütüphane, indirmeler, ROM ve kayıtlar
+volumes:
+  home-data:
+x-casaos:
+  id: local.home.media
+  architectures: [amd64]
+  main: home
+  title:
+    en_US: Home
+  description:
+    en_US: Personal media, Live TV and headless server-run games for your home network.
+    tr_TR: Ev ağındaki cihazlar için kişisel medya, Canlı TV ve sunucuda çalışan oyunlar.
+  tagline:
+    en_US: Your media, on your server.
+    tr_TR: Medyan, kendi sunucunda.
+  developer: Home
+  author: Home
+  category: Media
+  icon: ""
+  thumbnail: ""
+  scheme: http
+  index: /
+  port_map: "5080"
