@@ -13,4 +13,4 @@ The initial inventory was checked against Git's ignore rules for oversized files
 
 `.gitattributes` keeps source text in LF form and preserves manifest/digest-bound runtime assets byte for byte, including on Windows checkouts.
 
-Container registry publication, GitHub Actions automation and a hosted CasaOS store definition are subsequent distribution work. Source publication does not change the recorded dependency licences or the project's still-undecided distribution licence. See [dependency inventory](dependencies.md) and [0.43 verification](headless-lan-043.md).
+Container registry publication and GitHub Actions automation are being implemented under [CASAOS-REGISTRY-043](casaos-registry-043.md), following the user's clean-host image-not-found report. Anonymous pull is a required delivery check. A hosted CasaOS store definition remains separate work. Source publication does not change the recorded dependency licences or the project's still-undecided distribution licence. See [dependency inventory](dependencies.md) and [0.43 verification](headless-lan-043.md).

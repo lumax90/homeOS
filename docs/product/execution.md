@@ -22,6 +22,7 @@ Güncelleme: **2026-10-22**. Çalışan önizleme **0.43.0 / şema43**, LAN **ht
 
 ## Aktif iş kartları
 
+- [ ] CASAOS-REGISTRY-043 — OPS-05/06, GAM-19: `No such image: home:0.43.0` sonrası GitHub Actions → GHCR → anonim CasaOS pull ve otomatik ilk-dizin hazırlığı. Kullanıcı GitHub workflow/package yetkisini onayladı; build/publish/pull/kurulum kanıtı sürüyor. [İş kaydı](../casaos-registry-043.md).
 - [x] CASAOS-MOUNT-043 — OPS-05/06, GAM-19: kullanıcıdaki `field Source must not be empty` hatası için açık `/DATA/AppData/home/data → /data` bind ve UID/GID hazırlığı. **Upstream CasaOS importer reproducer + 6 Linux storage checks** geçti: gerçek checksum/load, non-root healthy start, tekrar/recreate ve eski volume/farklı sahipli dolu dizinde veri korunumu. Fiziksel CasaOS kabulü ACCEPT-43-LAN'da; otomatik registry indirmesi hâlâ açık. [İş kaydı](../headless-lan-043.md#casaos-custom-import-storage-correction).
 - [x] HEADLESS-LAN-043 — OPS-05/06, CLI-01/02/05, GAM-04/05/10/11/19: **0.43.0/43 live + local CasaOS x64 image**. Persistent non-root Docker/Compose, IP LAN access, Linux headless emulator, device-owned WebRTC/input, touch and HTTP-compatible IDs. **109 backend/68 Node/7 native systems + range/HLS + shutdown/recreate + signed update/preservation** passed. [Work log](../headless-lan-043.md).
 - [ ] ACCEPT-43-LAN — User's own CasaOS host and real TV/phone/computer: IP login, media/radio/TV, ROM streaming/input/pause/save/reconnect, recreation/reboot/data persistence and browser capabilities.

@@ -8,7 +8,9 @@ test "$(docker image inspect -f '{{.Os}}/{{.Architecture}}' "$image")" = linux/a
 mkdir -p "$output"
 docker tag "$image" home:0.43.0
 docker save --output "$output/home-0.43.0-linux-amd64.tar" home:0.43.0
-cp "$root/deploy/casaos/"{docker-compose.yml,load-home.sh,README.md} "$output/"
+cp "$root/deploy/casaos/docker-compose.local.yml" "$output/docker-compose.yml"
+cp "$root/deploy/casaos/load-home.sh" "$output/"
+cp "$root/deploy/casaos/README.local.md" "$output/README.md"
 docker image inspect home:0.43.0 >"$output/image.json"
 docker run --rm --entrypoint /bin/cat home:0.43.0 /app/NativeRuntime/proof.json >"$output/native-proof.json"
 docker run --rm --entrypoint /bin/cat home:0.43.0 /app/NativeRuntime/manifest.json >"$output/native-manifest.json"

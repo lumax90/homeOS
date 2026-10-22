@@ -6,7 +6,9 @@ docker info >/dev/null
 cd "$root"
 sha256sum --check home-0.43.0-linux-amd64.tar.sha256
 docker load --input home-0.43.0-linux-amd64.tar
-docker compose -f docker-compose.yml config --quiet
+compose=docker-compose.yml
+if [[ -f docker-compose.local.yml ]]; then compose=docker-compose.local.yml; fi
+docker compose -f "$compose" config --quiet
 run=(docker run --rm --pull never --network none --read-only --cap-drop ALL --security-opt no-new-privileges:true --entrypoint /bin/sh)
 if docker volume inspect home_home-data >/dev/null 2>&1; then
   if ! "${run[@]}" --user 1654:1654 --mount type=volume,source=home_home-data,target=/data,readonly home:0.43.0 \
@@ -28,5 +30,5 @@ fi
 "${run[@]}" --user 1654:1654 --mount type=bind,source=/DATA/AppData/home/data,target=/data home:0.43.0 \
   -ec 'check="$(mktemp /data/.home-install-check.XXXXXX)"; rm -- "$check"'
 printf '\nData ready: /DATA/AppData/home/data -> /data (UID/GID 1654:1654).\n'
-printf '\nImage loaded. In CasaOS choose Custom Install > Import and use docker-compose.yml.\n'
+printf '\nImage loaded. In CasaOS choose Custom Install > Import and use %s.\n' "$compose"
 printf 'Then open http://SERVER-IP:5080 from your TV, phone or computer.\n'

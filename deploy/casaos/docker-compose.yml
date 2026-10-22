@@ -1,8 +1,11 @@
 name: home
 services:
   home:
-    image: home:0.43.0
-    pull_policy: never
+    image: ghcr.io/lumax90/homeos:0.43.0
+    pull_policy: missing
+    depends_on:
+      home-data-init:
+        condition: service_completed_successfully
     restart: unless-stopped
     init: true
     user: "1654:1654"
@@ -25,7 +28,7 @@ services:
         source: /DATA/AppData/home/data
         target: /data
         bind:
-          create_host_path: false
+          create_host_path: true
     stop_grace_period: 3m
     logging:
       driver: json-file
@@ -47,6 +50,36 @@ services:
           description:
             en_US: Persistent accounts, library, downloads, ROMs and saves
             tr_TR: Kalıcı hesaplar, kütüphane, indirmeler, ROM ve kayıtlar
+  home-data-init:
+    image: ghcr.io/lumax90/homeos:0.43.0
+    pull_policy: missing
+    restart: on-failure:3
+    user: "0:0"
+    network_mode: none
+    read_only: true
+    cap_drop: [ALL]
+    cap_add: [CHOWN]
+    security_opt: [no-new-privileges:true]
+    entrypoint: ["/bin/sh", "/app/prepare-data.sh"]
+    healthcheck:
+      disable: true
+    volumes:
+      - type: bind
+        source: /DATA/AppData/home/data
+        target: /data
+        bind:
+          create_host_path: true
+    logging:
+      driver: json-file
+      options:
+        max-size: "1m"
+        max-file: "2"
+    x-casaos:
+      volumes:
+        - container: /data
+          description:
+            en_US: Use the same Host directory as the Home service; prepares first-install ownership.
+            tr_TR: Home servisiyle aynı Host klasörünü kullanın; ilk kurulum izinlerini hazırlar.
 x-casaos:
   id: local.home.media
   architectures: [amd64]

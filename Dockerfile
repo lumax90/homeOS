@@ -65,6 +65,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && chown 1654:1654 /data && rm -rf /var/lib/apt/lists/*
 COPY --from=build /publish/ /app/
 COPY --from=native-proof --chown=0:0 /native/ /app/NativeRuntime/
+COPY --chmod=0555 deploy/casaos/prepare-data.sh /app/prepare-data.sh
+LABEL org.opencontainers.image.source="https://github.com/lumax90/homeOS" \
+    org.opencontainers.image.title="Home" \
+    org.opencontainers.image.description="Personal media, Live TV and headless server-run games for your home network"
 ENV Home__DataPath=/data \
     Home__FfmpegPath=/usr/bin/ffmpeg \
     Home__FfprobePath=/usr/bin/ffprobe \
