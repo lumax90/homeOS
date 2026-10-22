@@ -3,6 +3,7 @@ set -euo pipefail
 root="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd)"
 image="${1:?Choose a built Linux x64 image}"
 output="${2:?Choose a new isolated verification directory}"
+compose_file="${3:-$root/deploy/casaos/docker-compose.yml}"
 [[ ! -e "$output" ]] || { echo 'Existing verification data was preserved; choose a new output directory.' >&2; exit 1; }
 test "$(docker image inspect -f '{{.Os}}/{{.Architecture}}' "$image")" = linux/amd64
 mkdir -p "$output/reports"
@@ -10,15 +11,16 @@ output="$(cd -- "$output" && pwd)"
 data="$output/data"
 reports="$output/reports"
 project="home-install-$(date +%s)-$$"
-docker compose -f "$root/deploy/casaos/docker-compose.yml" config --format json >"$reports/source-compose.json"
+docker compose -f "$compose_file" config --format json >"$reports/source-compose.json"
 python3 - "$reports/source-compose.json" "$output/compose.json" "$image" "$data" "$project" <<'PY'
 import json, sys
 source, destination, image, directory, project = sys.argv[1:]
 config = json.load(open(source))
 config['name'] = project
-for service in config['services'].values():
+for name, service in config['services'].items():
     service['image'] = image
     service['pull_policy'] = 'never'
+    service['container_name'] = f'{project}-{name}'
     assert len(service['volumes']) == 1
     assert service['volumes'][0]['type'] == 'bind'
     assert service['volumes'][0]['target'] == '/data'

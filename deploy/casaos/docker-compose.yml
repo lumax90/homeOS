@@ -1,6 +1,7 @@
 name: home
 services:
   home:
+    container_name: home
     image: ghcr.io/lumax90/homeos:0.43.0
     pull_policy: missing
     depends_on:
@@ -15,9 +16,15 @@ services:
     tmpfs:
       - /tmp:rw,nosuid,size=512m
     ports:
-      - "5080:8080/tcp"
-      - "62405:62405/udp"
-      - "62405:62405/tcp"
+      - target: 8080
+        published: "5080"
+        protocol: tcp
+      - target: 62405
+        published: "62405"
+        protocol: udp
+      - target: 62405
+        published: "62405"
+        protocol: tcp
     environment:
       TZ: Europe/Istanbul
       HOME: /data
@@ -51,6 +58,7 @@ services:
             en_US: Persistent accounts, library, downloads, ROMs and saves
             tr_TR: Kalıcı hesaplar, kütüphane, indirmeler, ROM ve kayıtlar
   home-data-init:
+    container_name: home-data-init
     image: ghcr.io/lumax90/homeos:0.43.0
     pull_policy: missing
     restart: on-failure:3

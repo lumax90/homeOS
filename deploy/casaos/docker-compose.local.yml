@@ -1,6 +1,7 @@
 name: home
 services:
   home:
+    container_name: home
     image: home:0.43.0
     pull_policy: never
     restart: unless-stopped
@@ -12,9 +13,15 @@ services:
     tmpfs:
       - /tmp:rw,nosuid,size=512m
     ports:
-      - "5080:8080/tcp"
-      - "62405:62405/udp"
-      - "62405:62405/tcp"
+      - target: 8080
+        published: "5080"
+        protocol: tcp
+      - target: 62405
+        published: "62405"
+        protocol: udp
+      - target: 62405
+        published: "62405"
+        protocol: tcp
     environment:
       TZ: Europe/Istanbul
       HOME: /data
