@@ -11,7 +11,7 @@ The source snapshot includes application code, tests, deployment/build tooling, 
 
 The initial inventory was checked against Git's ignore rules for oversized files, credential/key files and recognizable private-key/token formats. The remote was empty and the authenticated owner had push permission. Publication uses an ordinary upstream-setting push to `main`.
 
-The subsequent [privacy review](repository-privacy.md) found inappropriate developer-specific addresses and profile paths in public text, with no credential findings in the four-commit secret scan. Public documentation and helper defaults were sanitized, and Git/Docker exclusions were strengthened. Published-history cleanup is tracked in that review.
+The subsequent [privacy review](repository-privacy.md) found inappropriate developer-specific addresses and profile paths in public text, with no credential findings. Public documentation and helper defaults were sanitized, Git/Docker exclusions were strengthened, and five commits were rewritten and published with the owner's approval. The public branch remains available; the review records the remaining limitation of GitHub-retained immutable SHA views.
 
 `.gitattributes` keeps source text in LF form and preserves manifest/digest-bound runtime assets byte for byte, including on Windows checkouts.
 
