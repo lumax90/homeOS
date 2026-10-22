@@ -15,7 +15,7 @@
 
 ### Headless CasaOS / LAN — HEADLESS-LAN-043 / GAM-19
 
-- Use the supplied **Intel/AMD x64** local image folder `artifacts/home-casaos-0.43.0/`: run `bash load-home.sh`, then import its `docker-compose.yml` through CasaOS Custom Install. Open `http://SERVER-IP:5080` from another device and create/login to the owner account.
+- Use the supplied **Intel/AMD x64** local image folder `artifacts/home-casaos-0.43.0/`: run the updated `bash load-home.sh`, then import its `docker-compose.yml` through CasaOS Custom Install. Verify **Host `/DATA/AppData/home/data` → Container `/data`**, with no empty Host row; the loader prepares UID/GID 1654 access. **CASAOS-MOUNT-043:** an existing named-volume installation must retain its original `/data` mount. Open `http://SERVER-IP:5080` from another device and create/login to the owner account.
 - Leave the server without a display/browser session. Check movie/music/Live TV playback from phone, computer and TV; add actual media as a read-only bind. Verify page refresh, reconnect and independent account/device sessions.
 - Import your own ROM/BIOS where required; test video/audio, keyboard/touch, physical gamepad when the browser allows it, pause, save/exit and relaunch. One native game session owns the host at a time. Another device should receive an explanatory busy response rather than replace the active game.
 - Restart/recreate the CasaOS container with its existing `/data` volume and verify real preferences, ROM identities, saves and queues. The automatic protocol gate already covered seven **original isolated** systems, HTTP range/HLS, normal shutdown save and volume recreation; it does not establish every game's or TV model's compatibility.

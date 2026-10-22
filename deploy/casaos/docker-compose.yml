@@ -21,7 +21,11 @@ services:
       XDG_CACHE_HOME: /data/cache
       MESA_SHADER_CACHE_MAX_SIZE: 128M
     volumes:
-      - home-data:/data
+      - type: bind
+        source: /DATA/AppData/home/data
+        target: /data
+        bind:
+          create_host_path: false
     stop_grace_period: 3m
     logging:
       driver: json-file
@@ -43,8 +47,6 @@ services:
           description:
             en_US: Persistent accounts, library, downloads, ROMs and saves
             tr_TR: Kalıcı hesaplar, kütüphane, indirmeler, ROM ve kayıtlar
-volumes:
-  home-data:
 x-casaos:
   id: local.home.media
   architectures: [amd64]

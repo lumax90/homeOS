@@ -155,7 +155,7 @@ Kaynak kodları [sources.md](sources.md) içindedir. Başlangıç durumu 0.2 inc
 | OPS-02 | Kurulum sihirbazı, disk/izin/bağlantı/codec tanısı; ayarları kullanıcı adına üretme | Tümü | Kısmi |
 | OPS-03 | SQLite online backup, anahtarlar, şema yükseltmesi, doğrulama ve geri yükleme | Tümü | Kısmi |
 | OPS-04 | Sürümlü imzalı/güvenilir paketler, güncelleme ön kontrolü ve geri dönüş | Tümü | Planlandı |
-| OPS-05 | Linux x64/ARM64 + Docker ve Windows paketleri; varsayılan volume/UID/GPU yolları | Tümü | 0.43 Windows signed + Linux x64 headless Docker/CasaOS local image passed; ARM64 native, public store/distribution and physical-host acceptance open |
+| OPS-05 | Linux x64/ARM64 + Docker ve Windows paketleri; varsayılan volume/UID/GPU yolları | Tümü | 0.43 Windows signed + Linux x64 headless Docker/CasaOS local image passed; CASAOS-MOUNT-043 explicit bind/import/UID/persistence correction verified; ARM64 native, public store/distribution and physical-host acceptance open |
 | OPS-06 | HTTPS, reverse proxy/base URL, kontrollü uzaktan erişim ve bağlantı teşhisi | R01,R02 | HTTPS/proxy/base-path temelleri + 0.43 IP/LAN erişimi ve device-owned native WebRTC doğrulandı; gerçek ağ/cihaz ve DNS kabulü açık |
 | OPS-07 | Bildirimler, webhooks, SMTP/push, olay filtreleri; sır redaksiyonu | Tümü | Planlandı |
 | OPS-08 | Kaynak/transfer/oynatma ölçümleri, log görüntüleme, disk kapasitesi ve housekeeping | Tümü | Kısmi |
