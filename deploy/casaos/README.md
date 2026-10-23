@@ -1,17 +1,23 @@
 # Home — CasaOS / Intel-AMD x64
 
-## Install from the registry
+## Automatic-update channel
 
-**Published and verified 2026-10-22:** **`ghcr.io/lumax90/homeos:0.43.0`**, Linux **amd64**. Anonymous image pull, automatic data-directory preparation, healthy startup and data-preserving recreation passed. [Package page](https://github.com/users/lumax90/packages/container/package/homeos).
+**0.44 automatic updates are being verified.** The recipe tracks **`ghcr.io/lumax90/homeos:stable`**, Linux **amd64**. The existing immutable **`0.43.0`** image remains available. Publication and automatic-update receipts are tracked in [AUTO-UPDATE-044](../../docs/container-auto-updates-044.md). [Package page](https://github.com/users/lumax90/packages/container/package/homeos).
 
-Registry digest: `sha256:017e90f2860d2f76d1a787ee7476f5c6244da4aef351f94c733f965bde9bdba0`. Verification and source identity are recorded in [CASAOS-REGISTRY-043](../../docs/casaos-registry-043.md).
+## First installation
 
 1. Open **CasaOS → App Store → Custom Install → Import**.
 2. Import the contents of [docker-compose.yml](https://raw.githubusercontent.com/lumax90/homeOS/main/deploy/casaos/docker-compose.yml).
-3. Confirm **Host `/DATA/AppData/home/data` → Container `/data`** on both services, then install. CasaOS pulls the image; `home-data-init` prepares an empty directory for UID/GID **1654:1654** and exits before Home starts.
+3. Confirm **Host `/DATA/AppData/home/data` → Container `/data`** on `home` and `home-data-init`. The `home-updater` service has the separate Docker-socket mapping. CasaOS pulls the image; `home-data-init` prepares an empty directory for UID/GID **1654:1654** and exits before Home starts.
 4. Open **`http://SERVER-IP:5080`** from a phone, TV or computer and create the owner account. The server can run without a display/browser/desktop login.
 
-The registry recipe uses `ghcr.io/lumax90/homeos:0.43.0`, not the local-only `home:0.43.0` tag. A successful `home-data-init` container is **Exited (0)**; the `home` service is the running application. The initializer uses bounded failure retries because CasaOS's custom-import form rewrites `restart: "no"` into `unless-stopped`.
+A successful `home-data-init` container is **Exited (0)**; `home` and `home-updater` are the running services. The initializer uses bounded failure retries because CasaOS's custom-import form rewrites `restart: "no"` into `unless-stopped`.
+
+## One-time upgrade from the version-pinned recipe
+
+Update the **existing Home app's Compose configuration** to this three-service recipe while Home is idle. Transfer the current data/media mappings, ports and custom environment values into the updated configuration before applying it. The Docker-socket mount belongs only on `home-updater`.
+
+This changes the tracked image from `0.43.0` to `stable`, adds the updater, and enables Home's update guard. Changing only the image tag does not configure automatic updates. After this initial transition, normal application updates do not require editing the tag again. The updates page shows whether automatic setup is present and lets the owner pause/resume it.
 
 ## Storage
 
@@ -30,20 +36,23 @@ To add existing media, add a **read-only** mapping on the **home** service, e.g.
 
 ## Updates
 
-The installed recipe is pinned to **`0.43.0`**. A GitHub source commit or a change to the repository's Compose file does not update the configuration already imported into CasaOS. There is currently no automatic server-side updater in this recipe.
+Application-code pushes to `main` start the release workflow. Backend admission/backup checks, the image/native proof, fresh installation and actual automatic-update tests must pass before a candidate can move `stable`. Documentation-only changes do not redeploy the application. Immutable version/source tags remain available.
 
-For an application-code update:
+The scoped updater checks **every 15 minutes**:
 
-1. A new versioned Linux image must be built, verified and published to GHCR. The repository workflow is triggered by an explicit dispatch or a matching `vX.Y.Z` Git tag, not by ordinary pushes to `main`.
-2. Update the image tag on **both `home` and `home-data-init`** in the existing CasaOS app to the same published version, then apply the update so CasaOS pulls it and recreates the containers.
-3. Retain the existing `/data` mapping, custom media mounts, ports and environment settings. Accounts, library state, ROM copies and saves live in the persistent data directory. Docker can reuse unchanged image layers.
+1. It pulls a changed image and runs Home's private pre-update control.
+2. Active games, media/radio/TV playback, transfers, recording and running jobs defer the update. API admission/background claims are fenced while a consistent application backup is prepared.
+3. Home is replaced with the new image using its existing configuration, mounts and three-minute shutdown allowance. The updater can also replace itself.
 
-Home's executable-replacement updater is disabled inside Docker; container updates use the image lifecycle. Automatic image publication and automatic installation on the household server are separate operations.
+The **three most recent automatic application backups** are retained; manually created backups are preserved. Files, ROM copies and saves remain in the existing data directory. Docker reuses unchanged image layers. An interrupted preparation expires and reopens the application if the updater does not complete the stop.
+
+Automatic database rollback is not enabled. For an unexpected failed deployment, stop the updater, use the prior immutable source/version image and the pre-update backup as appropriate, and pause automatic updates until the problem is resolved. The backup has the existing application-state scope, not all media payloads. The Home service has no Docker socket; management access is confined to the updater service and its named/scoped selection.
 
 ## Troubleshooting
 
-- **`No such image: home:0.43.0`:** re-import the current registry Compose. Both image fields must be `ghcr.io/lumax90/homeos:0.43.0` and must allow image pulling.
+- **`No such image: home:0.43.0`:** apply the current registry Compose to the existing app. The automatic recipe uses `ghcr.io/lumax90/homeos:stable` and allows image pulling.
 - **`field Source must not be empty`:** fill both services' Host fields with `/DATA/AppData/home/data`; remove unused rows with empty Host fields.
 - **`home-data-init` exits with an ownership error:** check the selected existing data directory and its UID/GID. Its contents are retained; no recursive permission changes or automatic data migration are performed.
+- **A new image exists but Home stays on its current revision:** check the updater's log, the owner's automatic-update preference, and active playback/game/job activity. Busy/preparation failures leave Home running for a later retry.
 
 Updates use the container image lifecycle and retain the existing `/data` directory. Init, bounded logs, health checks, dropped capabilities and a three-minute graceful Home shutdown are included. Actual CasaOS hardware, TV/browser/gamepad and sustained real-game acceptance remain user-owned. This is a custom-install recipe, not an official CasaOS store entry. Component licences and source are retained under `/app/NativeRuntime/licenses/`; Home's final distribution licence remains undecided.

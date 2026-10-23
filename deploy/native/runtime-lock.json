@@ -1,0 +1,26 @@
+{
+  "format": 1,
+  "image": "ghcr.io/lumax90/homeos:0.43.0@sha256:017e90f2860d2f76d1a787ee7476f5c6244da4aef351f94c733f965bde9bdba0",
+  "platform": "linux-x64",
+  "reason": "Retain verified native binaries and hash-bound save/settings identities across application-only updates.",
+  "inputs": {
+    "deploy/native/sources.json": "9eed5c8f489707daa92cc3be63fb980b239f88ad126b7a1ea14a2df39671221a",
+    "deploy/native/build.sh": "3af89dc31c330afe4eb40088b79a1376c228b528aa7fad300c5dd6e91eac7196",
+    "tools/stage-linux-native.mjs": "f997cf5e5d792167b37cd99515cf07258ae60ba39f28d0117dffcdfde0f056df",
+    "tools/patch-linux-native-input.mjs": "d39806dac6e399b7abc04ac1ea84d48577470f7f19963fad5332501e8beb3cb0",
+    "tools/patch-linux-headless-output.mjs": "d07f4f31e83eddb76b1946ceac96b6c259f1922649ab31ba32b5bc742e47cf2d",
+    "tools/patch-native-host-adapter.mjs": "58c4aab91e47c5b7d7a4a8347d3bb732012247eeeb1d2130cc3d0baba9863bea",
+    "tools/native-host-options.c": "4f89f5ebd9b1eff32d067941cb744185b2553e9d4e6e1fbb8c4df3a9ff5f1042",
+    "tools/write-linux-native-manifest.mjs": "11ba483ec5b599d039c4717e8a109d9dc7d77024a36bd8bce73ba96bce5fcf41",
+    "server/HomeServer.Api/NativeCoreCatalog/catalog.json": "581877fa0015a2d9ef2a83add02b980e257c8ece5e4aa67ae9cd09a6b6db9cd4"
+  },
+  "assets": {
+    "frontend": "285e1197d59af4715cfbbbc6c45edb19d458cc329218224fee2f93b127c12ba5",
+    "mediaMtx": "0ffb7f18210d08ee38cb16668c4f3a2c96622e69d401119c0026d078a2b89523",
+    "mgba": "1f313f3c40a3d3c56eabd19133048076b41864367274941535b51f9536ccc24f",
+    "fceumm": "ff593fea0172b847f9810b88509e5c1b2bf7e1f1432597884cccd3ed969f0327",
+    "snes9x": "5acfd6050e43325f560d0bf5082bc9af69fd535be4f83536c0a176ce9cebc659",
+    "genesis_plus_gx": "b5de6496ec600e98d9110d1e7037d0b3c15f5076145e1b5f8f445be748023c22",
+    "pcsx_rearmed": "dd35516000ae979bee39d5d0922da80fb7ac13fcbb475e44b7cf93bbcdf0d647"
+  }
+}

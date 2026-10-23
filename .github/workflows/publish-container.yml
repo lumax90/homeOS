@@ -82,7 +82,7 @@ jobs:
             echo 'reuse=false' >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Build x64 image and native proof
+      - name: Build x64 image and verify native runtime lock
         if: steps.candidate.outputs.reuse != 'true'
         uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
         with:

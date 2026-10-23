@@ -56,9 +56,9 @@ address="$("${compose[@]}" port home 8080)"
 curl --fail --silent --show-error "http://$address/api/health" >"$reports/health.json"
 docker exec "$home" cat /app/NativeRuntime/proof.json >"$reports/native-proof.json"
 docker exec "$home" cat /app/NativeRuntime/manifest.json >"$reports/native-manifest.json"
-python3 - "$reports" "$data" "$root/package.json" <<'PY'
+python3 - "$reports" "$data" "$root/package.json" "$root/deploy/native/runtime-lock.json" <<'PY'
 import json, pathlib, sys
-reports, directory, package = sys.argv[1:]
+reports, directory, package, lock_file = sys.argv[1:]
 def load(name):
     return json.load(open(pathlib.Path(reports) / name))
 home, initializer = load('container.json')[0], load('initializer.json')[0]
@@ -72,6 +72,10 @@ assert initializer['HostConfig']['NetworkMode'] == 'none'
 assert initializer['HostConfig']['ReadonlyRootfs']
 assert initializer['HostConfig']['RestartPolicy'] == {'Name': 'on-failure', 'MaximumRetryCount': 3}
 assert load('health.json') == {'status': 'ok', 'version': json.load(open(package))['version']}
+native = load('native-manifest.json')
+lock = json.load(open(lock_file))
+assert native['frontend']['sha256'] == lock['assets']['frontend'] and native['mediaMtx']['sha256'] == lock['assets']['mediaMtx']
+assert all(core['binary']['sha256'] == lock['assets'][core['id']] for core in native['cores'])
 print('PASS: automatic directory preparation, completed initializer and healthy non-root Home')
 PY
 test "$(stat -c %u:%g "$data")" = 1654:1654

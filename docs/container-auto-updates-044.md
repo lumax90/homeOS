@@ -13,6 +13,7 @@ Started **2026-10-23**. Requirement **OPS-10**, with **OPS-03/04/05/09 and GAM-1
 - The automatic-backup history is bounded to **three**; retention checks the backup manifest's explicit purpose so manually created backups are preserved. A failed preparation reopens admission. An eight-minute lease expiry recovers from a missing updater callback. Successful startup records the new source revision.
 - Owners can pause/resume the application update policy in the updates screen. Image deployment and recovery use Docker; the existing signed executable updater remains disabled in containers.
 - Native ROM/source/save data stays in persistent managed storage. Application backups cover the existing database/key/configuration scope; they are not a media-library backup. Candidate health/startup and data preservation are verified before promotion. Automatic database rollback is not implemented; a failed deployment retains the pre-update backup and can be recovered with the prior immutable image and the existing restore mechanism.
+- Application-only images reuse the **immutable, previously verified native runtime** recorded in `deploy/native/runtime-lock.json`. The first fresh hosted rebuild changed frontend/PCSX binary hashes despite unchanged source pins, which would change existing hash-bound save/settings identities. That candidate was not promoted. The runtime lock preserves the original binaries and checks the native source inputs; changing emulator sources requires a separately verified compatible runtime release. The `native-proof` build target remains available for that work.
 
 ## Verification
 
@@ -20,7 +21,8 @@ Started **2026-10-23**. Requirement **OPS-10**, with **OPS-03/04/05/09 and GAM-1
 - Frontend/worker/PWA build passed; the final owner-control change also passed type checking. The updates screen supports pause/resume and identifies installations that still need the one-time Compose setup.
 - Real Linux Docker verification passed **private socket permissions, active-game deferral, automatic backup/replacement, cookie-session and paused-transfer preservation, read-only source/data mount preservation, unrelated-container exclusion, idempotent rescans and updater self-replacement**. Game content was not executed; only its isolated server-side lease was opened. Evidence: `artifacts/auto-update-044/` and the isolated VM's per-tree reports.
 - The bundled release has no `--version` flag; its verified archive and successful `--help` execution establish the selected binary input. Actual startup/update execution is covered by the Docker probe.
-- In progress: CasaOS conversion and GitHub `GITHUB_TOKEN` publication/promotion. The owner confirmed granting this repository **Write** access under the GHCR package's **Manage Actions access** settings.
+- The actual pinned CasaOS parser/output round trip preserves all three stable images, data/socket mounts, scope/hook labels, updater command, ports and permissions. Receipt: `artifacts/auto-update-044/casaos-import.json`.
+- In progress: the first complete GitHub `GITHUB_TOKEN` publication/promotion. The owner confirmed granting this repository **Write** access under the GHCR package's **Manage Actions access** settings. The first candidate is verified on an implementation branch before `main` promotion.
 
 No user ROM is launched and no internet media is acquired by verification. The integration probe uses an isolated local registry, private fixture database, an unexecuted server-side game lease, and a synthetic source-preservation file.
 
