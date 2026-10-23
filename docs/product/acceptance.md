@@ -15,6 +15,8 @@
 
 ### Headless CasaOS / LAN — HEADLESS-LAN-043 / GAM-19
 
+**2026-10-23 user acceptance:** the user confirmed that Home now runs on their CasaOS server. Initial installation/startup is accepted; media playback, games, controller behavior and sustained operation remain the checks below.
+
 - **CASAOS-REGISTRY-043:** import [the current Intel/AMD x64 Compose](https://raw.githubusercontent.com/lumax90/homeOS/main/deploy/casaos/docker-compose.yml) through CasaOS Custom Install. Both services use **`ghcr.io/lumax90/homeos:0.43.0`**; anonymous pull and fresh-data installation passed. Verify **Host `/DATA/AppData/home/data` → Container `/data`** on both services, with no empty Host row. `home-data-init` prepares UID/GID 1654 access and exits successfully before Home starts. An existing named-volume installation must retain its original `/data` mount. Open `http://SERVER-IP:5080` from another device and create/login to the owner account.
 - Leave the server without a display/browser session. Check movie/music/Live TV playback from phone, computer and TV; add actual media as a read-only bind. Verify page refresh, reconnect and independent account/device sessions.
 - Import your own ROM/BIOS where required; test video/audio, keyboard/touch, physical gamepad when the browser allows it, pause, save/exit and relaunch. One native game session owns the host at a time. Another device should receive an explanatory busy response rather than replace the active game.

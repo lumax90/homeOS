@@ -28,6 +28,18 @@ To add existing media, add a **read-only** mapping on the **home** service, e.g.
 - The address used to open Home is advertised for ordinary same-LAN WebRTC. Set `Home__Gaming__PublicHost` to the reachable LAN IP when a proxy uses a different address.
 - Plain-IP HTTP supports browsing/media and receive-only WebRTC where available, plus keyboard/touch input. Browser-restricted gamepad, installable PWA and offline features can require trusted HTTPS.
 
+## Updates
+
+The installed recipe is pinned to **`0.43.0`**. A GitHub source commit or a change to the repository's Compose file does not update the configuration already imported into CasaOS. There is currently no automatic server-side updater in this recipe.
+
+For an application-code update:
+
+1. A new versioned Linux image must be built, verified and published to GHCR. The repository workflow is triggered by an explicit dispatch or a matching `vX.Y.Z` Git tag, not by ordinary pushes to `main`.
+2. Update the image tag on **both `home` and `home-data-init`** in the existing CasaOS app to the same published version, then apply the update so CasaOS pulls it and recreates the containers.
+3. Retain the existing `/data` mapping, custom media mounts, ports and environment settings. Accounts, library state, ROM copies and saves live in the persistent data directory. Docker can reuse unchanged image layers.
+
+Home's executable-replacement updater is disabled inside Docker; container updates use the image lifecycle. Automatic image publication and automatic installation on the household server are separate operations.
+
 ## Troubleshooting
 
 - **`No such image: home:0.43.0`:** re-import the current registry Compose. Both image fields must be `ghcr.io/lumax90/homeos:0.43.0` and must allow image pulling.

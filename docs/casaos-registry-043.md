@@ -28,6 +28,12 @@
 - The first complete GitHub-hosted build/push and package access for that workflow remain a follow-up verification gate; manual publication does not establish automatic CI release success.
 - Actual CasaOS hardware/browser/TV acceptance remains **ACCEPT-43-LAN**.
 
+## User startup and update clarification — 2026-10-23
+
+The user confirmed successful startup on their CasaOS server. This accepts initial installation/startup, with the remaining device/playback/game checks tracked in **ACCEPT-43-LAN**.
+
+The current deployment uses a fixed `0.43.0` image tag on both services. Source pushes and repository Compose edits do not automatically update CasaOS's installed copy. Application-code releases require a new published image and a server-side pull/recreation with persistent data and custom mounts retained. The current workflow runs on dispatch/version tags; the CasaOS recipe does not contain an automatic updater. The [installation guide](../deploy/casaos/README.md#updates) now explains this lifecycle. References checked 2026-10-23: the current workflow, `Operations/UpdateService.cs` container guard, and [Docker Compose production deployment](https://docs.docker.com/compose/how-tos/production/) via Context7.
+
 ## References and build-only licences
 
 Consulted **2026-10-22** through Context7, current official release metadata and action input declarations:
