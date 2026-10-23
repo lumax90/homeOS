@@ -4,11 +4,11 @@ Kendi sunucunda çalışan, kendi mimarisine sahip bütünleşik medya uygulamas
 
 **C# / ASP.NET Core (.NET 10 LTS) + SQLite** çekirdeği; **React + HeroUI v3 + Motion** arayüzü.
 
-## Geliştirme sürümü: 0.43.0 / şema43
+## Geliştirme sürümü: 0.44.0 / şema43
 
 Music/Games/Live TV arayüzü, kişisel kütüphane, IPTV ve sunucuda ROM yürütme desteği. Home'u kendi sunucuna kurar, ev ağındaki cihazlardan sunucunun adresiyle kullanırsın.
 
-**CasaOS / Intel-AMD x64:** [Compose dosyasını](https://raw.githubusercontent.com/lumax90/homeOS/main/deploy/casaos/docker-compose.yml) CasaOS **Custom Install → Import** ekranına aktar. **`ghcr.io/lumax90/homeos:0.43.0`** imajı otomatik indirilir ve veri klasörü hazırlanır. Kurulumdan sonra kendi sunucunun adresiyle **`http://SUNUCU-IP:5080`** üzerinden bağlan. [Kurulum kılavuzu](deploy/casaos/README.md).
+**CasaOS / Intel-AMD x64:** [Compose dosyasını](https://raw.githubusercontent.com/lumax90/homeOS/main/deploy/casaos/docker-compose.yml) CasaOS **Custom Install → Import** ekranına aktar. **`ghcr.io/lumax90/homeos:stable`** imajı ve scoped güncelleyici kurulur. Doğrulanan uygulama güncellemeleri boştayken yedek alınarak otomatik uygulanır. Mevcut sürüm-sabitli kurulumlar için tek seferlik Compose geçişi gerekir. Kendi sunucunun adresiyle **`http://SUNUCU-IP:5080`** üzerinden bağlan. [Kurulum/güncelleme kılavuzu](deploy/casaos/README.md).
 
 **109 backend +68 Node**, yedi özgün sistemle gerçek LAN WebRTC görüntü/ses/kumanda ve kayıt, read-only medya range/HLS, container kapanış/yeniden oluşturma ve mevcut verinin korunumu doğrulandı. [Kanıt ve kapsam](docs/headless-lan-043.md). **Public imajın hesapsız indirme ve temiz kurulum kontrolleri geçti.** Fiziksel cihaz/gerçek oyun kabulü, ARM64 native, Umbrel mağaza paketi ve nihai dağıtım lisansı açık konulardır. Gamepad/PWA gibi tarayıcı özellikleri bazı cihazlarda güvenilir HTTPS ister.
 

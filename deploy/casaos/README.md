@@ -2,7 +2,7 @@
 
 ## Automatic-update channel
 
-**0.44 automatic updates are being verified.** The recipe tracks **`ghcr.io/lumax90/homeos:stable`**, Linux **amd64**. The existing immutable **`0.43.0`** image remains available. Publication and automatic-update receipts are tracked in [AUTO-UPDATE-044](../../docs/container-auto-updates-044.md). [Package page](https://github.com/users/lumax90/packages/container/package/homeos).
+**Published and verified 2026-10-23:** the recipe tracks **`ghcr.io/lumax90/homeos:stable`**, Linux **amd64**, starting with **0.44.0**. The immutable `0.44.0` and source-commit tags are also available. Publication, upgrade and automatic-update receipts are recorded in [AUTO-UPDATE-044](../../docs/container-auto-updates-044.md). [Package page](https://github.com/users/lumax90/packages/container/package/homeos).
 
 ## First installation
 
@@ -38,13 +38,15 @@ To add existing media, add a **read-only** mapping on the **home** service, e.g.
 
 Application-code pushes to `main` start the release workflow. Backend admission/backup checks, the image/native proof, fresh installation and actual automatic-update tests must pass before a candidate can move `stable`. Documentation-only changes do not redeploy the application. Immutable version/source tags remain available.
 
-The scoped updater checks **every 15 minutes**:
+The scoped updater checks **at startup and every 15 minutes**:
 
 1. It pulls a changed image and runs Home's private pre-update control.
 2. Active games, media/radio/TV playback, transfers, recording and running jobs defer the update. API admission/background claims are fenced while a consistent application backup is prepared.
 3. Home is replaced with the new image using its existing configuration, mounts and three-minute shutdown allowance. The updater can also replace itself.
 
 The **three most recent automatic application backups** are retained; manually created backups are preserved. Files, ROM copies and saves remain in the existing data directory. Docker reuses unchanged image layers. An interrupted preparation expires and reopens the application if the updater does not complete the stop.
+
+The updater has its own process health check. It ignores Compose startup-only dependencies while doing rolling updates: the completed `home-data-init` helper is not an application that needs restarting on every update.
 
 Automatic database rollback is not enabled. For an unexpected failed deployment, stop the updater, use the prior immutable source/version image and the pre-update backup as appropriate, and pause automatic updates until the problem is resolved. The backup has the existing application-state scope, not all media payloads. The Home service has no Docker socket; management access is confined to the updater service and its named/scoped selection.
 

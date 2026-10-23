@@ -160,7 +160,7 @@ Kaynak kodları [sources.md](sources.md) içindedir. Başlangıç durumu 0.2 inc
 | OPS-07 | Bildirimler, webhooks, SMTP/push, olay filtreleri; sır redaksiyonu | Tümü | Planlandı |
 | OPS-08 | Kaynak/transfer/oynatma ölçümleri, log görüntüleme, disk kapasitesi ve housekeeping | Tümü | Kısmi |
 | OPS-09 | Yapılandırma içe/dışa aktarma, profil/yetenek sürümleri ve bağımlılık lisans envanteri | Tümü | Planlandı |
-| OPS-10 | Doğrulanmış uygulama değişikliklerinin sabit takip kanalından otomatik alınması; kullanımda erteleme, güncelleme öncesi yedek, durum/pause kontrolü ve kalıcı veri korunumu | Kullanıcı, 2026-10-23 | AUTO-UPDATE-044 uygulanıyor; gerçek updater ve yayın doğrulaması sürüyor |
+| OPS-10 | Doğrulanmış uygulama değişikliklerinin sabit takip kanalından otomatik alınması; kullanımda erteleme, güncelleme öncesi yedek, durum/pause kontrolü ve kalıcı veri korunumu | Kullanıcı, 2026-10-23 | **0.44 stable yayımlandı**; main push/CI/GHCR, gerçek updater busy/backup/replacement/self-update, native kimlik ve veri korunumu geçti. Tek Compose geçişi ve cihaz kabulü ACCEPT-44-AUTO |
 | EXT-01 | Live TV/IPTV/radyo, M3U/XMLTV, kanal eşleme, EPG ve zaman kaydırma | R01,R02 | 0.42/43 canlı; HTTP/HLS, kaynak/rehber/grup/favori ve gerçek native fixture doğrulandı; gerçek yayın/cihaz kabulü ACCEPT-42 |
 | EXT-02 | DVR, tuner/çoklu kayıt çakışması, ön/son pay, tekrar kaydı engelleme ve reklam segmentleri | R01,R02 | 0.27 temelleri/0.42 yenilenen UI ve paylaşılan tuner/lifecycle doğrulandı; gerçek DVR ve ileri reklam kapsamı açık |
 | EXT-03 | Fotoğraf/albüm, kitap/çizgi roman/sesli kitap/podcast ve okuma/dinleme konumu | R01,R02 | Planlandı |

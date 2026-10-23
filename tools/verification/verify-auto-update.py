@@ -75,6 +75,12 @@ class Client:
 
 try:
     run('image', 'inspect', image)
+    recipe = json.loads(run('compose', '-f', str(Path(__file__).resolve().parents[2] / 'deploy/casaos/docker-compose.yml'), 'config', '--format', 'json'))
+    updater_arguments = recipe['services']['home-updater']['command'][:-2]
+    updater_arguments[updater_arguments.index('--scope') + 1] = project
+    once_arguments = list(updater_arguments)
+    if '--update-on-start' in once_arguments: once_arguments.remove('--update-on-start')
+    interval = once_arguments.index('--interval'); del once_arguments[interval:interval + 2]
     # Registry is verification software only. It is bound to loopback and removed at the end.
     registry_port, http_port = port(), port()
     run('run', '-d', '--name', registry, '--label', label, '-p', f'127.0.0.1:{registry_port}:5000', 'registry:3')
@@ -104,6 +110,9 @@ try:
     original_hash = hashlib.sha256(original.read_bytes()).hexdigest()
     run('run', '--rm', '--network', 'none', '--read-only', '--cap-drop', 'ALL', '--cap-add', 'CHOWN', '--user', '0:0', '--entrypoint', '/bin/sh', '--mount', f'type=bind,source={data},target=/data', image, '/app/prepare-data.sh')
     hooks = {
+        'com.docker.compose.project': project,
+        'com.docker.compose.service': 'home',
+        'com.docker.compose.depends_on': 'init:service_completed_successfully:false',
         'com.centurylinklabs.watchtower.enable': 'true',
         'com.centurylinklabs.watchtower.scope': project,
         'com.centurylinklabs.watchtower.lifecycle.pre-update': '/app/HomeServer.Api --container-update-prepare',
@@ -130,14 +139,14 @@ try:
     client.call('/games/tiny-crate/sessions', {'clientId': game_id, 'ticket': secrets.token_hex(32)})
     before = inspect(home)
     # A same-scope, enabled container outside the explicit names must remain untouched.
-    run('run', '-d', '--name', other, '--label', label, '--label', 'com.centurylinklabs.watchtower.enable=true', '--label', 'com.centurylinklabs.watchtower.scope=' + project, '--no-healthcheck', '--entrypoint', '/bin/sleep', reference, 'infinity')
+    run('run', '-d', '--name', other, '--label', label, '--label', 'com.docker.compose.project=' + project, '--label', 'com.docker.compose.service=init', '--label', 'com.centurylinklabs.watchtower.enable=true', '--label', 'com.centurylinklabs.watchtower.scope=' + project, '--no-healthcheck', '--entrypoint', '/bin/sleep', reference, 'infinity')
     containers.append(other)
     other_id = inspect(other)['Id']
     run('tag', project + ':b', reference)
     run('push', '--platform', 'linux/amd64', reference)
 
     def watch_once(name):
-        output = run('run', '--rm', '--label', label, '--label', 'com.centurylinklabs.watchtower=true', '--label', 'com.centurylinklabs.watchtower.scope=' + project, '--network', 'host', '--read-only', '--cap-drop', 'ALL', '--user', '0:0', '--tmpfs', '/tmp:rw,size=32m', '--tmpfs', '/data:rw,size=1m', '--entrypoint', '/app/Watchtower/watchtower', '--mount', 'type=bind,source=/var/run/docker.sock,target=/var/run/docker.sock,readonly', image, '--run-once', '--scope', project, '--label-enable', '--enable-lifecycle-hooks', '--rolling-restart', '--stop-timeout', '180s', home, timeout=300)
+        output = run('run', '--rm', '--label', label, '--label', 'com.centurylinklabs.watchtower=true', '--label', 'com.centurylinklabs.watchtower.scope=' + project, '--network', 'host', '--read-only', '--cap-drop', 'ALL', '--user', '0:0', '--tmpfs', '/tmp:rw,size=32m', '--tmpfs', '/data:rw,size=1m', '--entrypoint', '/app/Watchtower/watchtower', '--mount', 'type=bind,source=/var/run/docker.sock,target=/var/run/docker.sock,readonly', image, '--run-once', *once_arguments, home, timeout=300)
         (root / (name + '.log')).write_text(output)
 
     watch_once('busy-deferral')
@@ -165,7 +174,8 @@ try:
     # Run a real updater daemon on the old image while the registry points at the new one.
     # Explicit hostnames match CasaOS's parser output; the bundled executable must survive self-replacement.
     run('tag', project + ':a', reference)
-    updater_before = run('run', '-d', '--name', updater, '--hostname', updater, '--label', label, '--label', 'com.centurylinklabs.watchtower=true', '--label', 'com.centurylinklabs.watchtower.enable=true', '--label', 'com.centurylinklabs.watchtower.scope=' + project, '--network', 'host', '--read-only', '--cap-drop', 'ALL', '--user', '0:0', '--no-healthcheck', '--tmpfs', '/tmp:rw,size=32m', '--tmpfs', '/data:rw,size=1m', '--mount', 'type=bind,source=/var/run/docker.sock,target=/var/run/docker.sock,readonly', '--entrypoint', '/app/Watchtower/watchtower', reference, '--scope', project, '--label-enable', '--enable-lifecycle-hooks', '--interval', '5', '--stop-timeout', '180s', '--rolling-restart', home, updater)
+    updater_arguments[updater_arguments.index('--interval') + 1] = '5'
+    updater_before = run('run', '-d', '--name', updater, '--hostname', updater, '--label', label, '--label', 'com.centurylinklabs.watchtower=true', '--label', 'com.centurylinklabs.watchtower.enable=true', '--label', 'com.centurylinklabs.watchtower.scope=' + project, '--network', 'host', '--read-only', '--cap-drop', 'ALL', '--user', '0:0', '--health-cmd', '/app/Watchtower/watchtower --health-check', '--health-interval', '5s', '--health-timeout', '3s', '--health-start-period', '5s', '--tmpfs', '/tmp:rw,size=32m', '--tmpfs', '/data:rw,size=1m', '--mount', 'type=bind,source=/var/run/docker.sock,target=/var/run/docker.sock,readonly', '--entrypoint', '/app/Watchtower/watchtower', reference, *updater_arguments, home, updater)
     containers.append(updater)
     deadline = time.monotonic() + 150
     while time.monotonic() < deadline:
@@ -177,6 +187,7 @@ try:
             continue
         if current['Id'] != updater_before and current['State']['Running']:
             assert 'HOME_SOURCE_REVISION=' + 'b' * 40 in current['Config']['Env']
+            healthy(updater, timeout=45)
             break
         time.sleep(2)
     else:

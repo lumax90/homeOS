@@ -13,6 +13,10 @@
 
 ## Kullanıcının browser/cihaz kabulü
 
+### Automatic updates — AUTO-UPDATE-044 / OPS-10
+
+Apply the updated three-service CasaOS recipe once, retaining the existing data/media mounts, ports and environment settings. Verify that `home` and `home-updater` are healthy and `home-data-init` completed. In Home's updates page, verify automatic setup and pause/resume. During a later published application update, confirm that active play/media delays replacement, the update is applied after use ends, and preferences, sessions, ROM/save identities and paused transfers remain. The CI/Docker checks and old-version bootstrap passed; no household device or actual user game is exercised by those probes.
+
 ### Headless CasaOS / LAN — HEADLESS-LAN-043 / GAM-19
 
 **2026-10-23 user acceptance:** the user confirmed that Home now runs on their CasaOS server. Initial installation/startup is accepted; media playback, games, controller behavior and sustained operation remain the checks below.
