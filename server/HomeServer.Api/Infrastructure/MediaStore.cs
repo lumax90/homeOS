@@ -370,6 +370,7 @@ public sealed partial class MediaStore(HomePaths paths)
     {
         lock (_writeGate)
         {
+            if (ContainerUpdateBlocked) return null;
             using var db = Open();
             var id = Scalar(db, "SELECT j.id FROM jobs j JOIN libraries l ON l.id=j.library_id WHERE j.status='queued' AND l.enabled=1 AND NOT EXISTS(SELECT 1 FROM music_tasks mt WHERE mt.library_id=j.library_id AND mt.status='publishing') AND NOT EXISTS(SELECT 1 FROM dvr_recordings r WHERE r.status='publishing' AND json_extract(r.publication_json,'$.libraryId')=j.library_id) ORDER BY j.created_at LIMIT 1") as string;
             if (id is null) return null;

@@ -3,7 +3,21 @@ name: Publish Home container
 on:
   workflow_dispatch:
   push:
+    branches: [main]
     tags: ["v*"]
+    paths:
+      - ".github/workflows/publish-container.yml"
+      - "Dockerfile"
+      - ".dockerignore"
+      - "Directory.Build.props"
+      - "package*.json"
+      - "server/**"
+      - "web/**"
+      - "tools/**"
+      - "deploy/native/**"
+      - "deploy/casaos/prepare-data.sh"
+      - "docs/licenses/**"
+      - "tests/**"
 
 permissions:
   contents: read
@@ -25,6 +39,14 @@ jobs:
         with:
           persist-credentials: false
 
+      - name: Set up the backend test SDK
+        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          dotnet-version: "10.0.401"
+
+      - name: Verify update admission and backup recovery
+        run: dotnet test tests/HomeServer.Tests/HomeServer.Tests.csproj -c Release --filter 'FullyQualifiedName~ContainerUpdateTests|FullyQualifiedName~BackupTests' --logger 'trx;LogFileName=container-updates.trx' --results-directory "$RUNNER_TEMP/home-backend-verification" --nologo
+
       - name: Read release identity
         id: release
         shell: bash
@@ -36,7 +58,7 @@ jobs:
             exit 1
           fi
           image="ghcr.io/${GITHUB_REPOSITORY,,}"
-          printf 'version=%s\nimage=%s\ntag=%s:%s\n' "$version" "$image" "$image" "$version" >> "$GITHUB_OUTPUT"
+          printf 'version=%s\nimage=%s\ntag=%s:sha-%s\n' "$version" "$image" "$image" "$GITHUB_SHA" >> "$GITHUB_OUTPUT"
 
       - name: Set up Buildx
         uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
@@ -48,16 +70,20 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Preserve an already published release
+      - name: Locate an existing verified candidate
+        id: candidate
         env:
           RELEASE_IMAGE: ${{ steps.release.outputs.tag }}
         run: |
           if docker buildx imagetools inspect "$RELEASE_IMAGE" >/dev/null 2>&1; then
-            echo 'This release tag already exists. Publish a new application version rather than replacing it.' >&2
-            exit 1
+            docker pull "$RELEASE_IMAGE"
+            echo 'reuse=true' >> "$GITHUB_OUTPUT"
+          else
+            echo 'reuse=false' >> "$GITHUB_OUTPUT"
           fi
 
       - name: Build x64 image and native proof
+        if: steps.candidate.outputs.reuse != 'true'
         uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
         with:
           context: .
@@ -65,39 +91,52 @@ jobs:
           platforms: linux/amd64
           load: true
           tags: ${{ steps.release.outputs.tag }}
+          build-args: HOME_SOURCE_REVISION=${{ github.sha }}
           labels: |
             org.opencontainers.image.version=${{ steps.release.outputs.version }}
             org.opencontainers.image.revision=${{ github.sha }}
           cache-from: type=gha,scope=home-linux-amd64
+          cache-to: type=gha,scope=home-linux-amd64,mode=max,ignore-error=true
 
       - name: Verify unattended installation and data preservation
         env:
           RELEASE_IMAGE: ${{ steps.release.outputs.tag }}
         run: bash tools/verification/verify-container-install.sh "$RELEASE_IMAGE" "$RUNNER_TEMP/home-container-verification"
 
-      - name: Publish verified image
+      - name: Verify automatic replacement and busy deferral
+        env:
+          RELEASE_IMAGE: ${{ steps.release.outputs.tag }}
+        run: python3 tools/verification/verify-auto-update.py "$RELEASE_IMAGE" "$RUNNER_TEMP/home-auto-update-verification"
+
+      - name: Publish candidate and promote the verified stable channel
         id: publish
-        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
-        with:
-          context: .
-          target: final
-          platforms: linux/amd64
-          push: true
-          tags: |
-            ${{ steps.release.outputs.tag }}
-            ${{ steps.release.outputs.image }}:sha-${{ github.sha }}
-          labels: |
-            org.opencontainers.image.version=${{ steps.release.outputs.version }}
-            org.opencontainers.image.revision=${{ github.sha }}
-          provenance: mode=min
-          cache-to: type=gha,scope=home-linux-amd64,mode=max,ignore-error=true
+        env:
+          RELEASE_IMAGE: ${{ steps.release.outputs.tag }}
+          IMAGE: ${{ steps.release.outputs.image }}
+          VERSION: ${{ steps.release.outputs.version }}
+        run: |
+          test "$(docker image inspect -f '{{ index .Config.Labels "org.opencontainers.image.revision" }}' "$RELEASE_IMAGE")" = "$GITHUB_SHA"
+          docker push --platform linux/amd64 "$RELEASE_IMAGE"
+          git fetch --no-tags --depth=1 origin main
+          current="$(git rev-parse FETCH_HEAD)"
+          if [[ "$GITHUB_REF" == refs/heads/main || "$GITHUB_REF_TYPE" == tag ]] && git diff --quiet "$GITHUB_SHA" "$current" -- Dockerfile .dockerignore Directory.Build.props 'package*.json' server web tools deploy/native deploy/casaos/prepare-data.sh docs/licenses tests .github/workflows/publish-container.yml; then
+            node tools/verify-container-channel.mjs "$IMAGE" "$VERSION"
+            if ! docker buildx imagetools inspect "$IMAGE:$VERSION" >/dev/null 2>&1; then
+              docker tag "$RELEASE_IMAGE" "$IMAGE:$VERSION"
+              docker push --platform linux/amd64 "$IMAGE:$VERSION"
+            fi
+            docker tag "$RELEASE_IMAGE" "$IMAGE:stable"
+            docker push --platform linux/amd64 "$IMAGE:stable"
+            printf 'Promoted verified source `%s` to `%s:stable`.\n' "$GITHUB_SHA" "$IMAGE" >> "$GITHUB_STEP_SUMMARY"
+          else
+            printf 'Verified candidate `%s`; stable remains on the current main revision.\n' "$RELEASE_IMAGE" >> "$GITHUB_STEP_SUMMARY"
+          fi
 
       - name: Record registry digest
         env:
           RELEASE_IMAGE: ${{ steps.release.outputs.tag }}
-          RELEASE_DIGEST: ${{ steps.publish.outputs.digest }}
         run: |
-          printf 'Image: `%s`\n\nDigest: `%s`\n\nFirst publication requires Public package visibility before anonymous CasaOS pulls.\n' "$RELEASE_IMAGE" "$RELEASE_DIGEST" >> "$GITHUB_STEP_SUMMARY"
+          docker buildx imagetools inspect "$RELEASE_IMAGE" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Save verification receipts
         if: always()
@@ -107,5 +146,8 @@ jobs:
           path: |
             ${{ runner.temp }}/home-container-verification/reports/*.json
             ${{ runner.temp }}/home-container-verification/reports/*.log
+            ${{ runner.temp }}/home-auto-update-verification/*.json
+            ${{ runner.temp }}/home-auto-update-verification/*.log
+            ${{ runner.temp }}/home-backend-verification/*.trx
           if-no-files-found: ignore
           retention-days: 14

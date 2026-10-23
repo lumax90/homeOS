@@ -15,6 +15,10 @@ public sealed partial class BackupService(HomePaths paths, MediaStore store)
     private string Root => AppFiles.DirectoryIn(paths.Data, "backups");
 
     public async Task<BackupInfo> CreateAsync(string id, CancellationToken token)
+        => await CreateCoreAsync(id, null, token);
+    public async Task<BackupInfo> CreateContainerUpdateAsync(string id, CancellationToken token)
+        => await CreateCoreAsync(id, "container-update", token);
+    private async Task<BackupInfo> CreateCoreAsync(string id, string? purpose, CancellationToken token)
     {
         _ = AppFiles.Id(id);
         await _gate.WaitAsync(token);
@@ -28,7 +32,7 @@ public sealed partial class BackupService(HomePaths paths, MediaStore store)
             var schema = store.SnapshotState(temporary, token);
             var files = SnapshotFiles(temporary);
             if (files.Sum(file => file.Length) > MaximumArchiveBytes) throw new DomainException("Uygulama yedeği 1 GiB sınırını aşıyor.");
-            var manifest = new BackupManifest(1, schema, typeof(BackupService).Assembly.GetName().Version?.ToString() ?? "", DateTimeOffset.UtcNow.ToString("O"), paths.Data, files);
+            var manifest = new BackupManifest(1, schema, typeof(BackupService).Assembly.GetName().Version?.ToString() ?? "", DateTimeOffset.UtcNow.ToString("O"), paths.Data, files, purpose);
             await File.WriteAllTextAsync(Path.Combine(temporary, "manifest.json"), JsonSerializer.Serialize(manifest), token);
             if (File.Exists(pendingZip)) File.Delete(pendingZip);
             using (var zip = ZipFile.Open(pendingZip, ZipArchiveMode.Create))
@@ -60,6 +64,24 @@ public sealed partial class BackupService(HomePaths paths, MediaStore store)
         return new BackupInfo(id, manifest.CreatedAt, new FileInfo(path).Length, manifest.Schema);
     }
     public string FilePath(string id) => MediaPaths.ResolveFile(Root, AppFiles.Id(id) + ".zip");
+
+    public async Task<bool> DeleteContainerUpdateAsync(string id, CancellationToken token)
+    {
+        await _gate.WaitAsync(token);
+        try
+        {
+            var path = FilePath(id);
+            using (var archive = ZipFile.OpenRead(path))
+            {
+                var entry = archive.GetEntry("manifest.json") ?? throw new DomainException("Yedek manifesti yok.", 422);
+                if (entry.Length > 8 * 1024 * 1024) throw new DomainException("Yedek manifesti çok büyük.", 422);
+                using var stream = entry.Open();
+                if (JsonSerializer.Deserialize<BackupManifest>(stream)?.Purpose != "container-update") return false;
+            }
+            File.Delete(path); return true;
+        }
+        finally { _gate.Release(); }
+    }
 
     public async Task<RestorePlan> PrepareRestoreAsync(Stream input, CancellationToken token)
     {

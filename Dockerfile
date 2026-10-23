@@ -10,6 +10,13 @@ COPY tools/build-pwa.mjs tools/build-native-reader.mjs tools/ui-*.mjs tools/ui-*
 COPY docs/licenses/ docs/licenses/
 RUN npm run build
 
+FROM node-tools AS updater
+COPY tools/stage-container-updater.mjs /stage-container-updater.mjs
+RUN node /stage-container-updater.mjs /watchtower.tar.gz \
+    && mkdir /updater && tar -xzf /watchtower.tar.gz -C /updater watchtower LICENSE.md \
+    && cp /watchtower.tar.gz.json /updater/source.json \
+    && chmod 0555 /updater/watchtower && /updater/watchtower --help >/dev/null
+
 FROM mcr.microsoft.com/dotnet/sdk:10.0.401-noble@sha256:e70cdb7f80b0348f5cb85f19a8f670fca061f033d57eed12fa003d58b0e06317 AS native-build
 ARG TARGETARCH
 RUN test "$TARGETARCH" = amd64
@@ -65,11 +72,14 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && chown 1654:1654 /data && rm -rf /var/lib/apt/lists/*
 COPY --from=build /publish/ /app/
 COPY --from=native-proof --chown=0:0 /native/ /app/NativeRuntime/
+COPY --from=updater --chown=0:0 /updater/ /app/Watchtower/
 COPY --chmod=0555 deploy/casaos/prepare-data.sh /app/prepare-data.sh
 LABEL org.opencontainers.image.source="https://github.com/lumax90/homeOS" \
     org.opencontainers.image.title="Home" \
     org.opencontainers.image.description="Personal media, Live TV and headless server-run games for your home network"
+ARG HOME_SOURCE_REVISION=local
 ENV Home__DataPath=/data \
+    HOME_SOURCE_REVISION=$HOME_SOURCE_REVISION \
     Home__FfmpegPath=/usr/bin/ffmpeg \
     Home__FfprobePath=/usr/bin/ffprobe \
     Home__Par2Path=/usr/bin/par2 \

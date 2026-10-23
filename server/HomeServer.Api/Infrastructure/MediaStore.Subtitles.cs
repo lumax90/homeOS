@@ -71,6 +71,7 @@ public sealed partial class MediaStore
     {
         lock (_writeGate)
         {
+            if (ContainerUpdateBlocked) return null;
             using var db = Open();
             var item = Query(db, "SELECT w.media_id,m.title,w.language,w.status,w.message,w.next_run FROM subtitle_wanted w JOIN media m ON m.id=w.media_id WHERE w.profile_revision=$revision AND w.next_run<=$now ORDER BY w.next_run LIMIT 1",
                 r => new SubtitleWanted(r.GetString(0), r.GetString(1), r.GetString(2), r.GetString(3), r.GetString(4), r.GetString(5)), ("$revision", revision), ("$now", Now())).FirstOrDefault();

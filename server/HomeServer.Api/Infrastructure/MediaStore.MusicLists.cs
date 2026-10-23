@@ -75,6 +75,7 @@ public sealed partial class MediaStore
     {
         lock (_writeGate)
         {
+            if (ContainerUpdateBlocked) return null;
             using var db = Open(); PruneMusicLists(db);
             var job = Query(db, MusicListSelect + " WHERE status='queued' AND next_run<=$now ORDER BY next_run,id LIMIT 1", ReadMusicList, ("$now", Now())).FirstOrDefault(); if (job is null) return null;
             var lease = Guid.NewGuid().ToString("N"); Execute(db, "UPDATE music_list_jobs SET status='running',revision=revision+1,lease=$lease WHERE id=$id", ("$id", job.Id), ("$lease", lease));

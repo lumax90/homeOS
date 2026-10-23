@@ -17,10 +17,12 @@ import json, sys
 source, destination, image, directory, project = sys.argv[1:]
 config = json.load(open(source))
 config['name'] = project
+config['services'].pop('home-updater', None)  # The scoped updater is exercised by the automatic-update integration probe.
 for name, service in config['services'].items():
     service['image'] = image
     service['pull_policy'] = 'never'
     service['container_name'] = f'{project}-{name}'
+    service.setdefault('labels', {})['com.centurylinklabs.watchtower.scope'] = project
     assert len(service['volumes']) == 1
     assert service['volumes'][0]['type'] == 'bind'
     assert service['volumes'][0]['target'] == '/data'

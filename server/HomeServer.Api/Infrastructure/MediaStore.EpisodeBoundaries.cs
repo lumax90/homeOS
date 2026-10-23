@@ -32,6 +32,7 @@ public sealed partial class MediaStore
     {
         lock (_writeGate)
         {
+            if (ContainerUpdateBlocked) return null;
             using var db = Open(); var row = Query(db, "SELECT id,user_id,episodes_json FROM episode_boundary_jobs WHERE status='queued' ORDER BY created_at LIMIT 1", r => (Id: r.GetString(0), User: r.GetString(1), Episodes: JsonSerializer.Deserialize<BoundaryEpisode[]>(r.GetString(2), WebJson)!)).FirstOrDefault();
             if (row.Id is null) return null; var lease = Guid.NewGuid().ToString("N");
             Execute(db, "UPDATE episode_boundary_jobs SET status='running',lease=$lease,revision=revision+1,progress=5,updated_at=$now,message='Dosyadaki sahne ve ses sınırları inceleniyor.' WHERE id=$id", ("$id", row.Id), ("$lease", lease), ("$now", Now()));

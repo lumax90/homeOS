@@ -91,6 +91,7 @@ public sealed partial class MediaStore
     {
         lock (_writeGate)
         {
+            if (ContainerUpdateBlocked) return null;
             using var db = Open();
             var row = Query(db, """
                 SELECT w.media_id,m.title,w.language,w.status,w.message,w.next_run,w.profile_revision,w.override_revision,w.connection_revision,w.policy_json,w.attempts

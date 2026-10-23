@@ -170,6 +170,7 @@ public sealed partial class MediaStore
     {
         lock (_writeGate)
         {
+            if (ContainerUpdateBlocked) return null;
             using var db = Open();
             var id = Scalar(db, "SELECT j.id FROM music_automation_jobs j JOIN music_monitors m ON m.id=j.monitor_id WHERE j.status IN ('queued','waiting') AND j.due_at<=$now AND m.enabled=1 AND m.revision=j.revision ORDER BY j.due_at,j.id LIMIT 1", ("$now", now.ToString("O"))) as string;
             if (id is null) return null;

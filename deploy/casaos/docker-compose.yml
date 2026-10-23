@@ -2,7 +2,7 @@ name: home
 services:
   home:
     container_name: home
-    image: ghcr.io/lumax90/homeos:0.43.0
+    image: ghcr.io/lumax90/homeos:stable
     pull_policy: missing
     depends_on:
       home-data-init:
@@ -30,6 +30,15 @@ services:
       HOME: /data
       XDG_CACHE_HOME: /data/cache
       MESA_SHADER_CACHE_MAX_SIZE: 128M
+      Home__Updates__Automatic: "true"
+    labels:
+      com.centurylinklabs.watchtower.enable: "true"
+      com.centurylinklabs.watchtower.scope: home
+      com.centurylinklabs.watchtower.lifecycle.pre-update: /app/HomeServer.Api --container-update-prepare
+      com.centurylinklabs.watchtower.lifecycle.pre-update-timeout: "3"
+      com.centurylinklabs.watchtower.lifecycle.post-update: /app/HomeServer.Api --container-update-complete
+      com.centurylinklabs.watchtower.lifecycle.post-update-timeout: "3"
+      com.centurylinklabs.watchtower.lifecycle.post-check: /app/HomeServer.Api --container-update-cancel
     volumes:
       - type: bind
         source: /DATA/AppData/home/data
@@ -59,7 +68,7 @@ services:
             tr_TR: Kalıcı hesaplar, kütüphane, indirmeler, ROM ve kayıtlar
   home-data-init:
     container_name: home-data-init
-    image: ghcr.io/lumax90/homeos:0.43.0
+    image: ghcr.io/lumax90/homeos:stable
     pull_policy: missing
     restart: on-failure:3
     user: "0:0"
@@ -88,6 +97,44 @@ services:
           description:
             en_US: Use the same Host directory as the Home service; prepares first-install ownership.
             tr_TR: Home servisiyle aynı Host klasörünü kullanın; ilk kurulum izinlerini hazırlar.
+  home-updater:
+    container_name: home-updater
+    image: ghcr.io/lumax90/homeos:stable
+    pull_policy: missing
+    restart: unless-stopped
+    user: "0:0"
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    entrypoint: ["/app/Watchtower/watchtower"]
+    command: ["--scope", "home", "--label-enable", "--enable-lifecycle-hooks", "--interval", "900", "--stop-timeout", "180s", "--rolling-restart", "home", "home-updater"]
+    healthcheck:
+      disable: true
+    labels:
+      com.centurylinklabs.watchtower: "true"
+      com.centurylinklabs.watchtower.enable: "true"
+      com.centurylinklabs.watchtower.scope: home
+    tmpfs:
+      - /tmp:rw,nosuid,size=32m
+      - /data:rw,nosuid,size=1m
+    volumes:
+      - type: bind
+        source: /var/run/docker.sock
+        target: /var/run/docker.sock
+        read_only: true
+        bind:
+          create_host_path: false
+    logging:
+      driver: json-file
+      options:
+        max-size: "5m"
+        max-file: "2"
+    x-casaos:
+      volumes:
+        - container: /var/run/docker.sock
+          description:
+            en_US: Docker control for the scoped Home updater.
+            tr_TR: Home güncelleyicisinin Docker bağlantısı.
 x-casaos:
   id: local.home.media
   architectures: [amd64]

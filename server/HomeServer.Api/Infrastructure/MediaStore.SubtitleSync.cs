@@ -35,6 +35,7 @@ public sealed partial class MediaStore
     {
         lock (_writeGate)
         {
+            if (ContainerUpdateBlocked) return null;
             using var db = Open(); var id = Scalar(db, "SELECT id FROM subtitle_sync_jobs WHERE status='queued' ORDER BY created_at LIMIT 1") as string;
             if (id is null) return null;
             Execute(db, "UPDATE subtitle_sync_jobs SET status='running',revision=revision+1,progress=0,message='Konuşma etkinliği ölçülüyor.',updated_at=$now WHERE id=$id", ("$id", id), ("$now", Now())); return GetSubtitleSync(id);
@@ -52,6 +53,7 @@ public sealed partial class MediaStore
     {
         lock (_writeGate)
         {
+            RequireContainerWorkAllowed();
             var job = GetSubtitleSync(id) ?? throw new DomainException("Senkron işi bulunamadı.", 404);
             if (job.Status == "completed") return job;
             if (job.Revision != revision || job.Status != "proposed" || job.Result?.CanApply != true) throw new DomainException("Senkron önerisi değişti veya yeterli güven eşiğini geçmedi.", 409);

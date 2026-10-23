@@ -132,6 +132,7 @@ public sealed partial class MediaStore
         _ = AppFiles.Id(runId);
         lock (_writeGate)
         {
+            RequireContainerWorkAllowed();
             var record = GetDownload(id) ?? throw new DomainException("İndirme bulunamadı.", 404);
             if (record.Revision != revision || record.DesiredState != "running" || record.Archived) throw new OperationCanceledException();
             var policy = BudgetPolicyFor(record);

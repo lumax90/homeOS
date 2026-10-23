@@ -108,12 +108,20 @@ public sealed class GameTests
     [Fact]
     public void SchemaFortyMigrationPreservesExistingMediaAndPersonalState()
     {
-        using var home = new TestWorkspace(); var (actor, _) = Login(home); var library = home.AddLibrary(); var file = home.Write("original.mp4");
-        var media = home.Store.UpsertFile(library.Id, MediaPaths.Inspect(home.Source, file)!, "isolated"); home.Store.SaveProgress(media.Id, new(37, 100), actor);
-        using (var db = new SqliteConnection($"Data Source={Path.Combine(home.Paths.State, "home.db")}"))
-        { db.Open(); using var command = db.CreateCommand(); command.CommandText = "DROP TABLE game_roms; DROP TABLE game_saves; DROP TABLE game_sessions; DROP TABLE game_user_state; PRAGMA user_version=39;"; command.ExecuteNonQuery(); }
-        home.Store.Initialize(); home.Store.Initialize(); Assert.Equal(37, home.Store.GetMedia(media.Id, actor)!.PositionSeconds); Assert.Single(home.Store.GetLibraries(viewer: actor));
-        using var verified = new SqliteConnection($"Data Source={Path.Combine(home.Paths.State, "home.db")}"); verified.Open(); using var check = verified.CreateCommand(); check.CommandText = "PRAGMA user_version"; Assert.Equal((long)MediaStore.LatestSchema, check.ExecuteScalar()); check.CommandText = "PRAGMA foreign_key_check"; using var rows = check.ExecuteReader(); Assert.False(rows.Read());
+        using var home = new TestWorkspace(); var data = AppFiles.DirectoryIn(home.Root, "actual-schema39");
+        var paths = new HomePaths(data, Path.Combine(data, "thumbnails"), null);
+        using (var db = new SqliteConnection($"Data Source={Path.Combine(data, "home.db")}"))
+        {
+            db.Open(); using var command = db.CreateCommand(); command.CommandText = "PRAGMA foreign_keys=OFF"; command.ExecuteNonQuery();
+            foreach (var name in typeof(MediaStore).Assembly.GetManifestResourceNames().Where(name => name.Contains(".Migrations.") && int.TryParse(name.Split(".Migrations.")[1][..3], out var number) && number <= 39).Order())
+            { using var stream = typeof(MediaStore).Assembly.GetManifestResourceStream(name)!; using var reader = new StreamReader(stream); command.CommandText = reader.ReadToEnd(); command.ExecuteNonQuery(); }
+            command.CommandText = "PRAGMA user_version=39"; command.ExecuteNonQuery();
+        }
+        var store = new MediaStore(paths); store.CreateOwner(new("Owner", "isolated-hash")); var actor = store.GetAccount("1")!;
+        var library = store.AddLibrary(new("Isolated migration library", home.Source, "movies")); var file = home.Write("original.mp4");
+        var media = store.UpsertFile(library.Id, MediaPaths.Inspect(home.Source, file)!, "isolated"); store.SaveProgress(media.Id, new(37, 100), actor);
+        store.Initialize(); store.Initialize(); Assert.Equal(37, store.GetMedia(media.Id, actor)!.PositionSeconds); Assert.Single(store.GetLibraries(viewer: actor));
+        using var verified = new SqliteConnection($"Data Source={Path.Combine(data, "home.db")}"); verified.Open(); using var check = verified.CreateCommand(); check.CommandText = "PRAGMA user_version"; Assert.Equal((long)MediaStore.LatestSchema, check.ExecuteScalar()); check.CommandText = "PRAGMA foreign_key_check"; using var rows = check.ExecuteReader(); Assert.False(rows.Read());
     }
     [Fact]
     public async Task ApiUsesCsrfAndOpaqueSandboxWithoutExposingPackageRoots()

@@ -41,7 +41,7 @@ public sealed partial class MediaStore
  }
  public DvrRecording? ClaimDvr(string id)
  {
-   lock(_writeGate){var row=GetDvr(id);if(row is null||row.Status is not("scheduled" or"conflict" or"finalizing" or"publishing")||row.Lease is not null)return null;using var db=Open();
+   lock(_writeGate){if(ContainerUpdateBlocked)return null;var row=GetDvr(id);if(row is null||row.Status is not("scheduled" or"conflict" or"finalizing" or"publishing")||row.Lease is not null)return null;using var db=Open();
     if(row.Status is "publishing" or "finalizing"||DateTimeOffset.Parse(row.EndsAt)<=DateTimeOffset.UtcNow){Execute(db,"UPDATE dvr_recordings SET status=CASE WHEN status='publishing' THEN status ELSE 'finalizing' END,revision=revision+1,lease=$lease,updated_at=$now WHERE id=$id",("$id",id),("$lease",Guid.NewGuid().ToString("N")),("$now",Now()));return GetDvr(id);}
     if(DateTimeOffset.Parse(row.StartsAt)>DateTimeOffset.UtcNow)return null;
     var channel=GetLiveChannel(row.ChannelId);var source=GetLiveSource(channel.SourceId);if(!source.Enabled||!channel.Enabled||!channel.Available)return null;

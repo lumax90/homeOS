@@ -20,6 +20,7 @@ public sealed class DownloadWorker(MediaStore store, ITorrentSessions sessions, 
     private readonly ConcurrentDictionary<string, Run> _running = new();
     private readonly SemaphoreSlim _downloads = new(Math.Clamp(configuration.GetValue("Home:Downloads:MaximumConcurrent", 3), 1, 10));
     private readonly SemaphoreSlim _seeders = new(Math.Clamp(configuration.GetValue("Home:Downloads:MaximumSeeders", 3), 1, 10));
+    public bool ContainerUpdateBusy => _running.Any(pair => !pair.Value.Task.IsCompleted && store.GetDownload(pair.Key)?.Status is not ("completed" or "seeding"));
 
     public DownloadRecord Control(string id, string action)
     {
@@ -63,7 +64,7 @@ public sealed class DownloadWorker(MediaStore store, ITorrentSessions sessions, 
                     else if (pair.Value.Budget is { } active && !store.TouchDownloadBudgetRun(active, DateTimeOffset.UtcNow)) try { pair.Value.Cancellation.Cancel(); } catch (ObjectDisposedException) { }
                 }
                 if (DateTimeOffset.UtcNow - pruned > TimeSpan.FromMinutes(5)) { store.PruneDownloadBudgets(DateTimeOffset.UtcNow); pruned = DateTimeOffset.UtcNow; }
-                foreach (var record in store.GetDownloads().Where(d => d.DesiredState == "running" && d.Status != "failed" && !(d.SourceKind == "nzb" && d.Status == "completed")
+                foreach (var record in store.GetDownloads().Where(d => !store.ContainerUpdateBlocked && d.DesiredState == "running" && d.Status != "failed" && !(d.SourceKind == "nzb" && d.Status == "completed")
                     && (!DateTimeOffset.TryParse(d.Ownership?.RetryAt, out var retry) || retry <= DateTimeOffset.UtcNow)).OrderBy(d => d.Priority).ThenBy(d => d.CreatedAt))
                 {
                     if (_downloads.CurrentCount == 0) break;
@@ -150,6 +151,8 @@ public sealed class DownloadWorker(MediaStore store, ITorrentSessions sessions, 
             if (store.GetDownload(record.Id)?.Ownership?.WaitReason is null) Set("queued", stopping.IsCancellationRequested ? "Sunucu açıldığında devam edilecek." : "Yeni komut uygulanacak.",
                 store.GetDownload(record.Id)?.Progress ?? 0, store.GetDownload(record.Id)?.TotalBytes ?? 0);
         }
+        catch (DomainException ex) when (ex.StatusCode == 503 && running.Budget is null)
+        { /* Maintenance won admission before this worker; retain the original transfer intent and status. */ }
         catch (DownloadBudgetException ex) { store.HoldDownloadBudget(record.Id, record.Revision, ex, DateTimeOffset.UtcNow); }
         catch (OperationCanceledException) { Set("failed", "Kaynak bağlantısı zaman aşımına uğradı; yeniden dene veya başka bir sürüm seç.", store.GetDownload(record.Id)?.Progress ?? 0, store.GetDownload(record.Id)?.TotalBytes ?? 0); }
         catch (Exception ex)

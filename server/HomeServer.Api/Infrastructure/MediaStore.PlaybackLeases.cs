@@ -38,6 +38,7 @@ public sealed partial class MediaStore
         if (revision is < 1 or > 9_007_199_254_740_991 || mode is not ("preparing" or "pcm")) throw new DomainException("Oynatma komutu geçersiz.");
         lock (_writeGate)
         {
+            RequireContainerWorkAllowed();
             var viewer = RequirePlaybackActor(actor); var source = PlaybackSource(mediaId, viewer);
             if (watch is not null) RequireWatchPlayback(watch, actor, clientId, mediaId, now);
             if (mode == "pcm" && source.Media.Kind != "audio") throw new DomainException("Kesintisiz müzik için ses dosyası seç.");

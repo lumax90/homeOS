@@ -43,6 +43,11 @@ if (args is ["--healthcheck"])
     catch (HttpRequestException) { Environment.ExitCode = 1; } catch (TaskCanceledException) { Environment.ExitCode = 1; }
     return;
 }
+if (args is ["--container-update-prepare"] or ["--container-update-complete"] or ["--container-update-cancel"])
+{
+    Environment.ExitCode = await ContainerUpdateControl.RunCommandAsync(args[0].Replace("--container-update-", "", StringComparison.Ordinal));
+    return;
+}
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.Configure<HostOptions>(options=>options.ShutdownTimeout=TimeSpan.FromMinutes(3));
 var settingsFile = Path.Combine(Path.GetFullPath(builder.Configuration["Home:DataPath"] ?? ".data"), "home-settings.json");
@@ -255,6 +260,9 @@ builder.Services.AddSingleton<BackupService>();
 builder.Services.AddSingleton<RestartCoordinator>();
 builder.Services.AddSingleton<NetworkConfiguration>();
 builder.Services.AddSingleton<UpdateService>();
+builder.Services.AddSingleton<ContainerRequestGate>();
+builder.Services.AddSingleton<ContainerUpdateCoordinator>();
+builder.Services.AddHostedService<ContainerUpdateControl>();
 builder.Services.AddOptions<Microsoft.AspNetCore.Server.Kestrel.Core.KestrelServerOptions>().Configure<HomePaths, IDataProtectionProvider, IConfiguration>(NetworkConfiguration.ConfigureTls);
 builder.Services.AddHostedService<SystemWorker>();
 builder.Services.AddDataProtection().SetApplicationName("HomeServer");
@@ -351,6 +359,9 @@ app.Use(async (context, next) =>
             await context.Response.WriteAsJsonAsync(new { message, code = budget?.Code, retryAt = budget?.RetryAt });
     }
 });
+var containerUpdates = app.Services.GetRequiredService<ContainerUpdateCoordinator>();
+var containerRequests = app.Services.GetRequiredService<ContainerRequestGate>();
+app.Use((context, next) => ContainerUpdateMiddleware.InvokeAsync(context, next, containerRequests, containerUpdates.Supported));
 app.UseAuthentication();
 app.UseWebSockets();
 app.UseAuthorization();

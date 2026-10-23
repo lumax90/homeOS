@@ -32,6 +32,7 @@ public sealed partial class MediaStore
     {
         lock (_writeGate)
         {
+            if (ContainerUpdateBlocked) return null;
             using var db = Open();
             var job = Query(db, MatchJobSelect + " JOIN libraries l ON l.id=j.library_id WHERE j.status='queued' AND j.next_attempt<=$now AND l.enabled=1 AND l.revision=j.library_revision AND json_extract(l.options_json,'$.autoMatch')=1 ORDER BY j.next_attempt LIMIT 1", ReadMatchJob, ("$now", Now())).FirstOrDefault();
             if (job is not null) Execute(db, "UPDATE auto_match_jobs SET status='running' WHERE media_id=$id", ("$id", job.MediaId));

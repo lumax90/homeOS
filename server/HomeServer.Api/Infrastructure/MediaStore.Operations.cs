@@ -27,6 +27,7 @@ public sealed partial class MediaStore
     {
         lock (_writeGate)
         {
+            if (ContainerUpdateBlocked) return null;
             using var db = Open();
             var id = Scalar(db, "SELECT id FROM system_jobs WHERE status='queued' ORDER BY created_at LIMIT 1") as string;
             if (id is null) return null;

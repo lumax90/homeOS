@@ -2,7 +2,7 @@ name: home
 services:
   home:
     build: .
-    image: home:0.43.0
+    image: home:0.44.0
     init: true
     user: "1654:1654"
     read_only: true

@@ -28,6 +28,7 @@ public sealed partial class MediaStore
     {
         lock(_writeGate)
         {
+            if(ContainerUpdateBlocked)return null;
             using var db=Open();var row=Query(db,ProductJobSelect+" WHERE status='queued' AND kind IN (SELECT value FROM json_each($kinds)) AND due_at<=$now ORDER BY due_at,id LIMIT 1",ReadProductJob,("$kinds",JsonSerializer.Serialize(kinds)),("$now",Now())).FirstOrDefault();if(row is null)return null;
             Execute(db,"UPDATE product_jobs SET status='running',revision=revision+1,lease=$lease,attempts=attempts+1,updated_at=$now WHERE id=$id",("$id",row.Id),("$lease",Guid.NewGuid().ToString("N")),("$now",Now()));return GetProductJob(row.Id);
         }
@@ -44,6 +45,7 @@ public sealed partial class MediaStore
     {
         lock(_writeGate)
         {
+            RequireContainerWorkAllowed();
             var job=GetProductJob(id)??throw new DomainException("İş bulunamadı.",404);if(job.UserId!=actor.Id||GetAccountSecret(actor.Id)?.Version!=job.UserVersion)throw new DomainException("İş hesabı değişti.",403);
             if(job.Status=="completed")return job;if(job.Status!="proposed"||job.Revision!=revision)throw new DomainException("İş önerisi değişti.",409);
             using var db=Open();Execute(db,"UPDATE product_jobs SET status='applying',revision=revision+1,lease=$lease,updated_at=$now WHERE id=$id",("$id",id),("$lease",Guid.NewGuid().ToString("N")),("$now",Now()));return GetProductJob(id)!;

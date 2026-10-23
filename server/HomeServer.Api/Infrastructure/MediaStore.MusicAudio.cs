@@ -103,6 +103,7 @@ public sealed partial class MediaStore
     {
         lock (_writeGate)
         {
+            if (ContainerUpdateBlocked) return null;
             using var db = Open(); var task = Query(db, MusicTaskSelect + " WHERE status IN ('queued','publishing') ORDER BY CASE WHEN status='publishing' THEN 0 ELSE 1 END,created_at LIMIT 1", ReadMusicTask).FirstOrDefault();
             if (task is null) return null;
             Execute(db, "UPDATE music_tasks SET status=CASE WHEN status='publishing' THEN status ELSE 'running' END,updated_at=$now WHERE id=$id", ("$id", task.Id), ("$now", Now())); return GetMusicTask(task.Id);

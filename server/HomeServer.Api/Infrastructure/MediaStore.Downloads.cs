@@ -53,6 +53,7 @@ public sealed partial class MediaStore
         if (acquisition is not null && music is not null) throw new DomainException("Aynı edinme komutu hem video hem müzik kapsamı taşıyamaz.");
         lock (_writeGate)
         {
+            RequireContainerWorkAllowed();
             if (acquisition is not null) ValidateAutomationAcquisition(acquisition);
             if (acquisition is not null) ValidateCatalogAcquisition(acquisition);
             if (music is not null) ValidateMusicAutomationAcquisition(music);
@@ -123,6 +124,7 @@ public sealed partial class MediaStore
         if (intent is not ("running" or "paused" or "cancelled")) throw new DomainException("Geçersiz indirme komutu.");
         lock (_writeGate)
         {
+            if (intent == "running") RequireContainerWorkAllowed();
             using var db = Open();
             if (GetDownload(id) is null) throw new DomainException("İndirme bulunamadı.", 404);
             if (GetDownload(id)!.Archived) throw new DomainException("İndirmeyi önce arşivden çıkar.", 409);

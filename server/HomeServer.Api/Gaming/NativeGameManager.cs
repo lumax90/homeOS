@@ -48,6 +48,7 @@ public sealed class NativeGameManager(MediaStore store, HomePaths paths, NativeR
     private string[] _recoveryDirectories=[];
     private readonly TaskCompletionSource _recoveryReady=new(TaskCreationOptions.RunContinuationsAsynchronously);
     private volatile Active? _active;
+    public bool ContainerUpdateBusy => _active is not null || _gate.CurrentCount == 0 || _recoveryDirectories.Length > 0 && !_recoveryReady.Task.IsCompletedSuccessfully;
     public override async Task StartAsync(CancellationToken token)
     {
         var root = Path.Combine(paths.State, "games", "native-work");

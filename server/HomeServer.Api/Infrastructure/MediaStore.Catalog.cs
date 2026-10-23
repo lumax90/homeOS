@@ -134,6 +134,7 @@ public sealed partial class MediaStore
     {
         lock (_writeGate)
         {
+            if (ContainerUpdateBlocked) return null;
             using var db = Open();
             var id = Scalar(db, "SELECT content_id FROM tracking WHERE (monitor_mode<>'none' OR sync_state='pending') AND next_sync_at<=$now ORDER BY next_sync_at LIMIT 1", ("$now", Now())) as string;
             if (id is null) return null;

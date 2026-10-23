@@ -92,6 +92,7 @@ public sealed partial class MediaStore
     {
         lock (_writeGate)
         {
+            if (ContainerUpdateBlocked) return null;
             using var db = Open();
             Execute(db, "UPDATE offline_exports SET status='failed',revision=revision+1,lease=NULL,message='Hazırlık izni sona erdi; yeniden dene.' WHERE status='queued' AND expires_at<=$now", ("$now", Now()));
             var job = Query(db, OfflineSelect + " WHERE status='queued' AND expires_at>$now ORDER BY created_at LIMIT 1", ReadOffline, ("$now", Now())).FirstOrDefault();

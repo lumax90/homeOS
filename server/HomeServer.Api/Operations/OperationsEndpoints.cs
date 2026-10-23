@@ -11,6 +11,8 @@ public static class OperationsEndpoints
     {
         var group = api.MapGroup("/operations").RequireAuthorization("admin");
         group.MapGet("/updates", (UpdateService updates) => Results.Ok(updates.Status()));
+        group.MapGet("/container-updates", (ContainerUpdateCoordinator updates) => Results.Ok(updates.Status()));
+        group.MapPut("/container-updates", (ContainerUpdatePreferences input, ContainerUpdateCoordinator updates) => { updates.Configure(input); return Results.Ok(updates.Status()); });
         group.MapPost("/updates", async (HttpContext context, UpdateService updates, CancellationToken token) =>
         {
             var limit = context.Features.Get<IHttpMaxRequestBodySizeFeature>(); if (limit is { IsReadOnly: false }) limit.MaxRequestBodySize = PackageTrust.MaximumArchive;

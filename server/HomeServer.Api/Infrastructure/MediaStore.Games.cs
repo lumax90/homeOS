@@ -41,6 +41,7 @@ public sealed partial class MediaStore
         if (input.Ticket is not { Length: 64 } || input.Ticket.Any(c => !char.IsAsciiHexDigit(c))) throw new DomainException("Oyun oturumu bileti geçersiz.");
         lock (_writeGate)
         {
+            RequireContainerWorkAllowed();
             var account = RequireGameAccount(actor);
             if (ValidateLoginSession(loginId, actor.Id) is null) throw new DomainException("Oturum gerekli.", 401);
             using var db = Open();

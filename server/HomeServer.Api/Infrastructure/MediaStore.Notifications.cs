@@ -101,6 +101,7 @@ public sealed partial class MediaStore
     {
         lock (_writeGate)
         {
+            if (ContainerUpdateBlocked) return null;
             using var db = Open();
             for (var i = 0; i < 64; i++)
             {

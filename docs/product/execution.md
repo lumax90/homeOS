@@ -22,6 +22,7 @@ Güncelleme: **2026-10-23**. Geliştirme sürümü **0.43.0 / şema43**; LAN eri
 
 ## Aktif iş kartları
 
+- [ ] AUTO-UPDATE-044 — OPS-10/03/04/05/09, GAM-19: doğrulanmış main → stable yayını, scoped Watchtower, özel Unix kontrolü, kullanımda erteleme, yedek/lease ve kalıcı veriyi koruyan otomatik container değişimi. İlk mevcut kurulum için tek Compose geçişi gerekir. [İş kaydı](../container-auto-updates-044.md).
 - [x] REPO-PRIVACY-043 — OPS-09: public doküman/betikler ve **5 commitlik erişilebilir geçmiş** kişisel adres/kullanıcı yollarından arındırılıp kullanıcı onayıyla lease-protected force-push yapıldı. **Gitleaks: 0 bulgu; GitHub: 0 açık secret alert; env/veri/anahtar dosyası yok.** 10 helper check, 11 PowerShell parse, 21-exclude/4-include Docker context, 1.002 Git blob ve public README kontrolleri geçti. Eski SHA URL'si GitHub'ın tuttuğu kopyadan hâlâ erişilebilir; önbellek/dış klonlar silindi iddiası yok. [Denetim](../repository-privacy.md).
 - [x] CASAOS-REGISTRY-043 — OPS-05/06, GAM-19: **`ghcr.io/lumax90/homeos:0.43.0` public**, digest `017e90f2…`. Temiz Git kaynağından Linux builder yayını; gerçek CasaOS parser dönüşümü, anonim manifest/config/8-layer erişimi ve Docker pull, otomatik UID/GID hazırlığı, healthy start, recreate ve foreign-owner korunumu geçti. [İş kaydı](../casaos-registry-043.md).
 - [ ] CI-PUBLISH-043 — OPS-05: ilk tam GitHub-hosted build/push ve GHCR paketinin workflow erişimi doğrulanacak. Önceki Actions çalışması gizlilik incelemesi için iptal edildi; başarılı ilk imaj yerel doğrulanmış builder'dan yayımlandı.
