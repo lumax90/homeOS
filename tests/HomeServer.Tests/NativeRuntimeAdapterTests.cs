@@ -91,11 +91,32 @@ public sealed class NativeRuntimeAdapterTests
                 var packet = await receiver.ReceiveAsync(budget.Token); var command = Encoding.ASCII.GetString(packet.Buffer).Trim(); commands.Add(command);
                 if (command == "GET_STATUS") await receiver.SendAsync(Encoding.UTF8.GetBytes("GET_STATUS " + (paused ? "PAUSED" : "PLAYING") + " fixture,original,hash\n"), packet.RemoteEndPoint, budget.Token);
                 else if (command == "PAUSE_TOGGLE") paused = !paused;
+                else if (command == "LOAD_STATE_SLOT 0") await receiver.SendAsync(Encoding.ASCII.GetBytes("LOAD_STATE_SLOT 0\n"),packet.RemoteEndPoint,budget.Token);
                 else if (command == "QUIT") return;
             }
         });
         Assert.StartsWith("GET_STATUS PLAYING ", await control.StatusAsync(budget.Token)); await control.SetPausedAsync(true,budget.Token); await control.SetPausedAsync(true,budget.Token); Assert.True(paused);
         await control.SaveStateAsync(budget.Token); await control.LoadStateAsync(budget.Token); await control.SetPausedAsync(false,budget.Token); Assert.False(paused); await control.QuitAsync(budget.Token); await listener;
-        Assert.Equal(2, commands.Count(command => command == "PAUSE_TOGGLE")); Assert.Contains("SAVE_STATE", commands); Assert.Contains("LOAD_STATE", commands); Assert.All(commands, command => Assert.Contains(command, new[] { "GET_STATUS", "PAUSE_TOGGLE", "SAVE_STATE", "LOAD_STATE", "QUIT" }));
+        Assert.Equal(2, commands.Count(command => command == "PAUSE_TOGGLE")); Assert.Contains("SAVE_STATE", commands); Assert.Contains("LOAD_STATE_SLOT 0", commands); Assert.DoesNotContain("LOAD_STATE",commands); Assert.All(commands, command => Assert.Contains(command, new[] { "GET_STATUS", "PAUSE_TOGGLE", "SAVE_STATE", "LOAD_STATE_SLOT 0", "QUIT" }));
+    }
+    [Fact]
+    public async Task InitialPortRefusalDoesNotPoisonThePersistentControlSocket()
+    {
+        int port;using(var reservation=new UdpClient(new IPEndPoint(IPAddress.Loopback,0)))port=((IPEndPoint)reservation.Client.LocalEndPoint!).Port;
+        using var budget=new CancellationTokenSource(TimeSpan.FromSeconds(8));using var process=Process.GetCurrentProcess();await using var control=new RetroArchControl(process,port);
+        var listener=Task.Run(async()=>
+        {
+            await Task.Delay(1500,budget.Token);using var receiver=new UdpClient(new IPEndPoint(IPAddress.Loopback,port));
+            while(!budget.IsCancellationRequested)
+            {
+                var message=await receiver.ReceiveAsync(budget.Token);Assert.StartsWith("GET_STATUS",Encoding.ASCII.GetString(message.Buffer));
+                await receiver.SendAsync(Encoding.ASCII.GetBytes("GET_STATUS PLAYING original,fixture,hash\n"),message.RemoteEndPoint,budget.Token);
+            }
+        });
+        try
+        {
+            await control.WaitReadyAsync(TimeSpan.FromSeconds(6),budget.Token);
+        }
+        finally{budget.Cancel();try{await listener;}catch(OperationCanceledException){}}
     }
 }

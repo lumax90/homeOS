@@ -3,7 +3,7 @@ services:
   home:
     build:
       context: ..
-    image: home:0.44.0
+    image: home:0.45.0
     restart: unless-stopped
     init: true
     user: "1654:1654"

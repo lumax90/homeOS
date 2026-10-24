@@ -7,8 +7,11 @@ public sealed record TimedDvrInput(string CommandId,string ChannelId,string? Sta
 public sealed record ParsedChannel(string Key,string Name,string Group,string? EpgId,string? Logo,string Url,bool Radio,int Ordinal,Dictionary<string,string>? Headers=null);
 public sealed record LiveProgramme(string Id,string ChannelId,string StartsAt,string EndsAt,string Title,string Description,string EpisodeKey,bool? Repeat,int? MinimumAge);
 public sealed record LiveSession(string Id,string UserId,string LoginId,string DeviceId,string ChannelId,int SourceRevision,string Status,string CreatedAt,string LastSeen,string? Error,string? ClientId=null,long ClientRevision=0);
-public sealed record LivePlayInput(string? ClientId=null,long ClientRevision=1);
-public sealed record LiveLaunch(string Id,string Url,LiveChannel Channel,int TimeShiftMinutes=30);
+public sealed record LivePlayInput(string? ClientId=null,long ClientRevision=1,bool PrepareOnly=false);
+public sealed record LiveConfigureInput(PlaybackClient Client,bool ForceCompatible=false);
+public sealed record LiveStreamPlan(int? VideoStream,int? AudioStream,bool CopyVideo,bool CopyAudio,string Container,string Transport,string Mode,string? VideoCodec,string? AudioCodec,int Segments=450,bool ToneMap=false);
+public sealed record LiveLaunch(string Id,string Url,LiveChannel Channel,int TimeShiftMinutes=30,MediaTracks? Tracks=null,bool Prepared=false,LiveStreamPlan? Plan=null);
+public sealed record LivePlaybackStatus(string Id,string State,bool Recoverable,string? Error,LiveStreamPlan? Plan,long CacheBytes);
 public sealed record LiveChannelPreference(bool Favorite);
 public sealed record LiveChannelCard(LiveChannel Channel,string SourceName,string? PresetId,bool Favorite,string? LastWatchedAt,LiveProgramme? Now,LiveProgramme? Next,bool Playable=true);
 public sealed record LiveChannelGroup(string Name,int Count);

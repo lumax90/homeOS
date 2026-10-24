@@ -42,6 +42,8 @@ public static class RetroArchHostConfiguration
             sort_savestates_enable = "false"
             menu_show_start_screen = "false"
             savestate_file_compression = "false"
+            savestate_auto_index = "false"
+            state_slot = "0"
             savestate_auto_save = "false"
             savestate_auto_load = "false"
             record_driver = "ffmpeg"
@@ -74,6 +76,15 @@ public static class RetroArchHostConfiguration
     // Read by the reviewed Home host adapter and passed directly to upstream FFmpeg's muxer.
     public const string LowDelayMux="\nhome_low_delay = \"true\"\nformat_flush_packets = \"1\"\nformat_max_delay = \"0\"\nformat_max_interleave_delta = \"1\"\nformat_pes_payload_size = \"0\"\n";
     public const string ExtraControllerPorts="\ninput_max_users = \"4\"\nnetwork_remote_enable_user_p2 = \"true\"\nnetwork_remote_enable_user_p3 = \"true\"\nnetwork_remote_enable_user_p4 = \"true\"\n";
+    public static string CreateSelkies(string workspace,int remotePadPort,int commandPort,string? renderer,int width,int height)=>
+        CreatePrivateHost(workspace,remotePadPort,commandPort,renderer??"glcore",width,height)
+            .Replace("video_driver = \"glcore\"","video_driver = \"sdl2\"",StringComparison.Ordinal)
+            .Replace("audio_driver = \"null\"","audio_driver = \"pulse\"",StringComparison.Ordinal)
+            .Replace("audio_enable = \"false\"","audio_enable = \"true\"",StringComparison.Ordinal)
+            .Replace("audio_sync = \"false\"","audio_sync = \"true\"",StringComparison.Ordinal)
+            .Replace("video_gpu_record = \"true\"","video_gpu_record = \"false\"",StringComparison.Ordinal)
+            .Replace("video_fullscreen = \"false\"","video_fullscreen = \"true\"",StringComparison.Ordinal)
+        +$"\naudio_latency = \"32\"\naudio_out_rate = \"48000\"\nvideo_fullscreen_x = \"{width}\"\nvideo_fullscreen_y = \"{height}\"\nvideo_font_enable = \"false\"\nvideo_smooth = \"false\"\nsuspend_screensaver_enable = \"false\"\n";
     public static string CreatePrivateHost(string workspace,int remotePadPort,int commandPort,string? renderer,int width=640,int height=480)
     {
         // A software core stays windowless; an actual hardware-context request can still switch drivers upstream.

@@ -1,5 +1,6 @@
 .native-game-video{width:100%;height:100%;object-fit:contain;background:#000;outline:none;touch-action:none}.native-game-video:focus-visible{outline:2px solid #b7d1c0;outline-offset:-3px}
 .native-game-stage{display:flex;align-items:center;justify-content:center}
+.native-selkies-viewer{border:0;pointer-events:none;flex:none}
 .native-player-options{width:100%;text-align:left;max-height:320px;overflow:auto;margin:12px 0}.native-player-options summary{cursor:pointer;font-size:13px}.native-player-options input{width:100%;margin:12px 0}.native-player-option{display:grid;gap:7px;margin:16px 0;font-size:12px}.native-player-option select{width:100%}.native-player-option small{color:#9aa9b5}.game-pause-menu{max-height:calc(100dvh - 96px);overflow:auto}
 .native-game-sound{position:absolute;right:18px;bottom:18px;z-index:2;color:#fff;background:rgba(24,24,24,.6)}
 .native-game-stats{position:absolute;left:16px;bottom:16px;z-index:2;color:#fff;font-size:12px;background:rgba(24,24,24,.7);padding:8px 12px;border-radius:12px}.native-game-stats summary{cursor:pointer}.native-game-stats p{margin:5px 0}

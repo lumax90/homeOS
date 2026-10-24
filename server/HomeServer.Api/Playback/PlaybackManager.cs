@@ -14,7 +14,7 @@ public sealed partial class PlaybackManager(HomePaths paths, MediaStore store, M
 {
     private sealed record ProcessMarker(int Id, long StartedAt, string Executable);
     private sealed record ClientIntent(long Revision, bool Closed);
-    private sealed class Active(string owner, string clientId, long revision, string directory, PlaybackSession info, Process process, long reservation)
+    private sealed class Active(string owner, string clientId, long revision, string directory, PlaybackSession info, Process process, long reservation, double ahead)
     {
         public string Owner { get; } = owner;
         public string ClientId { get; } = clientId;
@@ -28,12 +28,18 @@ public sealed partial class PlaybackManager(HomePaths paths, MediaStore store, M
         public long Bytes;
         public bool Closing;
         public long Reservation { get; } = reservation;
+        public PlaybackWindow Window { get; } = new(directory, reservation, info.StartSeconds, info.RequestedStartSeconds, aheadSeconds: ahead);
+        public MediaProcessSuspension Production { get; } = new(process);
+        public object Gate { get; } = new();
+        public FileSystemWatcher? Changes;
+        public int ControlPending;
     }
     private readonly ConcurrentDictionary<string, Active> _sessions = new();
     private readonly SemaphoreSlim _starts = new(1, 1);
     private readonly MemoryCache _intents = new(new MemoryCacheOptions { SizeLimit = 256 });
     private readonly int _maximum = Math.Clamp(configuration.GetValue("Home:Playback:MaximumSessions", 2), 1, 8);
     private readonly long _budget = (long)(Math.Clamp(configuration.GetValue("Home:Playback:CacheGiBPerSession", 8d), .1, 64) * 1024 * 1024 * 1024);
+    private readonly double _ahead = Math.Clamp(configuration.GetValue("Home:Playback:AheadSeconds", 90d), 12, 120);
     private string Root => AppFiles.DirectoryIn(paths.Data, "playback");
 
     public async Task<PlaybackSession> CreateAsync(string owner, PlaybackStart input, CancellationToken token)
@@ -41,11 +47,11 @@ public sealed partial class PlaybackManager(HomePaths paths, MediaStore store, M
         var media = await analysis.InspectAsync(input.MediaId, token, allowUnprobed: true);
         var clientId = input.ClientId is null ? Guid.NewGuid().ToString("N") : AppFiles.Id(input.ClientId);
         if (input.ClientRevision < 0) throw new DomainException("Oynatma revizyonu geçersiz.");
-        var hdr = media.Probe.Streams?.Any(stream => stream.Kind == "video" && stream.ColorTransfer is "smpte2084" or "arib-std-b67") == true;
-        var toneMapAvailable = hdr && encoding is not null && (await encoding.InspectAsync(token)).ToneMapping;
         var selectedSubtitle = input.SubtitleId is null ? null : subtitles?.GetSource(media, input.SubtitleId).Track ?? throw new DomainException("Altyazı oynatma hizmeti kullanılamıyor.", 409);
         var burn = selectedSubtitle is not null && (selectedSubtitle.Image || input.BurnSubtitle);
-        var plan = PlaybackPlanner.Decide(media, input, tools.FfmpegAvailable, _budget, toneMapAvailable, selectedSubtitle);
+        var plan = PlaybackPlanner.Decide(media, input, tools.FfmpegAvailable, _budget, toneMappingAvailable: true, selectedSubtitle);
+        if (plan.ToneMap && (encoding is null || !(await encoding.InspectAsync(token)).ToneMapping))
+            throw new DomainException("HDR renk bilgisi veya tone mapping filtresi bu profilde uygun değil.", 409);
         await _starts.WaitAsync(token);
         try
         {
@@ -61,15 +67,16 @@ public sealed partial class PlaybackManager(HomePaths paths, MediaStore store, M
                 await CloseInternalAsync(oldId, owner);
             if (input.ReplaceSessionId is { } previous) await CloseInternalAsync(previous, owner);
             if (plan.Mode == "direct") return new PlaybackSession(null, input.MediaId, "direct", $"/api/media/{input.MediaId}/stream", 0,
-                media.Probe.Duration ?? 0, plan.Reasons, plan.AudioStream, "ready", RequestedStartSeconds: input.StartSeconds, SubtitleId: input.SubtitleId);
+                media.Probe.Duration ?? 0, plan.Reasons, plan.AudioStream, "ready", RequestedStartSeconds: input.StartSeconds, SubtitleId: input.SubtitleId,
+                VideoCodec: plan.VideoCodec, AudioCodec: plan.AudioCodec, Container: plan.Container, Transport: "direct");
             if (_sessions.Count >= _maximum) throw new DomainException($"Sunucuda {_maximum} dönüştürme oturumu açık. Kullanılmayan oynatıcıyı kapat.", 429);
             var start = plan.CopyVideo && plan.VideoStream is { } video
                 ? await tools.KeyframeBeforeAsync(media, video, input.StartSeconds, token) : input.StartSeconds;
             var duration = media.Probe.Duration!.Value - start;
             var rate = plan.VideoStream is null && !plan.CopyAudio ? 192000
                 : plan.CopyVideo ? media.Probe.BitRate ?? (long)(media.Media.SizeBytes * 8 / media.Probe.Duration.Value) : plan.Bitrate;
-            var reserved = (long)(Math.Max(256000, rate) / 8d * duration * 1.2);
-            if (reserved > _budget) throw new DomainException("Bu akış oynatma cache sınırını aşıyor. Daha düşük kalite seç.", 409);
+            // Reserve a rolling production/back-buffer window, not the remaining size of the movie.
+            var reserved = Math.Min(_budget, (long)(Math.Max(256000, rate) / 8d * Math.Min(duration, 300) * 1.25) + 16L * 1024 * 1024);
             var root = Root;
             var future = _sessions.Values.Sum(session => Math.Max(0, session.Reservation - Interlocked.Read(ref session.Bytes)));
             if (new DriveInfo(Path.GetPathRoot(root)!).AvailableFreeSpace < reserved + future + 256L * 1024 * 1024)
@@ -85,24 +92,26 @@ public sealed partial class PlaybackManager(HomePaths paths, MediaStore store, M
                 await File.WriteAllTextAsync(Path.Combine(directory, ".home-playback"), "Home.Playback.v1", token);
                 if (burn) plan = plan with { Subtitle = await subtitles!.PrepareBurnAsync(media, input.SubtitleId!, directory, input.SubtitleDelaySeconds, token) };
                 token.ThrowIfCancellationRequested();
-                var process = MediaProcess.Start(tools.FfmpegExecutable, Arguments(media.Path, directory, start, plan, encoder), false, directory);
+                var process = MediaProcess.Start(tools.FfmpegExecutable, Arguments(media.Path, directory, start, plan, encoder), true, directory);
                 var info = new PlaybackSession(id, input.MediaId, plan.Mode, $"/api/playback/{id}/index.m3u8", start,
-                    media.Probe.Duration.Value, plan.Reasons, plan.AudioStream, "starting", RequestedStartSeconds: input.StartSeconds, Encoder: plan.CopyVideo ? "copy" : encoder, SubtitleId: input.SubtitleId, SubtitleBurned: burn);
-                active = new Active(owner, clientId, input.ClientRevision, directory, info, process, reserved);
+                    media.Probe.Duration.Value, plan.Reasons, plan.AudioStream, "starting", RequestedStartSeconds: input.StartSeconds, Encoder: plan.CopyVideo ? "copy" : encoder, SubtitleId: input.SubtitleId, SubtitleBurned: burn,
+                    VideoCodec: plan.VideoCodec, AudioCodec: plan.AudioCodec, Container: plan.Container, Transport: plan.Transport);
+                active = new Active(owner, clientId, input.ClientRevision, directory, info, process, reserved, _ahead);
                 _sessions[id] = active;
                 active.Work = WatchAsync(active);
+                WatchProduction(active);
                 await File.WriteAllTextAsync(Path.Combine(directory, ".home-process.json"), JsonSerializer.Serialize(
                     new ProcessMarker(process.Id, process.StartTime.ToUniversalTime().Ticks, tools.FfmpegExecutable)), token);
                 using var startup = CancellationTokenSource.CreateLinkedTokenSource(token);
                 startup.CancelAfter(TimeSpan.FromSeconds(35));
-                while (!File.Exists(Path.Combine(directory, "index.m3u8")))
+                while (!active.Window.Ready)
                 {
                     if (active.Work.IsCompleted) throw new DomainException(active.Info.Error ?? "HLS akışı oluşturulamadı.", 422);
                     await Task.Delay(100, startup.Token);
                 }
                 if (active.Info.State == "failed") throw new DomainException(active.Info.Error!, 422);
                 active.Lifecycle.Ready();
-                return active.Info;
+                return Describe(active);
             }
             catch
             {
@@ -129,9 +138,11 @@ public sealed partial class PlaybackManager(HomePaths paths, MediaStore store, M
         if (heartbeat is not null && (!double.IsFinite(heartbeat.PositionSeconds) || heartbeat.PositionSeconds < 0 || heartbeat.PositionSeconds > session.Info.DurationSeconds + 5))
             throw new DomainException("Oynatma konumu geçersiz.");
         Interlocked.Exchange(ref session.LastSeen, DateTimeOffset.UtcNow.UtcTicks);
-        return session.Info;
+        if (heartbeat is not null) session.Window.Touch(heartbeat.PositionSeconds);
+        return Describe(session);
     }
-    public PlaybackSession Describe(string id, string owner) => Get(id, owner).Info;
+    public PlaybackSession Describe(string id, string owner) => Describe(Get(id, owner));
+    private static PlaybackSession Describe(Active session) => session.Info with { Telemetry = session.Window.Telemetry(session.Production.Paused) };
     public async Task CloseOwnerAsync(string owner)
     {
         await _starts.WaitAsync();
@@ -139,18 +150,24 @@ public sealed partial class PlaybackManager(HomePaths paths, MediaStore store, M
         finally { _starts.Release(); }
     }
 
-    public (FileStream Stream, string Mime) OpenArtifact(string id, string name, string owner)
+    public (Stream Stream, string Mime) OpenArtifact(string id, string name, string owner)
     {
         var session = Get(id, owner);
-        if (!Artifact().IsMatch(name)) throw new DomainException("Oynatma parçası bulunamadı.", 404);
-        if (store.GetMedia(session.Info.MediaId) is null) throw new DomainException("Medya artık bu kütüphanede etkin değil.", 404);
-        if (session.Info.State == "failed") throw new DomainException(session.Info.Error ?? "Dönüştürme durdu.", 422);
-        var full = Path.Combine(session.Directory, name);
-        if (!File.Exists(full)) throw new DomainException("Oynatma parçası henüz hazır değil.", 404);
-        full = MediaPaths.ResolveFile(session.Directory, name);
-        Interlocked.Exchange(ref session.LastSeen, DateTimeOffset.UtcNow.UtcTicks);
-        return (new FileStream(full, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete, 64 * 1024, FileOptions.Asynchronous),
-            name.EndsWith(".m3u8", StringComparison.Ordinal) ? "application/vnd.apple.mpegurl" : "video/mp2t");
+        lock (session.Gate)
+        {
+            if (session.Closing) throw new DomainException("Oynatma oturumu sona erdi. Yeniden oynat.", 410);
+            if (!Artifact().IsMatch(name)) throw new DomainException("Oynatma parçası bulunamadı.", 404);
+            if (store.GetMedia(session.Info.MediaId) is null) throw new DomainException("Medya artık bu kütüphanede etkin değil.", 404);
+            if (session.Info.State == "failed") throw new DomainException(session.Info.Error ?? "Dönüştürme durdu.", 422);
+            Interlocked.Exchange(ref session.LastSeen, DateTimeOffset.UtcNow.UtcTicks);
+            if (name == "index.m3u8") return (session.Window.Playlist(), "application/vnd.apple.mpegurl");
+            session.Window.RequireArtifact(name);
+            var full = Path.Combine(session.Directory, name);
+            if (!File.Exists(full)) throw new DomainException("Oynatma parçası henüz hazır değil.", 404);
+            full = MediaPaths.ResolveFile(session.Directory, name);
+            return (new FileStream(full, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete, 64 * 1024, FileOptions.Asynchronous),
+                name.EndsWith(".ts", StringComparison.Ordinal) ? "video/mp2t" : "video/mp4");
+        }
     }
 
     private Active Get(string id, string owner)
@@ -190,8 +207,7 @@ public sealed partial class PlaybackManager(HomePaths paths, MediaStore store, M
         if (!_sessions.TryGetValue(id, out var existing)) return;
         if (existing.Owner != owner) throw new DomainException("Bu oynatma oturumu sana ait değil.", 403);
         if (!_sessions.TryRemove(id, out var session)) return;
-        session.Closing = true;
-        MediaProcess.Kill(session.Process);
+        lock (session.Gate) { session.Closing = true; session.Changes?.Dispose(); MediaProcess.Kill(session.Process); }
         await session.Work;
         session.Process.Dispose();
         try { if (Directory.Exists(session.Directory)) AppFiles.DeleteOwnedDirectory(session.Directory); }
@@ -203,7 +219,9 @@ public sealed partial class PlaybackManager(HomePaths paths, MediaStore store, M
         try
         {
             var errors = MediaProcess.ReadErrorTailAsync(session.Process.StandardError);
+            var progress = ProgressAsync(session);
             await session.Process.WaitForExitAsync();
+            await progress;
             var error = await errors;
             if (session.Closing) session.Lifecycle.Close();
             else if (session.Process.ExitCode == 0) session.Lifecycle.Complete();
@@ -219,6 +237,44 @@ public sealed partial class PlaybackManager(HomePaths paths, MediaStore store, M
             MediaProcess.Kill(session.Process);
             session.Lifecycle.Fail("Oynatma işlemi izlenemedi. Yeniden dene.");
             logger.LogWarning("Oynatma işlemi {Id}: {Type}", session.Info.Id, ex.GetType().Name);
+        }
+    }
+
+    private static async Task ProgressAsync(Active session)
+    {
+        double? seconds = null, speed = null;
+        while (await session.Process.StandardOutput.ReadLineAsync() is { } line)
+        {
+            if (line.StartsWith("out_time_us=", StringComparison.Ordinal) && double.TryParse(line.AsSpan(12), CultureInfo.InvariantCulture, out var micros)) seconds = micros / 1_000_000;
+            if (line.StartsWith("speed=", StringComparison.Ordinal) && double.TryParse(line[6..].Trim().TrimEnd('x'), CultureInfo.InvariantCulture, out var rate)) speed = rate;
+            if (line.StartsWith("progress=", StringComparison.Ordinal)) session.Window.Progress(seconds, speed);
+        }
+    }
+
+    private static void WatchProduction(Active session)
+    {
+        var watcher = new FileSystemWatcher(session.Directory, "*.m3u8") { NotifyFilter = NotifyFilters.LastWrite | NotifyFilters.FileName | NotifyFilters.Size };
+        void Changed(object sender, FileSystemEventArgs change)
+        {
+            if (Interlocked.Exchange(ref session.ControlPending, 1) != 0) return;
+            ThreadPool.QueueUserWorkItem(_ => { try { ControlProduction(session); } finally { Volatile.Write(ref session.ControlPending, 0); } });
+        }
+        watcher.Changed += Changed; watcher.Created += Changed; watcher.Renamed += Changed;
+        session.Changes = watcher; watcher.EnableRaisingEvents = true;
+    }
+    private static void ControlProduction(Active session)
+    {
+        lock (session.Gate)
+        {
+            if (session.Closing || session.Info.State == "failed") return;
+            try
+            {
+                var paused = session.Window.Control(session.Production.Paused);
+                if (!session.Process.HasExited) session.Production.Set(paused);
+                Interlocked.Exchange(ref session.Bytes, session.Window.Telemetry(paused).CacheBytes);
+            }
+            catch (Exception ex) when (ex is IOException or DomainException or System.ComponentModel.Win32Exception or PlatformNotSupportedException)
+            { MediaProcess.Kill(session.Process); session.Lifecycle.Fail(ex is DomainException ? ex.Message : "Akışın geçici üretimi yönetilemedi. Kaldığın yerden yeniden dene."); }
         }
     }
 
@@ -279,39 +335,22 @@ public sealed partial class PlaybackManager(HomePaths paths, MediaStore store, M
                 {
                     var idle = DateTimeOffset.UtcNow.UtcTicks - Interlocked.Read(ref session.LastSeen) > TimeSpan.FromMinutes(2).Ticks;
                     if (idle) { await CloseAsync(id, session.Owner); continue; }
-                    var bytes = CacheBytes(session.Directory);
-                    Interlocked.Exchange(ref session.Bytes, bytes);
-                    if (bytes > _budget)
-                    {
-                        MediaProcess.Kill(session.Process);
-                        await session.Work;
-                        session.Lifecycle.Fail("Oynatma cache sınırına ulaşıldı. Daha düşük kalite seç.");
-                    }
+                    ControlProduction(session);
                 }
-                await Task.Delay(2000, stoppingToken);
+                await Task.Delay(250, stoppingToken);
             }
         }
         catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested) { }
         finally { foreach (var (id, session) in _sessions.ToArray()) await CloseAsync(id, session.Owner); }
     }
 
-    private static long CacheBytes(string directory)
-    {
-        try
-        {
-            long size = 0;
-            foreach (var path in Directory.EnumerateFiles(directory))
-                try { size += new FileInfo(path).Length; } catch (FileNotFoundException) { }
-            return size;
-        }
-        catch (DirectoryNotFoundException) { return 0; }
-    }
-
     public static string[] Arguments(string input, string directory, double start, PlaybackDecision plan, string encoder = "libx264")
     {
         var result = EncodingArguments(input, start, plan, encoder);
-        result.AddRange(["-f", "hls", "-hls_time", "4", "-hls_list_size", "0", "-hls_playlist_type", "event", "-hls_flags", "independent_segments+temp_file",
-            "-hls_segment_filename", Path.Combine(directory, "segment%06d.ts"), Path.Combine(directory, "index.m3u8")]);
+        result.InsertRange(result.IndexOf("-i"), ["-readrate", "4", "-readrate_initial_burst", "4"]);
+        result.AddRange(["-progress", "pipe:1", "-stats_period", "0.25", "-f", "hls", "-hls_time", "4", "-hls_list_size", "128", "-hls_flags", "independent_segments+temp_file"]);
+        if (plan.Container == "mp4") result.AddRange(["-hls_segment_type", "fmp4", "-hls_fmp4_init_filename", "init.mp4"]);
+        result.AddRange(["-hls_segment_filename", Path.Combine(directory, plan.Container == "mp4" ? "segment%06d.m4s" : "segment%06d.ts"), Path.Combine(directory, "index.m3u8")]);
         return result.ToArray();
     }
     public static List<string> EncodingArguments(string input, double start, PlaybackDecision plan, string encoder = "libx264")
@@ -338,11 +377,11 @@ public sealed partial class PlaybackManager(HomePaths paths, MediaStore store, M
                 }
                 if (!plan.CopyVideo) result.AddRange(["-vf", filter]);
             }
-            if (plan.CopyVideo) result.AddRange(["-c:v", "copy"]);
+            if (plan.CopyVideo) { result.AddRange(["-c:v", "copy"]); if (plan.Container == "mp4" && plan.VideoCodec == "hevc") result.AddRange(["-tag:v", "hvc1"]); }
             else result.AddRange(["-c:v", encoder, "-preset", encoder == "h264_nvenc" ? "p4" : "veryfast", "-pix_fmt", "yuv420p", "-threads", "2", "-filter_threads", "1",
                 "-b:v", Math.Max(350000, plan.Bitrate - 192000).ToString(CultureInfo.InvariantCulture),
                 "-maxrate", Math.Max(350000, plan.Bitrate - 192000).ToString(CultureInfo.InvariantCulture), "-bufsize", (plan.Bitrate * 2L).ToString(CultureInfo.InvariantCulture),
-                "-force_key_frames", "expr:gte(t,n_forced*4)", "-flags", "+cgop"]);
+                "-force_key_frames", "expr:gte(t,n_forced*4)", "-flags", "+cgop", "-fpsmax", "60", "-profile:v", "high"]);
             if (!plan.CopyVideo && encoder == "h264_nvenc") result.AddRange(["-forced-idr", "1"]);
             if (plan.ToneMap) result.AddRange(["-color_primaries", "bt709", "-color_trc", "bt709", "-colorspace", "bt709"]);
         }
@@ -355,6 +394,6 @@ public sealed partial class PlaybackManager(HomePaths paths, MediaStore store, M
         return result;
     }
 
-    [GeneratedRegex(@"^(?:index\.m3u8|segment\d{6}\.ts)$", RegexOptions.NonBacktracking)] private static partial Regex Artifact();
+    [GeneratedRegex(@"^(?:index\.m3u8|init\.mp4|segment\d{6}\.(?:ts|m4s))$", RegexOptions.NonBacktracking)] private static partial Regex Artifact();
     public override void Dispose() { _intents.Dispose(); base.Dispose(); }
 }

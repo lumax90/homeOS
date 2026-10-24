@@ -21,7 +21,7 @@ test('video and live controllers use the tested routing and retain the recovery 
   const video=await readFile(new URL('../../web/src/components/usePlayback.ts',import.meta.url),'utf8');
    const live=await readFile(new URL('../../web/src/live/useLiveStream.ts',import.meta.url),'utf8');
   for(const code of [video,live]){
-    assert.match(code,/selectPlaybackTransport\([^;]+isSupported\(\)[^;]+canPlayType\('application\/vnd\.apple\.mpegurl'\)\)/);
+     assert.match(code,/selectPlaybackTransport\([^;]+isSupported\(\)[^;]+canPlayType\('application\/vnd\.apple\.mpegurl'\)/);
      assert.doesNotMatch(code,/if\s*\([^;{\n]*canPlayType\('application\/vnd\.apple\.mpegurl'\)/);
   }
   const nativeHandler=video.slice(video.indexOf('function mediaError()'),video.indexOf('const shared:'));

@@ -14,5 +14,18 @@ public static class RadioEndpoints
         api.MapPost("/music/radio/sessions/{id}/heartbeat",(string id,CurrentAccount actor,HttpContext context,RadioPlayback playback)=>{MusicAccess.RequireCommand(actor,context);playback.Touch(id,actor.User,actor.SessionId??"");return Results.NoContent();}).RequireRateLimiting("watch-command");
         api.MapDelete("/music/radio/sessions/{id}",(string id,CurrentAccount actor,HttpContext context,RadioPlayback playback)=>{MusicAccess.RequireCommand(actor,context);playback.End(id,actor.User,actor.SessionId??"");return Results.NoContent();});
         api.MapGet("/music/radio/sessions/{id}/stream/{key}",async(string id,string key,CurrentAccount actor,HttpContext context,RadioPlayback playback)=>await playback.ServeAsync(id,key,actor.User,actor.SessionId??"",context));
+        api.MapPost("/music/radio/sessions/{id}/scenes/{scene}/prepare",async(string id,string scene,CurrentAccount actor,HttpContext context,RadioPlayback radio,MusicSceneCache cache,MusicExperiencePreferences preferences,CancellationToken token)=>
+        {
+            MusicAccess.RequireCommand(actor,context);var binding=radio.VisualBinding(id,actor.User,actor.SessionId??"");if(!preferences.Read(actor.User.Id).OnlineScenes)throw new DomainException("Stok görüntüler kapalı.",409);
+            using var lifetime=CancellationTokenSource.CreateLinkedTokenSource(token,binding.Lifetime);var result=await cache.PrepareAsync(scene,lifetime.Token);binding.Validate();
+            return Results.Ok(new MusicScenePrepared(result.Id,$"/api/music/scenes/{result.Id}/poster"));
+        });
+        api.MapGet("/music/scenes/{scene}/poster",async(string scene,CurrentAccount actor,MusicSceneCache cache,MusicExperiencePreferences preferences,CancellationToken token)=>
+        {
+            actor.RequireUnratedCatalog();if(!preferences.Read(actor.User.Id).OnlineScenes)return Results.NotFound();var asset=await cache.OpenAsync(scene,token);return asset is null?Results.NotFound():Results.File(asset.Poster,"image/jpeg",enableRangeProcessing:true);
+        });
+        api.MapPost("/music/radio/sessions/{id}/visual",async(string id,RadioVisualRequest input,CurrentAccount actor,HttpContext context,RadioVisualPlayback visuals,CancellationToken token)=>
+        {MusicAccess.RequireCommand(actor,context);return Results.Ok(await visuals.ConfigureAsync(id,actor.User,actor.SessionId??"",input,token));});
+        api.MapMethods("/music/radio/sessions/{id}/visual/{generation}/{file}",["GET","HEAD"],(string id,string generation,string file,CurrentAccount actor,RadioVisualPlayback visuals)=>visuals.Artifact(id,generation,file,actor.User,actor.SessionId??""));
     }
 }

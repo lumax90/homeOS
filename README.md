@@ -4,9 +4,11 @@ Kendi sunucunda çalışan, kendi mimarisine sahip bütünleşik medya uygulamas
 
 **C# / ASP.NET Core (.NET 10 LTS) + SQLite** çekirdeği; **React + HeroUI v3 + Motion** arayüzü.
 
-## Geliştirme sürümü: 0.44.0 / şema43
+## Geliştirme sürümü: 0.45.0 / şema43
 
 Music/Games/Live TV arayüzü, kişisel kütüphane, IPTV ve sunucuda ROM yürütme desteği. Home'u kendi sunucuna kurar, ev ağındaki cihazlardan sunucunun adresiyle kullanırsın.
+
+**0.45 toplu güncellemesi:** Kaynağa ve tarayıcıya göre film oynatma seçimi, uyumlu HEVC görüntüsünü koruyan akış, daha dayanıklı canlı TV, radyo ile hareketli sahneyi tek oynatıcıda birleştirme ve cihaz/profil bazında seçilen **deneysel Selkies** oyun yayını. Standart oyun yayını varsayılandır; mevcut core/kayıt kimlikleri korunur. [Sürüm ve yayın durumu](docs/playback-streaming-batch-045.md).
 
 **CasaOS / Intel-AMD x64:** [Compose dosyasını](https://raw.githubusercontent.com/lumax90/homeOS/main/deploy/casaos/docker-compose.yml) CasaOS **Custom Install → Import** ekranına aktar. **`ghcr.io/lumax90/homeos:stable`** imajı ve scoped güncelleyici kurulur. Doğrulanan uygulama güncellemeleri boştayken yedek alınarak otomatik uygulanır. Mevcut sürüm-sabitli kurulumlar için tek seferlik Compose geçişi gerekir. Kendi sunucunun adresiyle **`http://SUNUCU-IP:5080`** üzerinden bağlan. [Kurulum/güncelleme kılavuzu](deploy/casaos/README.md).
 

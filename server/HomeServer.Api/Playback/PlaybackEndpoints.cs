@@ -10,10 +10,10 @@ public static class PlaybackEndpoints
 {
     public static void MapPlayback(this RouteGroupBuilder api)
     {
-        api.MapGet("/media/{id}/tracks", async (string id, CurrentAccount actor, MediaAnalysisService analysis, SubtitleService subtitles, CancellationToken token) =>
+        api.MapGet("/media/{id}/tracks", async (string id, bool? allowUnprobed, CurrentAccount actor, MediaAnalysisService analysis, SubtitleService subtitles, CancellationToken token) =>
         {
             actor.RequireMedia(id);
-            var media = await analysis.InspectAsync(id, token);
+            var media = await analysis.InspectAsync(id, token, allowUnprobed: allowUnprobed == true);
             return Results.Ok(new MediaTracks(id, media.Fingerprint, media.Probe.Duration, media.Probe.Container, media.Probe.BitRate,
                 media.Probe.Streams ?? [], media.Probe.Chapters ?? [], subtitles.List(media)));
         });

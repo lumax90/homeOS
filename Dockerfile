@@ -19,6 +19,24 @@ RUN node /stage-container-updater.mjs /watchtower.tar.gz \
 
 FROM ghcr.io/lumax90/homeos:0.43.0@sha256:017e90f2860d2f76d1a787ee7476f5c6244da4aef351f94c733f965bde9bdba0 AS native-runtime
 
+FROM node-tools AS selkies-package
+WORKDIR /src
+COPY deploy/selkies/runtime.json deploy/selkies/runtime.json
+COPY tools/stage-selkies.mjs tools/stage-selkies.mjs
+RUN node tools/stage-selkies.mjs /selkies.deb
+
+FROM mcr.microsoft.com/dotnet/sdk:10.0.401-noble@sha256:e70cdb7f80b0348f5cb85f19a8f670fca061f033d57eed12fa003d58b0e06317 AS selkies-build
+ARG TARGETARCH
+RUN test "$TARGETARCH" = amd64 && apt-get update && apt-get install -y --no-install-recommends \
+    build-essential pkg-config python3 libavcodec-dev libavformat-dev libavutil-dev libswscale-dev libswresample-dev \
+    libx11-dev libxext-dev libxrandr-dev libxinerama-dev libxi-dev libgl1-mesa-dev libegl1-mesa-dev \
+    libx11-xcb-dev libpulse-dev libsdl2-dev zlib1g-dev && rm -rf /var/lib/apt/lists/*
+COPY --from=native-runtime /app/NativeRuntime/licenses/corresponding-source.tar.gz /native-source.tar.gz
+COPY deploy/selkies/build-frontend.sh /build-frontend.sh
+RUN mkdir /native-source && tar -xzf /native-source.tar.gz -C /native-source \
+    && bash /build-frontend.sh /native-source /selkies \
+    && cp /build-frontend.sh /selkies/licenses/build-frontend.sh
+
 FROM node-tools AS native-runtime-check
 WORKDIR /src
 COPY Dockerfile Dockerfile
@@ -53,6 +71,7 @@ ARG TARGETARCH
 WORKDIR /src
 COPY Directory.Build.props ./
 COPY server/ server/
+COPY web/src/music/sceneSources.json web/src/music/sceneSources.json
 COPY docs/licenses/ docs/licenses/
 COPY --from=web /src/server/HomeServer.Api/wwwroot/ server/HomeServer.Api/wwwroot/
 RUN --mount=type=cache,id=home-nuget,target=/root/.nuget/packages \
@@ -73,17 +92,23 @@ RUN /native-probe/Home.NativeLinuxProbe --verify-build /native /native-test-bina
 
 FROM mcr.microsoft.com/dotnet/runtime-deps:10.0.12-noble AS final
 WORKDIR /app
+COPY --from=selkies-package /selkies.deb /tmp/home-selkies.deb
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    ffmpeg par2 fonts-dejavu-core xvfb xauth libgl1-mesa-dri libgl1 libegl1 libxrandr2 libxinerama1 libxi6 \
+    ffmpeg par2 fonts-dejavu-core xvfb xauth libgl1-mesa-dri libgl1 libegl1 libxrandr2 libxinerama1 libxi6 pulseaudio libsdl2-2.0-0 /tmp/home-selkies.deb \
     && mkdir -p /data /app/licenses \
     && ffmpeg -L > /app/licenses/ffmpeg-build.txt 2>&1 \
     && dpkg-query -W > /app/licenses/system-packages.txt \
     && cp /usr/share/doc/ffmpeg/copyright /app/licenses/ffmpeg-copyright.txt \
     && cp /usr/share/doc/par2/copyright /app/licenses/par2-copyright.txt \
-    && chown 1654:1654 /data && rm -rf /var/lib/apt/lists/*
+    && cp /usr/share/doc/libsdl2-2.0-0/copyright /app/licenses/SDL2-copyright.txt \
+    && chown 1654:1654 /data && rm -rf /var/lib/apt/lists/* && rm /tmp/home-selkies.deb
 COPY --from=build /publish/ /app/
 COPY --from=native-runtime --chown=0:0 /app/NativeRuntime/ /app/NativeRuntime/
 COPY --from=native-runtime-check /native-runtime-checked.txt /app/NativeRuntime/runtime-lock-check.txt
+COPY --from=selkies-build /selkies/ /app/SelkiesRuntime/
+COPY deploy/selkies/runtime.json /app/SelkiesRuntime/source.json
+COPY deploy/selkies/write-manifest.py /app/SelkiesRuntime/write-manifest.py
+RUN /opt/selkies/bin/python3 /app/SelkiesRuntime/write-manifest.py /app/SelkiesRuntime /app/NativeRuntime/manifest.json
 COPY --from=updater --chown=0:0 /updater/ /app/Watchtower/
 COPY --chmod=0555 deploy/casaos/prepare-data.sh /app/prepare-data.sh
 LABEL org.opencontainers.image.source="https://github.com/lumax90/homeOS" \
@@ -96,6 +121,7 @@ ENV Home__DataPath=/data \
     Home__FfprobePath=/usr/bin/ffprobe \
     Home__Par2Path=/usr/bin/par2 \
     Home__Games__NativeRuntimePath=/app/NativeRuntime \
+    Home__Games__SelkiesRuntimePath=/app/SelkiesRuntime \
     Home__Network__BindAddress=0.0.0.0 \
     Home__Network__HttpPort=8080 \
     URLS=http://0.0.0.0:8080 \

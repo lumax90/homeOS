@@ -1,15 +1,16 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type Hls from 'hls.js';
 import workerUrl from 'hls.js/dist/hls.worker.js?url';
-import { ApiError, mutate, request, type MediaItem, type PlaybackSession } from '../api';
+import { ApiError, mutate, request, type MediaItem, type MediaTracks, type PlaybackSession } from '../api';
 import { appUrl } from '../base';
 import { browserPlayback } from '../playbackIdentity';
 import { useSession } from './SessionContext';
 import type { WatchPlayer } from '../watch/types';
 import { selectPlaybackTransport } from '../playbackTransport';
+import { browserCapabilityEnvironment, playbackCapabilities } from '../playbackCapabilities';
 
-export interface PlaybackOptions { audioStream: number | null; maxHeight: number | null; maxBitrate: number | null; forceCompatible: boolean; subtitleId: string | null; burnSubtitle: boolean; subtitleDelaySeconds: number }
-const defaultOptions: PlaybackOptions = { audioStream: null, maxHeight: null, maxBitrate: null, forceCompatible: false, subtitleId: null, burnSubtitle: false, subtitleDelaySeconds: 0 };
+export interface PlaybackOptions { audioStream: number | null; maxHeight: number | null; maxBitrate: number | null; forceCompatible: boolean; forceRemux: boolean; subtitleId: string | null; burnSubtitle: boolean; subtitleDelaySeconds: number }
+const defaultOptions: PlaybackOptions = { audioStream: null, maxHeight: null, maxBitrate: null, forceCompatible: false, forceRemux: false, subtitleId: null, burnSubtitle: false, subtitleDelaySeconds: 0 };
 
 function clientCapabilities(video: HTMLVideoElement, hls: typeof Hls) {
   const codecs = (values: Record<string, string>) => Object.entries(values).filter(([, mime]) => video.canPlayType(mime)).map(([codec]) => codec);
@@ -41,6 +42,8 @@ export function usePlayback(item: MediaItem, playbackKey = 0, coordination: { ma
   const attaching = useRef(false);
   const autoPlay = useRef(true);
   const recovered = useRef(false);
+  const lastReconnect = useRef(0);
+  const pulseNow = useRef(() => {});
   const positionRef = useRef(item.isWatched ? 0 : item.positionSeconds);
   const lengthRef = useRef(item.durationSeconds ?? 0);
   const lastSaved = useRef(0);
@@ -81,8 +84,11 @@ export function usePlayback(item: MediaItem, playbackKey = 0, coordination: { ma
     try {
       const { default: HlsPlayer } = await import('hls.js');
       if (controller.signal.aborted) return;
+      const tracks = await request<MediaTracks>(`/media/${item.id}/tracks?allowUnprobed=true`, { signal: controller.signal });
+      const profile = tracks.streams.length ? await playbackCapabilities(item.relativePath.split('.').at(-1)?.toLowerCase() ?? '', tracks, next,
+        browserCapabilityEnvironment(element, HlsPlayer.isSupported()), controller.signal) : clientCapabilities(element, HlsPlayer);
       const plan = await request<PlaybackSession>('/playback', { method: 'POST', signal: controller.signal,
-        body: JSON.stringify({ mediaId: item.id, startSeconds: seconds, client: clientCapabilities(element, HlsPlayer),
+        body: JSON.stringify({ mediaId: item.id, startSeconds: seconds, client: profile,
           replaceSessionId: sessionRef.current?.id ?? null, clientId: clientId.current, clientRevision: command, expectedUserId: owner.current, expectedSessionId: login.current, watch: watch ?? null, ...next }) });
       if (controller.signal.aborted || !alive.current || epoch !== generation.current) {
         if (plan.id) void mutate(`/playback/${plan.id}`, undefined, 'DELETE', true).catch(() => {});
@@ -93,18 +99,26 @@ export function usePlayback(item: MediaItem, playbackKey = 0, coordination: { ma
       lengthRef.current = plan.durationSeconds || lengthRef.current; setLength(lengthRef.current);
       positionRef.current = seconds; setPosition(seconds);
       attaching.current = true; recovered.current = false;
-      const transport = selectPlaybackTransport(plan.mode, HlsPlayer.isSupported(), element.canPlayType('application/vnd.apple.mpegurl'));
+      const transport = selectPlaybackTransport(plan.mode, HlsPlayer.isSupported(), element.canPlayType('application/vnd.apple.mpegurl'), plan.transport);
       if (transport === 'direct' || transport === 'native-hls') {
         element.src = appUrl(plan.url); element.load();
       } else if (transport === 'hls.js') {
         const hls = new HlsPlayer({ workerPath: appUrl(workerUrl), enableWorker: true, lowLatencyMode: false,
           startPosition: Math.max(0, plan.requestedStartSeconds - plan.startSeconds), maxBufferLength: 30, maxMaxBufferLength: 60,
-          backBufferLength: 30, maxBufferSize: 32 * 1024 * 1024 });
+          backBufferLength: 30, maxBufferSize: 32 * 1024 * 1024,
+          // A file producer may wait for the viewer. It is not a clock-driven live broadcast.
+          liveMaxUnchangedPlaylistRefresh: Infinity, liveMaxLatencyDurationCount: Infinity, maxLiveSyncPlaybackRate: 1 });
         hlsRef.current = hls;
         hls.on(HlsPlayer.Events.ERROR, (_event, data) => {
           if (!data.fatal || !alive.current || epoch !== generation.current) return;
           if (data.type === HlsPlayer.ErrorTypes.MEDIA_ERROR && !recovered.current) {
             recovered.current = true; hls.recoverMediaError(); return;
+          }
+          if (data.type === HlsPlayer.ErrorTypes.NETWORK_ERROR && data.response?.code === 410 && Date.now() - lastReconnect.current > 30_000) {
+            lastReconnect.current = Date.now(); void start(positionRef.current, {}, autoPlay.current); return;
+          }
+          if (data.type === HlsPlayer.ErrorTypes.MEDIA_ERROR && !next.forceCompatible) {
+            void start(positionRef.current, { forceCompatible: true }, autoPlay.current); return;
           }
           setBusy(false);
           setError('Oynatma akışı kesildi. Kaldığın yerden yeniden deneyebilirsin.');
@@ -117,7 +131,7 @@ export function usePlayback(item: MediaItem, playbackKey = 0, coordination: { ma
         setBusy(false); setError((err as Error).message);
       }
     } finally { if (pending.current === controller) pending.current = null; }
-  }, [item.id, save]);
+  }, [item.id, item.relativePath, save]);
 
   useEffect(() => {
     alive.current = true;
@@ -126,7 +140,7 @@ export function usePlayback(item: MediaItem, playbackKey = 0, coordination: { ma
     positionRef.current = coordinated.current.managed ? coordinated.current.position ?? 0 : item.isWatched ? 0 : item.positionSeconds;
     lengthRef.current = item.durationSeconds ?? 0;
     setPosition(positionRef.current); setLength(lengthRef.current);
-    optionsRef.current = { ...optionsRef.current, audioStream: null, forceCompatible: false, subtitleId: null, burnSubtitle: false, subtitleDelaySeconds: 0 };
+    optionsRef.current = { ...optionsRef.current, audioStream: null, forceCompatible: false, forceRemux: false, subtitleId: null, burnSubtitle: false, subtitleDelaySeconds: 0 };
     void start(positionRef.current, {}, !coordinated.current.managed);
     const pulse = () => {
       const id = sessionRef.current?.id;
@@ -140,7 +154,7 @@ export function usePlayback(item: MediaItem, playbackKey = 0, coordination: { ma
         setBusy(false); setPlaying(false); setError(message);
       };
       if (id && !pending.current) void mutate<PlaybackSession>(`/playback/${id}/heartbeat`, { positionSeconds: positionRef.current, paused: video.current?.paused ?? true })
-        .then(state => { if (state.error) stop(state.error); })
+        .then(state => { if (state.error) stop(state.error); else if (current()) { sessionRef.current = state; setSession(state); } })
         .catch(error => {
           if (!current()) return;
           if (error instanceof ApiError && [401, 403, 404, 409, 410].includes(error.status)) stop(error.message);
@@ -149,11 +163,12 @@ export function usePlayback(item: MediaItem, playbackKey = 0, coordination: { ma
     };
     const visibility = () => { if (document.hidden) save(true); else pulse(); };
     document.addEventListener('visibilitychange', visibility); window.addEventListener('home-playback-changed', pulse);
-    const heartbeat = window.setInterval(pulse, 20_000);
+    pulseNow.current = pulse;
+    const heartbeat = window.setInterval(pulse, 5_000);
     return () => {
       const closingRevision = revision.current;
       save(true); alive.current = false; ++generation.current; pending.current?.abort();
-      window.clearInterval(heartbeat); document.removeEventListener('visibilitychange', visibility); window.removeEventListener('home-playback-changed', pulse);
+      pulseNow.current = () => {}; window.clearInterval(heartbeat); document.removeEventListener('visibilitychange', visibility); window.removeEventListener('home-playback-changed', pulse);
       hlsRef.current?.destroy(); hlsRef.current = null;
       element?.pause(); element?.removeAttribute('src'); element?.load();
       void mutate(`/playback/clients/${clientId.current}/close`, { revision: closingRevision }, 'POST', true).catch(() => {});
@@ -166,7 +181,7 @@ export function usePlayback(item: MediaItem, playbackKey = 0, coordination: { ma
     if (!lengthRef.current && Number.isFinite(element.duration)) { lengthRef.current = element.duration; setLength(element.duration); }
     if (!loaded.current) {
       const relative = Math.max(0, plan.requestedStartSeconds - plan.startSeconds);
-      if (relative > 0) element.currentTime = relative;
+      element.currentTime = relative;
       loaded.current = true; setBusy(false);
       if (autoPlay.current) void element.play().catch(() => { armed.current = false; if (alive.current) setNotice('Başlamak için oynat düğmesine dokun.'); });
     }
@@ -181,8 +196,9 @@ export function usePlayback(item: MediaItem, playbackKey = 0, coordination: { ma
     if (!video.current || !Number.isFinite(seconds)) return;
     const desired = Math.max(0, Math.min(seconds, (lengthRef.current || seconds + .01) - .01));
     const relative = desired - (sessionRef.current?.startSeconds ?? 0);
-    const ranges = video.current.seekable;
-    const inRange = sessionRef.current?.mode === 'direct' || Array.from({ length: ranges.length }, (_, i) => i).some(i => relative >= ranges.start(i) && relative <= ranges.end(i));
+    const ranges = video.current.buffered;
+    const inRange = sessionRef.current?.mode === 'direct' || desired >= (sessionRef.current?.telemetry?.windowStartSeconds ?? 0)
+      && Array.from({ length: ranges.length }, (_, i) => i).some(i => relative >= ranges.start(i) && relative <= ranges.end(i));
     if (loaded.current && relative >= 0 && inRange) {
       video.current.currentTime = relative; positionRef.current = desired; setPosition(desired); save();
     } else void start(desired);
@@ -200,7 +216,10 @@ export function usePlayback(item: MediaItem, playbackKey = 0, coordination: { ma
     // hls.js owns its media error recovery. A native event must not race that
     // bounded recovery and leave a recovered player displaying a stale error.
     if (hlsRef.current) return;
-    if (sessionRef.current?.mode === 'direct' && !optionsRef.current.forceCompatible) {
+    if (video.current?.error?.code === 2) { setBusy(false); setError('Oynatma akışı kesildi. Kaldığın yerden yeniden deneyebilirsin.'); return; }
+    if (sessionRef.current?.mode === 'direct' && !optionsRef.current.forceRemux && !optionsRef.current.forceCompatible) {
+      void start(positionRef.current, { forceRemux: true }, !coordinated.current.managed);
+    } else if (!optionsRef.current.forceCompatible) {
       void start(positionRef.current, { forceCompatible: true }, !coordinated.current.managed);
     } else { setBusy(false); setError('Seçilen akış cihazda çözülemedi. Farklı ses/kalite seçip yeniden dene.'); }
   }
@@ -246,7 +265,7 @@ export function usePlayback(item: MediaItem, playbackKey = 0, coordination: { ma
     restart: () => start(0, {}, !coordinated.current.managed),
     configure: (changes: Partial<PlaybackOptions>) => start(positionRef.current, changes),
     events: { onLoadedMetadata: metadataLoaded, onCanPlay: () => { metadataLoaded(); setBusy(false); }, onWaiting: () => { if (loaded.current) setBusy(true); }, onPlaying: () => setBusy(false), onTimeUpdate: timeUpdated, onError: mediaError,
-      onPlay: () => { armed.current = true; autoPlay.current = true; setPlaying(true); setNotice(''); }, onPause: () => { if (loaded.current) autoPlay.current = false; setPlaying(false); save(); }, onEnded: () => {
+      onPlay: () => { armed.current = true; autoPlay.current = true; setPlaying(true); setNotice(''); pulseNow.current(); }, onPause: () => { if (loaded.current) autoPlay.current = false; setPlaying(false); save(); pulseNow.current(); }, onEnded: () => {
         setPlaying(false); timeUpdated(); save(); if (coordinated.current.managed) return; const id = sessionRef.current?.id; sessionRef.current = null;
         if (id) void mutate(`/playback/${id}`, undefined, 'DELETE', true).catch(() => {});
       } },

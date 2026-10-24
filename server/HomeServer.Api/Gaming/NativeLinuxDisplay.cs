@@ -22,7 +22,7 @@ public sealed class NativeLinuxDisplay: IAsyncDisposable
             var number=RandomNumberGenerator.GetInt32(90,999);if(File.Exists($"/tmp/.X{number}-lock")||File.Exists($"/tmp/.X11-unix/X{number}"))continue;
             var auth=Path.Combine(root,"authority-"+number);await File.WriteAllBytesAsync(auth,[],token);File.SetUnixFileMode(auth,UnixFileMode.UserRead|UnixFileMode.UserWrite);
             await MediaProcess.RunAsync("/usr/bin/xauth",["-f",auth,"add",":"+number,"MIT-MAGIC-COOKIE-1",Convert.ToHexStringLower(RandomNumberGenerator.GetBytes(16))],TimeSpan.FromSeconds(5),token);
-            var process=MediaProcess.Start("/usr/bin/Xvfb",[":"+number,"-screen","0",$"{width}x{height}x24","-nolisten","tcp","-auth",auth,"-noreset"],workingDirectory:root);
+            var process=MediaProcess.Start("/usr/bin/Xvfb",[":"+number,"-screen","0",$"{width}x{height}x24","-s","0","-dpms","-nolisten","tcp","-auth",auth,"-noreset"],workingDirectory:root);
             var output=MediaProcess.ReadErrorTailAsync(process.StandardOutput);var error=MediaProcess.ReadErrorTailAsync(process.StandardError);
             try
             {

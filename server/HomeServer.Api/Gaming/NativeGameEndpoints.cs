@@ -14,6 +14,9 @@ public static class NativeGameEndpoints
     public static void MapNativeGames(this WebApplication app, RouteGroupBuilder api)
     {
         api.MapGet("/games/native/status", (NativeRuntimeSetup setup, CurrentAccount actor, HttpContext context) => Results.Ok(setup.Status(actor.User, Local(context))));
+        api.MapGet("/games/native/backends",(NativeRuntimeSetup setup,NativeSelkiesRuntime selkies,CurrentAccount actor,HttpContext context)=>
+        {var standard=setup.Status(actor.User,Local(context));return Results.Ok(new{defaultBackend="standard",items=new[]{new NativeStreamingBackend("standard",standard.Available,false,standard.Reason),selkies.Status()}});});
+        NativeSelkiesProxy.Map(app);
         api.MapPost("/games/native/setup", async (NativeSetupCommand input, NativeRuntimeSetup setup, CurrentAccount actor, HttpContext context, CancellationToken token) =>
         {
             GameEndpoints.RequireCommandActor(actor, context);
@@ -48,10 +51,10 @@ public static class NativeGameEndpoints
         api.MapPut("/games/native/sessions/{id}/options",async(string id,NativeCoreOptionChange input,NativeGameManager games,CurrentAccount actor,HttpContext context,CancellationToken token)=>{GameEndpoints.RequireCommandActor(actor,context);return Results.Ok(await games.SetOptionAsync(id,input,actor.User,actor.SessionId??"",token));}).RequireRateLimiting("watch-command");
         api.MapGet("/games/native/sessions/{id}/controllers",async(string id,NativeGameManager games,CurrentAccount actor,CancellationToken token)=>Results.Ok(await games.ControllersAsync(id,actor.User,actor.SessionId??"",token)));
         api.MapPut("/games/native/sessions/{id}/controllers",async(string id,NativeControllerChange input,NativeGameManager games,CurrentAccount actor,HttpContext context,CancellationToken token)=>{GameEndpoints.RequireCommandActor(actor,context);return Results.Ok(await games.SetControllerAsync(id,input,actor.User,actor.SessionId??"",token));}).RequireRateLimiting("watch-command");
-        api.MapPost("/games/{id}/native-sessions", async (string id, GameStart input, NativeGameManager games, CurrentAccount actor, HttpContext context, CancellationToken token) =>
+        api.MapPost("/games/{id}/native-sessions", async (string id, NativeGameStart input, NativeGameManager games, CurrentAccount actor, HttpContext context, CancellationToken token) =>
         {
             GameEndpoints.RequireCommandActor(actor,context);
-            return Results.Ok(await games.LaunchAsync(id,input,actor.User,actor.SessionId??"",token,context.Request.Host.Host));
+            return Results.Ok(await games.LaunchAsync(id,new(input.ClientId,input.Ticket),actor.User,actor.SessionId??"",token,context.Request.Host.Host,input.StreamingBackend,$"{context.Request.Scheme}://{context.Request.Host}",context.Request.PathBase));
         }).RequireRateLimiting("watch-command");
         api.MapPost("/games/native/sessions/{id}/command", async (string id, NativeGameCommand input, NativeGameManager games, CurrentAccount actor, HttpContext context) =>
         {

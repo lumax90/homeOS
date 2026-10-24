@@ -281,7 +281,8 @@ export interface MediaStreamInfo {
   isDefault: boolean; forced: boolean; hearingImpaired: boolean; width: number | null; height: number | null;
   channels: number | null; channelLayout: string | null; sampleRate: number | null; bitRate: number | null;
   profile: string | null; pixelFormat: string | null; colorTransfer: string | null; colorPrimaries: string | null;
-  dolbyVision: boolean;
+  dolbyVision: boolean; colorSpace?: string | null; level?: number | null; frameRate?: number | null; bitDepth?: number | null;
+  codecTag?: string | null; codecString?: string | null;
 }
 export interface SubtitleTrack { id: string; language: string; title: string; format: string; origin: string; forced: boolean; hearingImpaired: boolean; playable: boolean; burnable: boolean; image: boolean; score: number | null }
 export interface MediaTracks {
@@ -293,6 +294,8 @@ export interface PlaybackSession {
   reasons: string[]; audioStream: number | null; state: string; error: string | null; requestedStartSeconds: number;
   encoder: string;
   subtitleId: string | null; subtitleBurned: boolean;
+  videoCodec?: string | null; audioCodec?: string | null; container?: string | null; transport?: 'direct' | 'hls.js' | 'native-hls' | null;
+  telemetry?: { speed: number | null; producedSeconds: number; windowStartSeconds: number; windowEndSeconds: number; cacheBytes: number; throttled: boolean } | null;
 }
 
 export interface PlaybackLimits { maximumStreams: number; maximumStreamsPerDevice: number; revision: number }

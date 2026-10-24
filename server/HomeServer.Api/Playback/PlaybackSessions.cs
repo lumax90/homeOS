@@ -172,6 +172,7 @@ public sealed class PlaybackSessions(MediaStore store, PlaybackManager processes
             using var access = sessions.OpenRequest(id, actor, mode, mediaId);
             using var lifetime = CancellationTokenSource.CreateLinkedTokenSource(access.Token, context.RequestAborted);
             using var abort = access.Token.Register(context.Abort);
+            context.Response.Headers.CacheControl = "no-store";
             var response = await result(access, lifetime.Token);
             try { lifetime.Token.ThrowIfCancellationRequested(); await response.ExecuteAsync(context); }
             finally { if (response is FileStreamHttpResult file) await file.FileStream.DisposeAsync(); }

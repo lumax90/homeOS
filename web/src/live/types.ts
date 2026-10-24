@@ -5,7 +5,10 @@ export interface TvLibraryPage{items:TvChannelCard[];total:number;offset:number;
 export interface TvSource{id:string;name:string;enabled:boolean;revision:number;tuners:number;lastError:string|null;lastSync:string|null;nextSync:string;presetId:string|null;channels:number}
 export interface TvPublicList{list:{id:string;name:string;category:string;playlistUrl:string;description:string;provider:string;license:string;sourceUrl:string};source:TvSource|null}
 export interface TvSourceSettings{allowLan:boolean;playlistUrlConfigured:boolean;playlistFileConfigured:boolean;streamConfigured:boolean;epgConfigured:boolean;group:string;radio:boolean}
-export interface LiveWatch{id:string;url:string;channel:TvChannel;timeShiftMinutes:number}
+import type {MediaTracks} from '../api';
+export interface LiveStreamPlan{mode:string;container:string;transport:'hls.js'|'native-hls';copyVideo:boolean;copyAudio:boolean;videoCodec:string|null;audioCodec:string|null}
+export interface LiveWatch{id:string;url:string;channel:TvChannel;timeShiftMinutes:number;tracks?:MediaTracks|null;prepared?:boolean;plan?:LiveStreamPlan|null}
+export interface LivePlaybackStatus{id:string;state:string;recoverable:boolean;error:string|null;plan:LiveStreamPlan|null;cacheBytes:number}
 export interface TvSelection{channel:TvChannel;command:number}
 export interface TvRecording{id:string;title:string;startsAt:string;endsAt:string;status:string;revision:number;message:string;bytes:number;mediaId:string|null}
 export interface TvRule{id:string;channelId:string;title:string;enabled:boolean;onlyNew:boolean;paddingBefore:number;paddingAfter:number;priority:number;revision:number}

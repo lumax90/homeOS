@@ -50,6 +50,12 @@ The updater has its own process health check. It ignores Compose startup-only de
 
 Automatic database rollback is not enabled. For an unexpected failed deployment, stop the updater, use the prior immutable source/version image and the pre-update backup as appropriate, and pause automatic updates until the problem is resolved. The backup has the existing application-state scope, not all media payloads. The Home service has no Docker socket; management access is confined to the updater service and its named/scoped selection.
 
+## Experimental game streaming backend
+
+The upcoming batch includes an optional **Selkies 2.1.0** backend for the initial seven retro systems. In Games settings, open **Emulation settings → Advanced streaming preference** to choose it for the current browser/profile. The choice applies to the next game session; **Standard remains the default** until device acceptance.
+
+Only the selected publisher runs. Selkies's screen/audio processes start with its game session and stop on exit; the installed package additionally occupies disk space. It uses Home's existing web address and game media ports, with the same core binaries and save identities. See [implementation and acceptance status](../../docs/selkies-streaming.md).
+
 ## Troubleshooting
 
 - **`No such image: home:0.43.0`:** apply the current registry Compose to the existing app. The automatic recipe uses `ghcr.io/lumax90/homeos:stable` and allows image pulling.

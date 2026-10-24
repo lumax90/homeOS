@@ -1,0 +1,14 @@
+{
+  "format": 1,
+  "reviewedAt": "2026-10-24",
+  "version": "2.1.0",
+  "sourceCommit": "6ee68a7a815956e6745e916741f13335e0b3ff53",
+  "sourceUrl": "https://github.com/selkies-project/selkies/tree/6ee68a7a815956e6745e916741f13335e0b3ff53",
+  "documentation": "https://docs.selkies.io/latest/",
+  "license": "MPL-2.0",
+  "package": {
+    "url": "https://github.com/selkies-project/selkies/releases/download/2.1.0/selkies-2.1.0-ubuntu24.04-amd64.deb",
+    "bytes": 52471274,
+    "sha256": "cedba7a9d8bb4d07fd2b2139a518dc2c03452e0f0254c5bb088426623e2027f3"
+  }
+}

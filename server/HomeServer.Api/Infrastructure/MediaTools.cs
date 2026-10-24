@@ -18,6 +18,7 @@ public sealed class MediaTools(IConfiguration configuration, HomePaths paths, IL
     public bool FfmpegAvailable => _ffmpeg is not null;
     public bool FfprobeAvailable => _ffprobe is not null;
     public string FfmpegExecutable => _ffmpeg ?? throw new DomainException("FFmpeg sunucuda yapılandırılmadı.", 409);
+    private const string ProbeEntries = "format=duration,format_name,bit_rate,start_time:format_tags:stream=index,codec_type,codec_name,codec_tag_string,width,height,channels,channel_layout,sample_rate,bit_rate,profile,level,avg_frame_rate,pix_fmt,color_transfer,color_primaries,color_space,bits_per_raw_sample,bits_per_sample,extradata:stream_tags=language,title:stream_disposition=default,forced,hearing_impaired,attached_pic:stream_side_data=side_data_type,dv_profile,dv_level:chapter=id,start_time,end_time:chapter_tags=title";
 
     public async Task<ProbeResult?> ProbeAsync(string path, CancellationToken cancellationToken)
     {
@@ -27,7 +28,7 @@ public sealed class MediaTools(IConfiguration configuration, HomePaths paths, IL
         {
             var output = await MediaProcess.RunAsync(_ffprobe,
                 ["-v", "error", "-protocol_whitelist", "file,pipe", "-format_whitelist", MediaProcess.MediaFormats, "-max_streams", "128",
-                 "-show_entries", "format=duration,format_name,bit_rate,start_time:format_tags:stream=index,codec_type,codec_name,width,height,channels,channel_layout,sample_rate,bit_rate,profile,pix_fmt,color_transfer,color_primaries,color_space,bits_per_raw_sample,bits_per_sample:stream_tags=language,title:stream_disposition=default,forced,hearing_impaired,attached_pic:stream_side_data=side_data_type,dv_profile:chapter=id,start_time,end_time:chapter_tags=title",
+                  "-show_data", "-show_entries", ProbeEntries,
                  "-of", "json", path], TimeSpan.FromSeconds(30), cancellationToken);
             var result = ParseProbe(output);
             return result.Music is { } music ? result with { Music = Music.MusicTagFile.Read(path, music, cancellationToken) } : result;
@@ -38,6 +39,26 @@ public sealed class MediaTools(IConfiguration configuration, HomePaths paths, IL
             logger.LogWarning("Medya bilgileri okunamadı: {Path} ({Type})", path, ex.GetType().Name);
             return null;
         }
+        finally { _operations.Release(); }
+    }
+
+    public async Task<ProbeResult> ProbeLiveRelayAsync(string input, CancellationToken token)
+    {
+        if (_ffprobe is null) throw new DomainException("Canlı yayın izlerini okumak için ffprobe gerekli.", 409);
+        if (!Uri.TryCreate(input, UriKind.Absolute, out var uri) || uri.Scheme != "http" || uri.Host != "127.0.0.1"
+            || uri.UserInfo.Length > 0 || uri.Query.Length > 0 || !uri.AbsolutePath.Contains("/internal/live/", StringComparison.Ordinal))
+            throw new DomainException("Canlı analiz yalnız özel yayın aracısı üzerinden yapılabilir.", 403);
+        await _operations.WaitAsync(token);
+        try
+        {
+            var text = await MediaProcess.RunAsync(_ffprobe,
+                ["-v", "error", "-protocol_whitelist", "http,tcp,crypto", "-rw_timeout", "15000000", "-analyzeduration", "3000000", "-probesize", "4000000",
+                 "-max_streams", "128", "-show_data", "-show_entries", ProbeEntries, "-of", "json", input], TimeSpan.FromSeconds(25), token);
+            return ParseProbe(text);
+        }
+        catch (OperationCanceledException) when (token.IsCancellationRequested) { throw; }
+        catch (Exception ex) when (ex is IOException or JsonException or OperationCanceledException or InvalidOperationException)
+        { throw new DomainException("Canlı kaynağın izleri okunamadı. Bağlantı yeniden denenebilir.", 502); }
         finally { _operations.Release(); }
     }
 
@@ -64,7 +85,9 @@ public sealed class MediaTools(IConfiguration configuration, HomePaths paths, IL
                     Number(disposition, "default") == 1, Number(disposition, "forced") == 1, Number(disposition, "hearing_impaired") == 1,
                     Int(value, "width"), Int(value, "height"), Int(value, "channels"), Text(value, "channel_layout"), Int(value, "sample_rate"),
                     Long(value, "bit_rate"), Text(value, "profile"), Text(value, "pix_fmt"), Text(value, "color_transfer"), Text(value, "color_primaries"),
-                    value.TryGetProperty("side_data_list", out var sideData) && sideData.EnumerateArray().Any(data => Text(data, "side_data_type")?.Contains("DOVI", StringComparison.OrdinalIgnoreCase) == true), Text(value, "color_space")));
+                    value.TryGetProperty("side_data_list", out var sideData) && sideData.EnumerateArray().Any(data => Text(data, "side_data_type")?.Contains("DOVI", StringComparison.OrdinalIgnoreCase) == true), Text(value, "color_space"),
+                    Int(value, "level"), CodecIdentifiers.FrameRate(Text(value, "avg_frame_rate")), CodecIdentifiers.BitDepth(Text(value, "pix_fmt"), Int(value, "bits_per_raw_sample")),
+                    Text(value, "codec_tag_string"), CodecIdentifiers.FromProbe(value)));
             }
         }
         var chapters = new List<MediaChapter>();
@@ -83,7 +106,7 @@ public sealed class MediaTools(IConfiguration configuration, HomePaths paths, IL
         var audio = streams.Where(s => s.Kind == "audio").OrderByDescending(s => s.IsDefault).FirstOrDefault();
         return new ProbeResult(duration is >= 0 ? duration : null, video?.Width, video?.Height, video?.Codec, audio?.Codec,
             streams.Where(s => s.Kind == "audio").Select(s => s.Language).Distinct().ToArray(), streams.ToArray(), chapters.ToArray(), Text(format, "format_name"), Long(format, "bit_rate"), Number(format, "start_time") ?? 0,
-            video is null && audio is not null ? Music.MusicTags.Read(root) : null);
+            video is null && audio is not null ? Music.MusicTags.Read(root) : null, AnalysisVersion: 1);
     }
 
     public async Task<double> KeyframeBeforeAsync(AnalyzedMedia media, int videoIndex, double position, CancellationToken token)

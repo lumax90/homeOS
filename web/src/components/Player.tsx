@@ -6,7 +6,7 @@ import { VideoPlayer, VideoSkin } from '@videojs/react/video';
 import { I18nProvider, useMediaAttach } from '@videojs/react';
 import '@videojs/react/i18n/locales/tr/register';
 import '@videojs/react/video/skin.css';
-import { appUrl, clock, mutate, request, thumbnail, type MediaItem, type MediaTracks } from '../api';
+import { appUrl, bytes, clock, mutate, request, thumbnail, type MediaItem, type MediaTracks } from '../api';
 import { useUiLanguage, uiLocale, translate as t } from '../i18n';
 import { createHomeMediaBridge, type HomeMediaPort } from '../homeMediaBridge';
 import { usePlayback } from './usePlayback';
@@ -25,6 +25,7 @@ import { usePageTitle } from '../usePageTitle';
 import { useControllerCommands } from '../controller/react';
 import { controllerPlayback } from '../controller/playback';
 import { MusicVisualMode } from '../music/MusicVisualMode';
+import { playbackBuffer } from '../playbackDiagnostics';
 
 function language(code: string) { try { return code === 'und' ? t('Dil belirtilmemiş') : new Intl.DisplayNames([uiLocale()], { type: 'language' }).of(code) || code; } catch { return code; } }
 const noRoom = () => null;
@@ -131,7 +132,10 @@ export function Player({ item, onClose, onNext, onPrevious, onEnded, queueLength
       endTime: rows[index + 1]?.startSeconds ?? playback.length, text: chapter.title || `${index + 1}` }))
   };
   const subtitleUrl = subtitle && !burnSubtitle && !playback.session?.subtitleBurned ? appUrl(`/api/media/${item.id}/subtitles/${encodeURIComponent(subtitle)}?${new URLSearchParams({ start: String(playback.session?.startSeconds ?? 0), delay: String(delay) })}`) : undefined;
-  const mode = playback.session?.encoder === 'h264_nvenc' ? 'GPU video uyarlaması · NVENC' : playback.session?.mode === 'direct' ? 'Doğrudan oynatma' : 'H.264 uyumluluk modu';
+  const mode = playback.session?.mode === 'direct' ? 'Doğrudan oynatma' : playback.session?.mode === 'remux' ? 'Yalnız kapsayıcı değişiyor'
+    : playback.session?.mode === 'audio-transcode' ? 'Yalnız ses dönüştürülüyor' : playback.session?.encoder === 'h264_nvenc' ? 'GPU video uyarlaması · NVENC' : 'Görüntü dönüştürülüyor';
+  const sourceVideo = tracks.data?.streams.find(stream => stream.kind === 'video');
+  const sourceAudio = tracks.data?.streams.find(stream => stream.kind === 'audio' && stream.index === playback.session?.audioStream);
   const close = () => { playback.save(true); onClose(); };
   const controllerPanel = useRef<HTMLElement>(null), controllerStage = useRef<HTMLDivElement>(null);
   useControllerCommands(controllerPanel, action => {
@@ -166,6 +170,13 @@ export function Player({ item, onClose, onNext, onPrevious, onEnded, queueLength
       {page && (settings || roomPanel || room) && <aside className="watch-inspector" aria-label="Oynatma tercihleri"><header><h2>Oynatma tercihleri</h2><Button isIconOnly variant="ghost" aria-label="Kapat" onPress={() => { setSettings(false); setRoomPanel(false); }}><X size={18} /></Button></header>
         {roomController && (roomPanel || room) && <WatchPlayerPanel controller={roomController} ready={!!playback.session && !playback.busy} onPrepare={playback.arm} />}
         {settings && <div className="home-form">
+          {playback.session && <section aria-label="Oynatma bilgisi"><h3>{mode}</h3>
+            {sourceVideo && <p className="field-hint">{t('Görüntü')}: {sourceVideo.codec.toUpperCase()} → {playback.session.videoCodec?.toUpperCase() ?? sourceVideo.codec.toUpperCase()}{video.current?.videoHeight ? ` · ${video.current.videoWidth} × ${video.current.videoHeight}` : ''}</p>}
+            {sourceAudio && <p className="field-hint">{t('Ses')}: {sourceAudio.codec.toUpperCase()} → {playback.session.audioCodec?.toUpperCase() ?? sourceAudio.codec.toUpperCase()}</p>}
+            <p className="field-hint">{t('Tarayıcı tamponu')}: {clock(playbackBuffer(video.current))}{playback.session.container ? ` · ${playback.session.container.toUpperCase()}` : ''}</p>
+            {playback.session.telemetry && <><p className="field-hint">{t('Geçici akış alanı')}: {bytes(playback.session.telemetry.cacheBytes)} · {playback.session.state === 'completed' ? t('Akış hazır.') : playback.session.telemetry.throttled ? t('Tampon hazır; üretim bekliyor.') : t('Akış üretimi sürüyor.')}</p>
+              {playback.session.telemetry.speed != null && <p className="field-hint">{t('Üretim hızı')}: {playback.session.telemetry.speed.toFixed(2)}×</p>}</>}
+          </section>}
           <p className="field-hint">Bu seçimler videodaki ayarlar menüsüyle aynıdır. Değişiklikler kaldığın konumu korur.</p>
           <section className="watch-track-settings" aria-label="Ses, altyazı ve kalite">
             <label className="field"><span>Ses / dublaj</span><select aria-label="Ses / dublaj" value={playback.options.audioStream ?? playback.session?.audioStream ?? ''} disabled={tracks.isPending || !tracks.data?.streams.some(stream => stream.kind === 'audio')} onChange={event => { if (event.target.value === '') void playback.configure({ audioStream: null }); else mediaPort.current.audio(Number(event.target.value)); }}><option value="">Varsayılan</option>{mediaPort.current.audioOptions().map(option => <option key={option.id} value={option.id}>{option.label}</option>)}</select></label>

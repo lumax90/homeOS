@@ -10,7 +10,8 @@ using HomeServer.Infrastructure;
 
 namespace HomeServer.Gaming;
 
-public sealed record NativeGameLaunch(string Id,string Url,string Version,bool HasSave,bool LocalOnly,long InputEpoch=0,string[]? Discs=null,int DiscIndex=0,bool StateSupported=true);
+public sealed record NativeGameLaunch(string Id,string Url,string Version,bool HasSave,bool LocalOnly,long InputEpoch=0,string[]? Discs=null,int DiscIndex=0,bool StateSupported=true,string StreamingBackend="standard");
+public sealed record NativeGameStart(string ClientId,string Ticket,string StreamingBackend="standard");
 public sealed record NativeGameCommand(string Action);
 public sealed record NativeGameInput(long Sequence,ushort Buttons,long InputEpoch=0,short[]? Axes=null,NativePointer? Pointer=null,ushort[]? KeyCodes=null,short[]? Pressure=null,NativeAuxiliaryPad[]? Ports=null);
 public sealed record NativeAuxiliaryPad(ushort Buttons,short[]? Axes=null,short[]? Pressure=null);
@@ -19,7 +20,7 @@ public sealed record NativeClosingCheckpoint(string User,string Game,string Buil
 
 /// <summary>Headless server runner. Upstream engines own emulation/encoding/WebRTC; Home owns each device lease.</summary>
 public sealed class NativeGameManager(MediaStore store, HomePaths paths, NativeRomLibrary roms, NativeSaveSnapshots saves,
-    EventHub events,ILogger<NativeGameManager> logger,NativeCoreRegistry? cores=null,NativeFirmwareLibrary? firmware=null,NativeCoreOptions? coreOptions=null,NativeGameSettings? gameSettings=null,NativeStreamNetwork? network=null,IConfiguration? configuration=null) : BackgroundService
+    EventHub events,ILogger<NativeGameManager> logger,NativeCoreRegistry? cores=null,NativeFirmwareLibrary? firmware=null,NativeCoreOptions? coreOptions=null,NativeGameSettings? gameSettings=null,NativeStreamNetwork? network=null,IConfiguration? configuration=null,NativeSelkiesRuntime? selkiesRuntime=null) : BackgroundService
 {
     private readonly NativeGameSettings _settings=gameSettings??new(paths);
     private sealed class Active(Account owner, string login, GameManifest game, GameSession session, string directory,
@@ -37,6 +38,7 @@ public sealed class NativeGameManager(MediaStore store, HomePaths paths, NativeR
         public string[] Discs=[];public int DiscIndex;
         public string CoreId="mgba",CoreHash="";public NativeCoreOption[]? Options;
         public NativeGpuProcess? GpuProcess;public NativeLinuxDisplay? LinuxDisplay;public bool ModernHost;public string Executable="";public bool LocalSockets;public bool StateSupported=true;
+        public NativeSelkiesSession? Selkies;
         public int InputStreamConnected;
         public int InputProtected = 1; public long PolicyCheckedTicks = DateTime.UtcNow.Ticks;
         public DateTimeOffset LastSeen = DateTimeOffset.UtcNow, LastInput = DateTimeOffset.UtcNow;
@@ -59,7 +61,7 @@ public sealed class NativeGameManager(MediaStore store, HomePaths paths, NativeR
             foreach (var directory in Directory.EnumerateDirectories(root).Take(1000))
             {
                 if (!Guid.TryParseExact(Path.GetFileName(directory), "N", out _)) continue;
-                foreach (var name in new[] { "engine", "media", "display" }) { var child = Path.Combine(directory,name); if (Directory.Exists(child)) await OwnedNativeProcess.RecoverAsync(child,token); }
+                foreach (var name in new[] { "engine", "media", "selkies", "sound", "display" }) { var child = Path.Combine(directory,name); if (Directory.Exists(child)) await OwnedNativeProcess.RecoverAsync(child,token); }
                 if(File.Exists(Path.Combine(directory,"closing-checkpoint.json"))||File.Exists(Path.Combine(directory,"active-checkpoint.json")))pendingRecovery.Add(directory);
                 else CleanupWork(directory);
             }
@@ -83,9 +85,10 @@ public sealed class NativeGameManager(MediaStore store, HomePaths paths, NativeR
             CleanupWork(directory);
         }
     }
-    public async Task<NativeGameLaunch> LaunchAsync(string gameId, GameStart input, Account actor, string login, CancellationToken token, string? requestedHost=null)
+    public async Task<NativeGameLaunch> LaunchAsync(string gameId, GameStart input, Account actor, string login, CancellationToken token, string? requestedHost=null,string streamingBackend="standard",string? requestOrigin=null,string pathBase="")
     {
         if (!actor.IsAdmin) throw new DomainException("Sunucu emülasyonu sahip hesabını gerektirir.",403);
+        streamingBackend=NativeSelkiesRuntime.Backend(streamingBackend);
         AppFiles.Id(input.ClientId);if(input.Ticket is not{Length:64}||input.Ticket.Any(c=>!char.IsAsciiHexDigit(c)))throw new DomainException("Oyun oturumu bileti geçersiz.");
         var advertisedHosts=network?.Hosts(requestedHost)??["127.0.0.1"];
         var rom = store.GetGameRom(gameId,actor) ?? throw new DomainException("ROM bu profile ait değil veya bulunamadı.",404);
@@ -97,16 +100,21 @@ public sealed class NativeGameManager(MediaStore store, HomePaths paths, NativeR
             if(resolution is null){if(rom.System!="gba")throw new DomainException("Bu oyun için emülasyon çekirdeğini kur.",409);profile.Verify();}
             if (_active is { } existing)
             {
-                if (existing.Session.Id == input.ClientId && existing.Owner.Id == actor.Id && existing.Login == login && store.GetGameRuntimeSession(input.ClientId,input.Ticket) is not null) return Launch(existing);
+                if (existing.Session.Id == input.ClientId && existing.Owner.Id == actor.Id && existing.Login == login && store.GetGameRuntimeSession(input.ClientId,input.Ticket) is not null)
+                {if(Launch(existing).StreamingBackend!=streamingBackend)throw new DomainException("Yayın yöntemi sonraki oyun oturumunda uygulanır.",409);return Launch(existing);}
                 throw new DomainException("Sunucu başka bir cihazın oyun oturumu için kullanılıyor. Önce o cihazdaki oyundan çık.",409);
             }
             foreach (var port in new[] { 62401,62402,62403,62404,62405,62406 })
                 if (IPGlobalProperties.GetIPGlobalProperties().GetActiveUdpListeners().Any(value=>value.Port==port) || IPGlobalProperties.GetIPGlobalProperties().GetActiveTcpListeners().Any(value=>value.Port==port))
                     throw new DomainException("Yerel oyun prototipinin bağlantı portu zaten kullanılıyor.",409);
             var hostRoot = AppFiles.DirectoryIn(paths.State,"games");
-            var hostLock = new FileStream(Path.Combine(hostRoot,"native-host.lock"),FileMode.OpenOrCreate,FileAccess.ReadWrite,FileShare.None);
             var game=resolution?.Game(rom)??profile.Game(rom);var coreId=resolution?.Definition.Id??"mgba";var binary=resolution?.Binary??profile.Core;var coreInfo=resolution?.Info??profile.CoreInfo;
+            NativeSelkiesInstallation? installation=null;
+            if(streamingBackend=="selkies")installation=await (selkiesRuntime??throw new DomainException("Selkies paketi bu sunucuda kurulu değil.",409)).RequireAsync(profile,coreId,binary.Sha256,token);
+            var hostLock = new FileStream(Path.Combine(hostRoot,"native-host.lock"),FileMode.OpenOrCreate,FileAccess.ReadWrite,FileShare.None);
             GameSession? session=null;Active? active=null;Process? engine=null,media=null;HttpClient? http=null;NativeGpuProcess? gpuProcess=null;NativeLinuxDisplay? linuxDisplay=null;var frontend=resolution?.Gpu?.Frontend.Path??profile.RetroArch.Path;
+            NativeSelkiesSession? selkies=null;
+            RetroArchControl? startingControl=null;UdpClient? startingPad=null;Task<string>? startingOutput=null,startingError=null;
             try
             {
                 session = store.StartGameSession(game,input,actor,login); var checkpoint = store.GetGameCheckpoint(game.Id,game.Version,actor.Id);
@@ -116,7 +124,8 @@ public sealed class NativeGameManager(MediaStore store, HomePaths paths, NativeR
                 var privateHost=profile.LoopbackOnly||resolution?.ModernHost==true;var graphics=privateHost&&resolution?.Definition.Hardware==true;var width=rom.System=="3ds"?400:640;var height=480;var inputPort=privateHost?62420:62401;
                 if(privateHost&&IPGlobalProperties.GetIPGlobalProperties().GetActiveUdpListeners().Any(endpoint=>endpoint.Port>=62420&&endpoint.Port<=62423))throw new DomainException("Oyun kumanda bağlantısı zaten kullanılıyor.",409);
                 var renderer=resolution is null?null:NativeGpuRuntime.Renderer(resolution.Definition);
-                await File.WriteAllTextAsync(Path.Combine(engineRoot,"retroarch.cfg"),(privateHost?RetroArchHostConfiguration.CreatePrivateHost(engineRoot,inputPort,62406,renderer,width,height):RetroArchHostConfiguration.Create(engineRoot,inputPort,62406))+_settings.ControllerConfiguration(actor.Id,coreId,binary.Sha256,rom.Id),token);
+                var engineConfiguration=installation is not null?RetroArchHostConfiguration.CreateSelkies(engineRoot,inputPort,62406,renderer,width,height):privateHost?RetroArchHostConfiguration.CreatePrivateHost(engineRoot,inputPort,62406,renderer,width,height):RetroArchHostConfiguration.Create(engineRoot,inputPort,62406);
+                await File.WriteAllTextAsync(Path.Combine(engineRoot,"retroarch.cfg"),engineConfiguration+_settings.ControllerConfiguration(actor.Id,coreId,binary.Sha256,rom.Id),token);
                 var options=NativeEmulationSettings.Read(paths);options=options with{Quality=_settings.Quality(actor.Id,coreId,binary.Sha256,rom.Id)??options.Quality};
                 await File.WriteAllTextAsync(Path.Combine(engineRoot,"record.cfg"),graphics?NativeEmulationSettings.Recording(options,width,height)+RetroArchHostConfiguration.LowDelayMux:NativeEmulationSettings.Recording(options)+(profile.LoopbackOnly||resolution?.Gpu?.LoopbackOnly==true?RetroArchHostConfiguration.LowDelayMux:""),token);
                 await File.WriteAllTextAsync(Path.Combine(engineRoot,"core-options.cfg"),(coreId=="mgba"?NativeEmulationSettings.CoreOptions(options):NativeCoreConfiguration.Options(coreId))+_settings.Configuration(actor.Id,coreId,binary.Sha256,rom.Id)+NativeCoreConfiguration.RequiredOptions(coreId),token);
@@ -128,35 +137,64 @@ public sealed class NativeGameManager(MediaStore store, HomePaths paths, NativeR
                 content=await roms.PrepareWritableContentAsync(rom,engineRoot,content,token);
                 if(resolution is not null&&firmware is not null)await firmware.StageAsync(resolution.Definition,rom,Path.Combine(engineRoot,"system"),token);
                 var secret = Guid.NewGuid().ToString("N")+Guid.NewGuid().ToString("N"); var path = "game-"+session.Id;
+                Task<string>? mediaOut=null,mediaError=null;
+                if(installation is not null)
+                {
+                    frontend=installation.Frontend;
+                    selkies=await NativeSelkiesSession.PrepareAsync(root,installation,pathBase+"/game-native/"+session.Id+"/selkies",requestOrigin??"http://localhost",input.Ticket,width,height,token);
+                }
+                else
+                {
                 await File.WriteAllTextAsync(Path.Combine(mediaRoot,"mediamtx.yml"),MediaMtxGameConfiguration.Create(path,secret,62402,62403,62404,62405,advertisedHosts),token);
                 media = MediaProcess.Start(profile.MediaMtx.Path,[Path.Combine(mediaRoot,"mediamtx.yml")],workingDirectory:mediaRoot); await OwnedNativeProcess.RecordAsync(mediaRoot,media,token);
                 http = new HttpClient(new SocketsHttpHandler{UseProxy=false,UseCookies=false,AllowAutoRedirect=false}){Timeout=TimeSpan.FromSeconds(5)};
                 http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic",Convert.ToBase64String(Encoding.UTF8.GetBytes("home-native:"+secret)));
-                var mediaOut = MediaProcess.ReadErrorTailAsync(media.StandardOutput); var mediaError = MediaProcess.ReadErrorTailAsync(media.StandardError);
+                mediaOut = MediaProcess.ReadErrorTailAsync(media.StandardOutput); mediaError = MediaProcess.ReadErrorTailAsync(media.StandardError);
                 await WaitMediaAsync(http,media,path,false,token);
-                var arguments=new[]{"--config",Path.Combine(engineRoot,"retroarch.cfg"),"-L",coreFile,"--record",RetroArchHostConfiguration.LocalMpegTs(62402),"--recordconfig",Path.Combine(engineRoot,"record.cfg"),Path.Combine(engineRoot,content)};
+                }
+                var arguments=selkies is not null?new[]{"--config",Path.Combine(engineRoot,"retroarch.cfg"),"-L",coreFile,Path.Combine(engineRoot,content)}:new[]{"--config",Path.Combine(engineRoot,"retroarch.cfg"),"-L",coreFile,"--record",RetroArchHostConfiguration.LocalMpegTs(62402),"--recordconfig",Path.Combine(engineRoot,"record.cfg"),Path.Combine(engineRoot,content)};
                 if(configuration?.GetValue<bool>("Home:Games:Diagnostics")==true)arguments=["--verbose",..arguments];
                 if(privateHost&&!profile.Bundled){gpuProcess=NativeGpuProcess.Start(frontend,arguments,engineRoot);engine=gpuProcess.Process;}
                 else
                 {
-                    if(graphics)linuxDisplay=await NativeLinuxDisplay.StartAsync(root,width,height,token);
-                    engine=MediaProcess.Start(frontend,arguments,workingDirectory:engineRoot,environment:linuxDisplay?.Environment);
+                    if(graphics&&selkies is null)linuxDisplay=await NativeLinuxDisplay.StartAsync(root,width,height,token);
+                    engine=MediaProcess.Start(frontend,arguments,workingDirectory:engineRoot,environment:selkies?.Environment??linuxDisplay?.Environment);
                 }
                 await OwnedNativeProcess.RecordAsync(engineRoot,engine,token,frontend);
-                var control=new RetroArchControl(engine,62406);var pad=new UdpClient(new IPEndPoint(IPAddress.Loopback,0));pad.Connect(IPAddress.Loopback,inputPort);
-                active = new(actor,login,game,session,root,engine,media,http,control,pad,hostLock,checkpoint.Revision)
-                {CoreId=coreId,CoreHash=binary.Sha256,GpuProcess=gpuProcess,LinuxDisplay=linuxDisplay,ModernHost=privateHost,Executable=frontend,StateSupported=resolution?.Definition.SaveState??true,LocalSockets=profile.LoopbackOnly||resolution?.Gpu?.LoopbackOnly==true,EngineOut=gpuProcess is null?MediaProcess.ReadErrorTailAsync(engine.StandardOutput):gpuProcess.ReadLogAfterExitAsync(gpuProcess.OutputLog),EngineError=gpuProcess is null?MediaProcess.ReadErrorTailAsync(engine.StandardError):gpuProcess.ReadLogAfterExitAsync(gpuProcess.ErrorLog),MediaOut=mediaOut,MediaError=mediaError};
+                var control=startingControl=new RetroArchControl(engine,62406);var pad=startingPad=new UdpClient(new IPEndPoint(IPAddress.Loopback,0));pad.Connect(IPAddress.Loopback,inputPort);
+                var engineOut=startingOutput=gpuProcess is null?MediaProcess.ReadErrorTailAsync(engine.StandardOutput):gpuProcess.ReadLogAfterExitAsync(gpuProcess.OutputLog);
+                var engineError=startingError=gpuProcess is null?MediaProcess.ReadErrorTailAsync(engine.StandardError):gpuProcess.ReadLogAfterExitAsync(gpuProcess.ErrorLog);
+                if(selkies is not null)
+                {
+                    await control.WaitReadyAsync(TimeSpan.FromSeconds(30),token);
+                    var frameMilliseconds=await control.FrameMillisecondsAsync(token);
+                    await selkies.StartAsync(advertisedHosts,width,height,1000/(frameMilliseconds-1),options.Quality,token);
+                    media=selkies.Process;http=selkies.Http;mediaOut=selkies.Output;mediaError=selkies.Error;
+                }
+                active = new(actor,login,game,session,root,engine,media!,http!,control,pad,hostLock,checkpoint.Revision)
+                {CoreId=coreId,CoreHash=binary.Sha256,GpuProcess=gpuProcess,LinuxDisplay=linuxDisplay,Selkies=selkies,ModernHost=privateHost,Executable=frontend,StateSupported=resolution?.Definition.SaveState??true,LocalSockets=profile.LoopbackOnly||resolution?.Gpu?.LoopbackOnly==true,EngineOut=engineOut,EngineError=engineError,MediaOut=mediaOut,MediaError=mediaError};
                 active.InputPort=inputPort;if(privateHost){for(var i=1;i<4;i++){var extra=new UdpClient(new IPEndPoint(IPAddress.Loopback,0));extra.Connect(IPAddress.Loopback,inputPort+i);active.OtherPads=[..active.OtherPads,extra];}}
-                await WaitMediaAsync(http,engine,path,true,token); await control.StatusAsync(token); await control.EnablePacedHeadlessModeAsync(token);
+                if(selkies is null){await WaitMediaAsync(http!,engine,path,true,token);await control.StatusAsync(token);await control.EnablePacedHeadlessModeAsync(token);}
                 if(active.LocalSockets){active.FrameMilliseconds=await control.FrameMillisecondsAsync(token);active.StateSupported=await control.SupportsStateAsync(token);}
                 if(active.LocalSockets){var disk=await control.DiskStatusAsync(token);active.Discs=Enumerable.Range(0,disk.Count).Select(index=>"Disc "+(index+1)).ToArray();var savedDisk=Path.Combine(engineRoot,"saves","home-disc-index.json");if(File.Exists(savedDisk)){var index=JsonSerializer.Deserialize<int>(await File.ReadAllTextAsync(savedDisk,token));if(index>=0&&index<disk.Count)await control.SetDiskAsync(index,token);}active.DiscIndex=(await control.DiskStatusAsync(token)).Index;}
                 await control.SetPausedAsync(true,token);if(restored){await control.LoadStateAsync(token);await control.SetPausedAsync(true,token);}
                 await RetroPadProtocol.ReleaseAllAsync(pad,token);HomeServer.Operations.PackageTrust.AtomicJson(Path.Combine(root,"active-checkpoint.json"),new NativeClosingCheckpoint(actor.Id,game.Id,game.Version,checkpoint.Revision,false));_active=active;events.Publish("games.changed");return Launch(active);
             }
-            catch
+            catch(Exception startupError)
             {
+                var startupExit=engine is not null&&engine.HasExited?engine.ExitCode:(int?)null;
+                logger.LogWarning(startupError,"Native {Core} startup command failed",coreId);
                 if (engine is not null) MediaProcess.Kill(engine); if(media is not null)MediaProcess.Kill(media);
-                if(active is not null){await DisposeAsync(active);if(active.EngineError is{} error)logger.LogWarning("Native core {Core} could not start: {Tail}",active.CoreId,await error);}else{if(gpuProcess is not null)gpuProcess.Dispose();else engine?.Dispose();if(linuxDisplay is not null)await linuxDisplay.DisposeAsync();media?.Dispose();http?.Dispose();hostLock.Dispose();}
+                if(active is not null){await DisposeAsync(active);if(active.EngineError is{} error)logger.LogWarning("Native core {Core} could not start: {Tail}",active.CoreId,await error);}
+                else
+                {
+                    if(engine is not null)await engine.WaitForExitAsync(CancellationToken.None);
+                    if(startingError is not null)logger.LogWarning("Native core {Core} startup failed (exit {Exit}): {Output} {Tail}",coreId,startupExit,startingOutput is null?"":await startingOutput,await startingError);
+                    if(startingControl is not null)await startingControl.DisposeAsync();startingPad?.Dispose();
+                    if(gpuProcess is not null)gpuProcess.Dispose();else engine?.Dispose();if(linuxDisplay is not null)await linuxDisplay.DisposeAsync();
+                    if(selkies is not null){if(selkies.Error is{} error&&selkies.Process.HasExited)logger.LogWarning("Selkies startup failed: {Tail}",await error);await selkies.DisposeAsync();}
+                    else{media?.Dispose();http?.Dispose();}hostLock.Dispose();
+                }
                 if(session is not null){store.CloseGameSession(session.Id,actor,login);CleanupWork(Path.Combine(paths.State,"games","native-work",session.Id));}throw;
             }
         }
@@ -172,7 +210,9 @@ public sealed class NativeGameManager(MediaStore store, HomePaths paths, NativeR
         }
         finally { _gate.Release(); }
     }
-    private static NativeGameLaunch Launch(Active active)=>new(active.Session.Id,"/game-native/"+active.Session.Id+"/whep",active.Game.Version,active.SaveRevision>0,false,active.InputEpoch,active.Discs,active.DiscIndex,active.StateSupported);
+    private static NativeGameLaunch Launch(Active active)=>new(active.Session.Id,active.Selkies?.ClientUrl??"/game-native/"+active.Session.Id+"/whep",active.Game.Version,active.SaveRevision>0,false,active.InputEpoch,active.Discs,active.DiscIndex,active.StateSupported,active.Selkies is null?"standard":"selkies");
+    public NativeSelkiesSession RequireSelkies(string id,Account actor,string login)
+    {var current=Require(id,actor,login);return current.Selkies is{ } session&&!session.Lifetime.IsCancellationRequested?session:throw new DomainException("Selkies oyun oturumu sona erdi.",410);}
     private static async Task WaitMediaAsync(HttpClient http,Process process,string path,bool ready,CancellationToken token)
     {
         for(var attempt=0;attempt<100;attempt++)
@@ -340,7 +380,8 @@ public sealed class NativeGameManager(MediaStore store, HomePaths paths, NativeR
         await current.Control.DisposeAsync();current.Pad.Dispose();foreach(var pad in current.OtherPads)pad.Dispose();current.Http.Dispose();current.HostLock.Dispose();
         foreach(var task in new[]{current.EngineOut,current.EngineError,current.MediaOut,current.MediaError})if(task is not null)await task;
         if(configuration?.GetValue<bool>("Home:Games:Diagnostics")==true)logger.LogInformation("Native {Core} session exit {Exit}: {Output} {Error}",current.CoreId,current.Engine.ExitCode,current.EngineOut is null?"":await current.EngineOut,current.EngineError is null?"":await current.EngineError);
-        if(current.GpuProcess is not null)current.GpuProcess.Dispose();else current.Engine.Dispose();current.Media.Dispose();
+        if(current.Selkies is not null&&configuration?.GetValue<bool>("Home:Games:Diagnostics")==true)logger.LogInformation("Selkies session exit: {Output} {Error}",current.MediaOut is null?"":await current.MediaOut,current.MediaError is null?"":await current.MediaError);
+        if(current.GpuProcess is not null)current.GpuProcess.Dispose();else current.Engine.Dispose();if(current.Selkies is not null)await current.Selkies.DisposeAsync();else current.Media.Dispose();
         if(current.LinuxDisplay is not null)await current.LinuxDisplay.DisposeAsync();
     }
     public async Task<HttpResponseMessage> WhepAsync(string id,string ticket,string method,string? reader,byte[] body,string? contentType,string? ifMatch,CancellationToken token)
@@ -350,6 +391,7 @@ public sealed class NativeGameManager(MediaStore store, HomePaths paths, NativeR
         {
             var current=_active;var session=store.GetGameRuntimeSession(id,ticket);
             if(current is null||session is null||current.Session.Id!=id||session.GameVersion!=current.Game.Version)throw new DomainException("Yerel oyun yayın oturumu sona erdi.",401);
+            if(current.Selkies is not null)throw new DomainException("Yerel oyun yayın oturumu sona erdi.",410);
             if(reader is not null&&(!Guid.TryParse(reader,out _)||!current.Readers.Contains(reader)))throw new DomainException("Yerel oyun yayın okuyucusu bulunamadı.",404);
             if(body.Length>64*1024)throw new DomainException("Yerel yayın isteği çok büyük.",413);
             if(method=="POST"&&current.Readers.Count>=2)throw new DomainException("Yerel yayın okuyucusu sınırına ulaşıldı.",429);
@@ -419,7 +461,7 @@ public sealed class NativeGameManager(MediaStore store, HomePaths paths, NativeR
                     var valid=store.ValidateLoginSession(current.Login,current.Owner.Id);
                     try{store.RequireGameSession(current.Session.Id,current.Owner,current.Login);}catch(DomainException){valid=null;}
                     var protectedInput=NativeLocalInputGuard.IsRecentSafeResult(Volatile.Read(ref current.InputProtected)==1,Interlocked.Read(ref current.PolicyCheckedTicks),DateTime.UtcNow.Ticks);
-                    if(valid is null||!valid.IsAdmin||!protectedInput||current.Engine.HasExited||current.Media.HasExited||now-current.LastSeen>TimeSpan.FromSeconds(35))
+                    if(valid is null||!valid.IsAdmin||!protectedInput||current.Engine.HasExited||current.Media.HasExited||current.Selkies?.HasExited==true||now-current.LastSeen>TimeSpan.FromSeconds(35))
                     {
                         await _gate.WaitAsync(token);try{if(ReferenceEquals(_active,current)){using var limit=CancellationTokenSource.CreateLinkedTokenSource(token);limit.CancelAfter(TimeSpan.FromMinutes(10));if(valid is not null&&protectedInput)try{await SaveAsync(current,limit.Token,current.ModernHost);}catch(Exception error){logger.LogWarning(error,"Native disconnect checkpoint was not committed");}store.CloseGameSession(current.Session.Id,current.Owner,current.Login);_active=null;await DisposeAsync(current);CleanupWork(current.Directory);events.Publish("games.changed");}}finally{_gate.Release();}
                     }

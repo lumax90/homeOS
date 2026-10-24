@@ -11,6 +11,7 @@ public interface IRadioStreamSource { Task<HttpResponseMessage> GetAsync(string 
 public sealed class RadioStreamSource(RemoteMediaHttp http):IRadioStreamSource { public Task<HttpResponseMessage> GetAsync(string url,CancellationToken token,string? range=null)=>http.GetAsync(url,false,token,range); }
 public sealed record RadioPlayRequest(string StationId,string ClientId,long Revision=1);
 public sealed record RadioLaunch(string Id,string Url,RadioStation Station);
+public sealed record RadioVisualBinding(RadioStation Station,CancellationToken Lifetime,Action Validate,string AudioUrl);
 public sealed class RadioPlayback(MediaStore store,RadioDirectory directory,IRadioStreamSource source,EventHub events):BackgroundService
 {
     private sealed class Lease(MusicRadioSession session,RadioStation station)
@@ -39,6 +40,8 @@ public sealed class RadioPlayback(MediaStore store,RadioDirectory directory,IRad
         return _leases.TryGetValue(id,out var lease)?lease:throw new DomainException("Radyo oturumu sona erdi.",410);
     }
     public void Touch(string id,Account actor,string login)=>_=Get(id,actor,login,true);
+    public RadioVisualBinding VisualBinding(string id,Account actor,string login)
+    {var lease=Get(id,actor,login,true);return new(lease.Station,lease.Stop.Token,()=>{_=Get(id,actor,login);},Node(id,lease,lease.Station.Url));}
     public void End(string id,Account actor,string login,bool manage=false)
     {if(_leases.TryGetValue(id,out var lease)&&(lease.Session.UserId==actor.Id&&(manage||lease.Session.LoginId==login)||manage&&actor.IsAdmin))Close(id,lease);}
     private void Close(string id,Lease lease)

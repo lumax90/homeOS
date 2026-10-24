@@ -22,10 +22,10 @@ public static class OwnedNativeProcess
         catch(Exception ex)when(ex is ArgumentException or InvalidOperationException or System.ComponentModel.Win32Exception){}
         File.Delete(path);
     }
-    public static async Task RunAsync(string directory,string executable,IEnumerable<string> arguments,TimeSpan limit,CancellationToken token)
+    public static async Task RunAsync(string directory,string executable,IEnumerable<string> arguments,TimeSpan limit,CancellationToken token,string? workingDirectory=null)
     {
         await RecoverAsync(directory,token);using var budget=CancellationTokenSource.CreateLinkedTokenSource(token);budget.CancelAfter(limit);
-        using var process=MediaProcess.Start(executable,arguments);var output=MediaProcess.ReadErrorTailAsync(process.StandardOutput);var errors=MediaProcess.ReadErrorTailAsync(process.StandardError);var path=Path.Combine(directory,"native-process.json");
+        using var process=MediaProcess.Start(executable,arguments,workingDirectory:workingDirectory);var output=MediaProcess.ReadErrorTailAsync(process.StandardOutput);var errors=MediaProcess.ReadErrorTailAsync(process.StandardError);var path=Path.Combine(directory,"native-process.json");
         try
         {
             await File.WriteAllTextAsync(path,JsonSerializer.Serialize(new Owner(process.Id,process.StartTime.ToUniversalTime().Ticks,Path.GetFullPath(executable))),token);

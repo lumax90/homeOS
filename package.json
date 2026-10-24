@@ -1,6 +1,6 @@
 {
   "name": "home-media-server",
-  "version": "0.44.0",
+  "version": "0.45.0",
   "private": true,
   "type": "module",
   "workspaces": [
@@ -18,7 +18,10 @@
     "test:rooms": "node --test tests/unit/watch-room.test.ts",
     "test:lyrics": "node --test tests/unit/lyrics.test.ts",
     "test:i18n": "node --test tests/unit/localization.test.mjs",
-    "test:playback-transport": "node --test tests/unit/playback-transport.test.ts",
+    "test:playback-transport": "node --test tests/unit/playback-transport.test.ts tests/unit/playback-capabilities.test.ts",
+    "test:live": "node --test tests/unit/live-tv.test.ts tests/unit/live-recovery.test.ts",
+    "test:radio-visual": "node --test tests/unit/radio-visual.test.ts tests/unit/music-experience.test.ts",
+    "test:native-streaming": "node --test tests/unit/native-streaming.test.ts",
     "test:player": "node --test tests/unit/home-media-bridge.test.ts",
     "test:navigation": "node --test tests/unit/navigation.test.ts",
     "test:discovery": "node --test tests/unit/discovery-feed.test.ts",

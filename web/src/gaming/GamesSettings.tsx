@@ -8,6 +8,7 @@ import {runtimeText,translate as t,useUiLanguage} from '../i18n';
 import {useSession} from '../components/SessionContext';
 import {NativeCoreSettings} from './NativeCoreSettings';
 import {nativeDisplayPreferences,saveNativeDisplay,type NativeDisplayPreferences} from './nativePreferences';
+import {nativeStreamingBackend,saveNativeStreamingBackend,parseStreamingBackend,type NativeStreamingStatus} from './nativeStreaming';
 import './game-settings.css';
 import './games-refresh.css';
 
@@ -43,14 +44,17 @@ function LibraryPreferences(){
 }
 function EmulationPreferences(){
   const session=useSession(),cache=useQueryClient();const [display,setDisplay]=useState(()=>nativeDisplayPreferences(session.userId??'')),[notice,setNotice]=useState('');
+  const [streaming,setStreaming]=useState(()=>nativeStreamingBackend(session.userId??''));
+  const backends=useQuery({queryKey:['games','streaming-backends'],queryFn:()=>request<NativeStreamingStatus>('/games/native/backends')});
   const status=useQuery({queryKey:['games','native-availability'],queryFn:()=>request<{available:boolean;enabled:boolean;canConfigure:boolean;prepared:boolean;version:string;reason:string|null}>('/games/native/status')});
   const options=useQuery({queryKey:['games','emulation-options'],queryFn:()=>request<{revision:number;quality:string;audioFilter:boolean;solarSensor:number}>('/games/native/options')});
   const quality=useMutation({mutationFn:(value:string)=>mutate('/games/native/options',{...options.data,quality:value},'PUT'),onSuccess:()=>cache.invalidateQueries({queryKey:['games','emulation-options']})});
   const toggle=useMutation({mutationFn:()=>mutate('/games/native/setup',{enabled:!status.data?.enabled,expectedVersion:status.data?.version}),onSuccess:()=>cache.invalidateQueries({queryKey:['games']})});
-  function save(){saveNativeDisplay(session.userId??'',display);setNotice(t('Genel tercihler kaydedildi.'));}
+  function save(){saveNativeDisplay(session.userId??'',display);saveNativeStreamingBackend(session.userId??'',streaming);setNotice(t('Genel tercihler kaydedildi.'));}
   return <section className="games-preferences-section"><header><h3>Genel emülasyon tercihleri</h3><p>Bu tarayıcıdaki profilinin varsayılan görünümü. Oyuna özel tercihler önceliklidir.</p></header>
     <div className="games-form-grid"><label className="games-field">Görüntü boyutu<select aria-label="Görüntü boyutu" value={display.fit} onChange={event=>setDisplay(old=>({...old,fit:event.target.value as NativeDisplayPreferences['fit']}))}><option value="contain">Orijinal oran · otomatik</option><option value="integer">Tam kat piksel ölçekleme</option><option value="fill">Ekranı doldur</option></select></label><label className="games-field">Oyun ses düzeyi<input aria-label="Oyun ses düzeyi" type="range" min="0" max="100" value={display.volume} onChange={event=>setDisplay(old=>({...old,volume:Number(event.target.value)}))}/><small>{display.volume}%</small></label></div>
     <label className="games-toggle-row"><span><strong>Görüntüyü yumuşat</strong><small>Ölçeklenen görüntüyü yumuşatır; iç çözünürlük ayarı her emülatöre aittir.</small></span><input type="checkbox" checked={display.smooth} onChange={event=>setDisplay(old=>({...old,smooth:event.target.checked}))}/></label>
+    <details className="games-advanced-disclosure"><summary>Gelişmiş yayın tercihi</summary><label className="games-field">Yayın altyapısı<select aria-label="Yayın altyapısı" value={streaming} onChange={event=>setStreaming(parseStreamingBackend(event.target.value))}><option value="standard">Standart · varsayılan</option><option value="selkies" disabled={!backends.data?.items.find(item=>item.id==='selkies')?.available}>Selkies · deneysel</option></select><small>Bu tarayıcı ve profil için hatırlanır. Sonraki oyun açılışında uygulanır; her oturumda tek yayın yöntemi çalışır.</small></label>{backends.data?.items.find(item=>item.id==='selkies')?.reason&&<p className="field-hint">{runtimeText(backends.data.items.find(item=>item.id==='selkies')!.reason!)}</p>}{streaming==='selkies'&&<p className="field-hint">İlk Selkies dilimi: GB, GBC, GBA, NES, SNES, Mega Drive ve PlayStation. Görüntü ve ses Selkies üzerinden; kumanda ve kayıtlar Home tarafından yönetilir.</p>}{backends.error&&<p className="form-error">{runtimeText(backends.error.message)}</p>}</details>
     <Button variant="secondary" onPress={save}>Genel tercihleri kaydet</Button>{notice&&<p className="games-inline-status" role="status"><CheckCircle2 size={16}/>{notice}</p>}
     <div className="games-preferences-divider"><h4>Sunucuda oynatma</h4><p>Yayın kalitesi ve emülasyon yürütücüsü. Oyun içi ayarlardan her oyun için özel tercih kaydedebilirsin.</p></div>
     {options.data&&<label className="games-field">Yayın kalitesi<select aria-label="Yayın kalitesi" value={options.data.quality} disabled={!status.data?.canConfigure||quality.isPending} onChange={event=>quality.mutate(event.target.value)}><option value="auto">Otomatik · düşük gecikme</option><option value="quality">Daha net görüntü</option><option value="low">Daha az ağ kullanımı</option></select><small>Sunucu varsayılanını değiştirmeden önce açık oyundan çık.</small></label>}

@@ -2,6 +2,8 @@
 
 İnceleme: **2026-10-19**. Gereksinimler **GAM-04/05/10**; kartlar **GAMING-03 / GAMING-REUSE-01**. Durum: **kaynak/belge karşılaştırması ve öneri; bağımlılık benimsemesi veya çalışan prototip değil**. Önizleme 0.33.0/şema 40, uygulama kodu, mevcut oyunlar/kayıtlar ve paused transferler değiştirilmedi.
 
+**2026-10-23 güncellemesi:** Çalışan 0.44 tabanlı Home/CasaOS akışı üzerinden [gecikme ve yeniden kullanım araştırması](gaming-latency-research.md) yenilendi. Selkies **2.1.0** ve Moonlight Web **v3.0.0** yayımlandı; aşağıdaki 2026-10-19 sürüm tablosu tarihsel snapshot'tır. Güncel ilk karşılaştırmalı prototip adayı Selkies; uygulama/gerçek cihaz performans kararı açık.
+
 ## Kullanıcının bağlayıcı ürün yönlendirmesi
 
 - Asıl hedef kullanıcının kendi ROM'larını **Home sunucusunda native emülatörle** çalıştırması; TV oyunu emüle etmez, görüntü/ses alır ve gamepad girdisi gönderir.

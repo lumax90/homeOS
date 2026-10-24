@@ -21,6 +21,19 @@ public sealed class RetroArchControl : IAsyncDisposable
     }
     public async Task<string> StatusAsync(CancellationToken token)
     { await _commands.WaitAsync(token); try { return await QueryAsync(token); } finally { _commands.Release(); } }
+    public async Task WaitReadyAsync(TimeSpan timeout,CancellationToken token)
+    {
+        using var startup=CancellationTokenSource.CreateLinkedTokenSource(token);startup.CancelAfter(timeout);
+        try
+        {
+            for(;;)
+            {
+                try{await StatusAsync(startup.Token);return;}
+                catch(DomainException)when(!_process.HasExited){await Task.Delay(100,startup.Token);}
+            }
+        }
+        catch(OperationCanceledException)when(!token.IsCancellationRequested){throw new DomainException("Yerel oyun bileşeni başlatılamadı.",502);}
+    }
     public async Task SetPausedAsync(bool paused, CancellationToken token)
     {
         await _commands.WaitAsync(token);
@@ -51,7 +64,12 @@ public sealed class RetroArchControl : IAsyncDisposable
         }
         finally{_commands.Release();}
     }
-    public Task LoadStateAsync(CancellationToken token) => CommandAsync("LOAD_STATE", token);
+    public async Task LoadStateAsync(CancellationToken token)
+    {
+        // LOAD_STATE is a hotkey and can release pause after its queued work.
+        // The released slot action queues the same load without that hotkey side effect.
+        if(await ReplyAsync("LOAD_STATE_SLOT 0",token)!="LOAD_STATE_SLOT 0")throw new DomainException("Emülatör kayıt yükleme komutunu doğrulayamadı.",502);
+    }
     public Task QuitAsync(CancellationToken token) => CommandAsync("QUIT", token);
     public Task EnablePacedHeadlessModeAsync(CancellationToken token) => CommandAsync("FAST_FORWARD", token);
     public async Task<(int Count,int Index)> DiskStatusAsync(CancellationToken token)
@@ -90,11 +108,13 @@ public sealed class RetroArchControl : IAsyncDisposable
     { await _commands.WaitAsync(token); try { await SendAsync(command, token); } finally { _commands.Release(); } }
     private async Task<string> QueryAsync(CancellationToken token)
     {
-        while (_socket.Available > 0) await _socket.ReceiveAsync(token);
-        await SendAsync("GET_STATUS", token);
         using var timeout = CancellationTokenSource.CreateLinkedTokenSource(token); timeout.CancelAfter(TimeSpan.FromSeconds(3));
         try
         {
+            // A connected UDP socket can surface startup ICMP refusal on the
+            // next send or availability read, not just on ReceiveAsync.
+            while (_socket.Available > 0) await _socket.ReceiveAsync(timeout.Token);
+            await SendAsync("GET_STATUS", timeout.Token);
             for (var attempt = 0; attempt < 8; attempt++)
             {
                 var packet = await _socket.ReceiveAsync(timeout.Token);

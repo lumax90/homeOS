@@ -2,6 +2,8 @@
 
 Kontrol: **2026-10-22**. Home'un dağıtım lisansı henüz seçilmedi. Aşağıdaki kayıt kod/veri sağlayıcılarının lisansını belirtir; dış hizmet aboneliği veya dağıtım hakkı uydurulmaz.
 
+**2026-10-23 / radio visual compatibility:** Existing ten Commons selections now share `web/src/music/sceneSources.json` between client and server. User-selected runtime preparation produces a bounded silent H.264 loop/poster, preserving each source's CC BY / CC BY-SA / CC0 attribution and licence record. No new stock dataset or binary is bundled. [RADIO-VISUAL-01](radio-visual.md).
+
 **2026-10-23 / automatic container updates:** maintained **nicholas-fedor/watchtower 1.23.2**, **Apache-2.0**, unmodified hash-pinned Linux amd64 executable and licence; original containrrr repository is archived. The scoped updater is deployment infrastructure, with its Docker socket separate from the Home server. Pinned source/archive and implementation status: [AUTO-UPDATE-044](container-auto-updates-044.md). Distribution `registry:3` (**Apache-2.0**) is used only in isolated update verification.
 
 **2026-10-22 / CasaOS registry publication:** build-only GitHub checkout/artifact actions (**MIT**) and Docker Buildx/login/build-push actions (**Apache-2.0**) are pinned to official release commits. These run in CI and are not application runtime services. Exact versions, source references, container visibility and verification status are in [CASAOS-REGISTRY-043](casaos-registry-043.md). The image retains the existing component-specific licence notices and native corresponding-source archive; public package access is not a new blanket licence for those components or provider media.
@@ -74,7 +76,13 @@ Plex/*arr/Jellyfin uygulama kodu bu ürüne kopyalanmadı. Özellik araştırmas
 
 hls.js lisans metni üretim paketindeki `wwwroot/third-party/hls.js-LICENSE.txt` dosyasına dahil edilir. Yeni istemci/sağlayıcı bağımlılıkları eklenirken bu kayıt genişletilir.
 
-## Gaming araştırma adayları — benimsenmedi / paketlenmedi
+## Gaming bileşenleri ve araştırma adayları
+
+**2026-10-24 / SELKIES-01 yerel entegrasyon:** Selkies **2.1.0** official Ubuntu 24.04 amd64 `.deb`, kaynak commit ve tam arşiv SHA-256 `deploy/selkies/runtime.json` ile sabitlendi. Selkies/pixelflux/pcmflux **MPL-2.0**, vendored aiortc/aioice **BSD-3-Clause + MPL-2.0**, python-xlib **LGPL**; default wheel'in x264/x265'i **GPL-2.0-or-later**. Python/npm/native transitif bildirimleri upstream pakette; image build kurulu Python paket/lisans envanterini ayrıca tutar. PulseAudio çıktılı ek RetroArch 1.22.2 frontend **GPL-3.0** ailesi, mevcut corresponding source + ek build tarifiyle; immutable standart frontend/core hash'leri korunur. Selkies gamepad interposer/desktop kontrolü bu dilimde kullanılmaz. [Kapsam, kaynaklar ve doğrulama](selkies-streaming.md).
+
+**SDL2 software presentation / aynı dilim:** RetroArch'ın mevcut SDL2 video sürücüsü, **Zlib** lisanslı SDL2 sistem paketiyle kullanılır. Native package/compiler seçenekleri, kurulu sürüm ve `SDL2-copyright.txt` imajda tutulur. Bu seçim ilk software-core grubunun Selkies ekranı içindir; standart native runtime'ı veya emulator core'larını yeniden derlemez.
+
+**2026-10-23 / oyun gecikmesi araştırması:** Selkies **2.1.0 / MPL-2.0**, Moonlight Web **v3.0.0 / GPL-3.0-or-later**, Sunshine **GPL-3.0**, Wolf **MIT**, CloudRetro **Apache-2.0** kaynak/sürüm karşılaştırması yenilendi. GStreamer core **LGPL**, `gst-plugin-webrtc` manifesti **MPL-2.0**; encoder/core/transitive build koşulları ayrıca geçerli. İlk deneme adayı Selkies, framework adayı `webrtcsink`; runtime bağımlılığı eklenmedi. [Sabit kaynaklar ve entegrasyon sınırları](gaming-latency-research.md).
 
 **2026-10-20 / Home native host adapter:** released RetroArch 1.22.2 remains GPL-3.0-or-later; the new explicitly labeled Home adapter adds loopback binding, existing libretro peripheral/option/disc facades, and upstream FFmpeg/GPU readback configuration. It is not represented as unmodified upstream. Build inputs/proofs and corresponding local source changes are retained by `tools/build-native-frontend.ps1`, `tools/patch-native-host-adapter.mjs`, `tools/native-host-options.c`. Additional **Vulkan-Headers `acbb9391c0a597272800cd3f4363661c00a27c77`** API header text uses Apache-2.0 OR MIT per-file notices; no GPU driver/loader was downloaded or installed. Existing bundled GLSLang/SPIRV-Cross code is pinned with the released frontend and keeps its BSD/Apache/MIT per-file notices. Header sources/licenses are retained in the approved review cache. No ROM/BIOS/test-media datasets acquired. [Actual implementation, metrics and open distribution gates](gaming-native-host-037.md).
 

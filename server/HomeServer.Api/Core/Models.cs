@@ -21,7 +21,7 @@ public sealed record ScanJob(
     int Processed, int Added, int Attempt, string Message,
     string CreatedAt, string? StartedAt, string? FinishedAt, bool CancelRequested);
 public sealed record ProbeResult(double? Duration, int? Width, int? Height, string? VideoCodec, string? AudioCodec, string[]? AudioLanguages = null,
-    MediaStreamInfo[]? Streams = null, MediaChapter[]? Chapters = null, string? Container = null, long? BitRate = null, double StartTime = 0, AudioTags? Music = null);
+    MediaStreamInfo[]? Streams = null, MediaChapter[]? Chapters = null, string? Container = null, long? BitRate = null, double StartTime = 0, AudioTags? Music = null, int AnalysisVersion = 0);
 public sealed record SourceFile(string RelativePath, string Title, string Kind, string MimeType, long Size, string ModifiedAt);
 public sealed record HomeEvent(string Type, string At);
 public sealed record HomePaths(string Data, string Thumbnails, string? Demo, string? StatePath = null, string? NativeRuntimePath = null)

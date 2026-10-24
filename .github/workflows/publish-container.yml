@@ -15,6 +15,7 @@ on:
       - "web/**"
       - "tools/**"
       - "deploy/native/**"
+      - "deploy/selkies/**"
       - "deploy/casaos/prepare-data.sh"
       - "docs/licenses/**"
       - "tests/**"
@@ -46,6 +47,24 @@ jobs:
 
       - name: Verify update admission and backup recovery
         run: dotnet test tests/HomeServer.Tests/HomeServer.Tests.csproj -c Release --filter 'FullyQualifiedName~ContainerUpdateTests|FullyQualifiedName~BackupTests' --logger 'trx;LogFileName=container-updates.trx' --results-directory "$RUNNER_TEMP/home-backend-verification" --nologo
+
+      - name: Verify radio visual media and permission boundaries
+        env:
+          HOME_TEST_FFMPEG: /usr/bin/ffmpeg
+          HOME_TEST_FFPROBE: /usr/bin/ffprobe
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends ffmpeg
+          dotnet test tests/HomeServer.Tests/HomeServer.Tests.csproj -c Release --no-restore --filter 'FullyQualifiedName~RadioVisualTests|FullyQualifiedName~RadioTests|FullyQualifiedName~MusicExperienceTests' --logger 'trx;LogFileName=radio-visual.trx' --results-directory "$RUNNER_TEMP/home-backend-verification" --nologo
+
+      - name: Verify native stream selection and save contract
+        run: dotnet test tests/HomeServer.Tests/HomeServer.Tests.csproj -c Release --no-restore --filter 'FullyQualifiedName~NativeSelkiesTests|FullyQualifiedName~NativeRuntimeAdapterTests|FullyQualifiedName~NativeHostIntegrationTests|FullyQualifiedName~NativeInputBufferTests' --logger 'trx;LogFileName=selkies-boundaries.trx' --results-directory "$RUNNER_TEMP/home-backend-verification" --nologo
+
+      - name: Verify film and live playback planning and lifecycle
+        env:
+          HOME_TEST_FFMPEG: /usr/bin/ffmpeg
+          HOME_TEST_FFPROBE: /usr/bin/ffprobe
+        run: dotnet test tests/HomeServer.Tests/HomeServer.Tests.csproj -c Release --no-restore --filter 'FullyQualifiedName~PlaybackEfficiencyTests|FullyQualifiedName~PlaybackWindowTests|FullyQualifiedName~PlaybackLifecycleTests|FullyQualifiedName~PlaybackQuotaTests|FullyQualifiedName~LiveStabilityTests|FullyQualifiedName~LiveTvProtocolTests|FullyQualifiedName~LiveTvExperienceTests' --logger 'trx;LogFileName=playback-live.trx' --results-directory "$RUNNER_TEMP/home-backend-verification" --nologo
 
       - name: Read release identity
         id: release
@@ -103,10 +122,36 @@ jobs:
           RELEASE_IMAGE: ${{ steps.release.outputs.tag }}
         run: bash tools/verification/verify-container-install.sh "$RELEASE_IMAGE" "$RUNNER_TEMP/home-container-verification"
 
+      - name: Verify browser playback decisions
+        run: >-
+          docker run --rm --network none
+          --mount "type=bind,source=$GITHUB_WORKSPACE,target=/src,readonly" --workdir /src
+          node:24-bookworm-slim@sha256:55fb5f5a527ea2c5c4a95f963e48ef90aa38c7b346054fdc8ee9957a2b55d205
+          node --test tests/unit/playback-transport.test.ts tests/unit/playback-capabilities.test.ts tests/unit/live-tv.test.ts tests/unit/live-recovery.test.ts tests/unit/radio-visual.test.ts tests/unit/music-experience.test.ts tests/unit/native-streaming.test.ts
+
+      - name: Verify 4K preservation and bounded playback production
+        env:
+          RELEASE_IMAGE: ${{ steps.release.outputs.tag }}
+        run: python3 tools/verification/verify-playback-efficiency.py "$RELEASE_IMAGE" "$RUNNER_TEMP/home-playback-verification"
+
+      - name: Verify live stream preservation and temporary failure recovery
+        env:
+          RELEASE_IMAGE: ${{ steps.release.outputs.tag }}
+        run: python3 tools/verification/verify-live-stability.py "$RELEASE_IMAGE" "$RUNNER_TEMP/home-live-verification"
+
       - name: Verify automatic replacement and busy deferral
         env:
           RELEASE_IMAGE: ${{ steps.release.outputs.tag }}
         run: python3 tools/verification/verify-auto-update.py "$RELEASE_IMAGE" "$RUNNER_TEMP/home-auto-update-verification"
+
+      - name: Verify optional Selkies streaming and cross-backend saves
+        env:
+          RELEASE_IMAGE: ${{ steps.release.outputs.tag }}
+        run: |
+          sudo apt-get install -y --no-install-recommends python3-venv
+          python3 -m venv "$RUNNER_TEMP/home-stream-protocol-env"
+          "$RUNNER_TEMP/home-stream-protocol-env/bin/pip" install aiortc==1.15.0 aiohttp==3.14.5
+          python3 tools/verification/verify-selkies-container.py "$RELEASE_IMAGE" "$RUNNER_TEMP/home-selkies-verification" --python "$RUNNER_TEMP/home-stream-protocol-env/bin/python"
 
       - name: Publish candidate and promote the verified stable channel
         id: publish
@@ -119,7 +164,7 @@ jobs:
           docker push --platform linux/amd64 "$RELEASE_IMAGE"
           git fetch --no-tags --depth=1 origin main
           current="$(git rev-parse FETCH_HEAD)"
-          if [[ "$GITHUB_REF" == refs/heads/main || "$GITHUB_REF_TYPE" == tag ]] && git diff --quiet "$GITHUB_SHA" "$current" -- Dockerfile .dockerignore Directory.Build.props 'package*.json' server web tools deploy/native deploy/casaos/prepare-data.sh docs/licenses tests .github/workflows/publish-container.yml; then
+          if [[ "$GITHUB_REF" == refs/heads/main || "$GITHUB_REF_TYPE" == tag ]] && git diff --quiet "$GITHUB_SHA" "$current" -- Dockerfile .dockerignore Directory.Build.props 'package*.json' server web tools deploy/native deploy/selkies deploy/casaos/prepare-data.sh docs/licenses tests .github/workflows/publish-container.yml; then
             node tools/verify-container-channel.mjs "$IMAGE" "$VERSION"
             if ! docker buildx imagetools inspect "$IMAGE:$VERSION" >/dev/null 2>&1; then
               docker tag "$RELEASE_IMAGE" "$IMAGE:$VERSION"
@@ -149,5 +194,11 @@ jobs:
             ${{ runner.temp }}/home-auto-update-verification/*.json
             ${{ runner.temp }}/home-auto-update-verification/*.log
             ${{ runner.temp }}/home-backend-verification/*.trx
+            ${{ runner.temp }}/home-playback-verification/result.json
+            ${{ runner.temp }}/home-playback-verification/container.log
+            ${{ runner.temp }}/home-live-verification/result.json
+            ${{ runner.temp }}/home-live-verification/container.log
+            ${{ runner.temp }}/home-selkies-verification/*.json
+            ${{ runner.temp }}/home-selkies-verification/*.log
           if-no-files-found: ignore
           retention-days: 14

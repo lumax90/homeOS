@@ -12,6 +12,27 @@ public sealed class LiveHttp(RemoteMediaHttp http):ILiveHttp
     public Task<HttpResponseMessage> GetAsync(string url,bool allowLan,CancellationToken token,string? range=null,IReadOnlyDictionary<string,string>? headers=null)=>http.GetAsync(url,allowLan,token,range,headers);
 }
 public sealed record LiveTextResource(byte[] Bytes,Uri Uri);
+public static class LiveHttpRetry
+{
+    public static async Task<HttpResponseMessage> OpenAsync(ILiveHttp http,string url,bool lan,Action validate,CancellationToken token,string? range=null,
+        IReadOnlyDictionary<string,string>? headers=null,Func<TimeSpan,CancellationToken,Task>? delay=null)
+    {
+        delay ??= Task.Delay;
+        for(var attempt=0;;attempt++)
+        {
+            token.ThrowIfCancellationRequested(); validate();
+            try
+            {
+                var response=await http.GetAsync(url,lan,token,range,headers);
+                if(attempt>=2 || (int)response.StatusCode is not(408 or 429 or 500 or 502 or 503 or 504))return response;
+                var retry=response.Headers.RetryAfter?.Delta ?? (response.Headers.RetryAfter?.Date-DateTimeOffset.UtcNow);
+                var wait=retry is{}value?TimeSpan.FromMilliseconds(Math.Clamp(value.TotalMilliseconds,0,2000)):TimeSpan.FromMilliseconds(attempt==0?250:750);
+                response.Dispose(); await delay(wait,token);
+            }
+            catch(HttpRequestException)when(attempt<2){await delay(TimeSpan.FromMilliseconds(attempt==0?250:750),token);}
+        }
+    }
+}
 public static class LiveHttpRead
 {
     public static async Task<LiveTextResource> ReadAsync(ILiveHttp http,string url,bool lan,int maximum,CancellationToken token)

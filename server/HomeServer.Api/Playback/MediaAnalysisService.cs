@@ -18,7 +18,7 @@ public sealed class MediaAnalysisService(MediaStore store, IMediaProbe tools)
             var path = MediaPaths.ResolveFile(library.Path, media.RelativePath);
             var fingerprint = Fingerprint(new FileInfo(path));
             var probe = store.GetAnalysis(mediaId, fingerprint);
-            if (probe is null)
+            if (probe is null || tools.FfprobeAvailable && probe.AnalysisVersion < 1)
             {
                 if (!tools.FfprobeAvailable)
                 {

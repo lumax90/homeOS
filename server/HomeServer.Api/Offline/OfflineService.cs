@@ -105,7 +105,7 @@ public sealed class OfflineService(HomePaths paths, MediaStore store, MediaAnaly
                 var request = new PlaybackStart(media.Media.Id, new(["mp4", "m4a"], ["h264"], ["aac"], true), AudioStream: input.AudioStream,
                     MaxHeight: input.Profile == "compatible-1080" ? 1080 : 720, MaxBitrate: input.Profile == "compatible-1080" ? 6000000 : 3000000,
                     ForceCompatible: true, SubtitleId: burn ? input.SubtitleId : null, BurnSubtitle: burn, SubtitleDelaySeconds: input.SubtitleDelaySeconds);
-                var plan = PlaybackPlanner.Decide(media, request, tools.FfmpegAvailable, job.ReservedBytes * 2, tone, burn ? source?.Track : null);
+                var plan = PlaybackPlanner.Decide(media, request, tools.FfmpegAvailable, job.ReservedBytes * 2, tone, burn ? source?.Track : null, completeFile: true);
                 if (burn) plan = plan with { Subtitle = await subtitles.PrepareBurnAsync(media, input.SubtitleId!, directory, input.SubtitleDelaySeconds, budget.Token) };
                 var encoder = plan.VideoStream is null ? "libx264" : await encoding.EncoderAsync(budget.Token);
                 var temporary = Path.Combine(directory, "media.partial.mp4");
