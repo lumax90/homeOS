@@ -1,6 +1,6 @@
 # Deneysel ikinci oyun yayını — SELKIES-01
 
-Tarih: **2026-10-24**. Gereksinimler **GAM-05/10/11/14/19, CLI-01/05, OPS-09**. **Yerel uygulama ve odaklı doğrulama hazır; toplu yayın ve gerçek cihaz kabulü bekliyor.** Kullanıcı ikinci yöntemi onayladı; iyi cihaz sonuçları alınırsa Selkies'i daha sonra varsayılan yapma kararı ayrıca verilecek. Kullanıcı PC tarayıcısında gecikmenin TV'den daha az olduğunu bildirdi.
+Tarih: **2026-10-24**. Gereksinimler **GAM-05/10/11/14/19, CLI-01/05, OPS-09**. **0.45.0 / stable ile deneysel seçenek olarak yayımlandı; gerçek cihaz kabulü bekliyor.** [Yayın kaydı](playback-streaming-batch-045.md). Kullanıcı ikinci yöntemi onayladı; iyi cihaz sonuçları alınırsa Selkies'i daha sonra varsayılan yapma kararı ayrıca verilecek. Kullanıcı PC tarayıcısında gecikmenin TV'den daha az olduğunu bildirdi.
 
 ## Kullanıcıya sunulan seçim
 
@@ -53,8 +53,9 @@ Bu action cevabı yükleme isteğinin kabulüdür; genel bir yeni upstream task-
 
 - **57 farklı backend/native/backup-admission kontrolü**, **10 Node/yerelleştirme kontrolü**, TypeScript/worker/PWA build, viewer syntax ve actionlint geçti. Son native-control/display değişiklikleri kendi odaklı alt kümelerinde yeniden doğrulandı.
 - Ayrı native frontend ve üretim Linux imajı build edildi. **Yedi sistem × standart/Selkies/standart = 21 gerçek oturum** geçti: görüntüde girdi değişimi, Opus negotiation, aynı-session retry, yanlış login, aynı save kimliği ve sıfır artık süreç. GBA'da gerçek RAM frame-counter iki yönde de tam olarak geri yüklendi; NES/GBA tonları sıfırdan farklı PCM'ye çözüldü.
-- **Aktif Selkies oyunu sırasında graceful stop → aynı data volume ile container recreation** geçti; yeni checkpoint, yedi ROM/favori/kayıt ve boş native süreç durumu korundu. `verify-selkies.py` / `verify-selkies-container.py` gelecek toplu yayında zorunlu kontrol olarak bağlıdır.
+- **Aktif Selkies oyunu sırasında graceful stop → aynı data volume ile container recreation** geçti; yeni checkpoint, yedi ROM/favori/kayıt ve boş native süreç durumu korundu. `verify-selkies.py` / `verify-selkies-container.py` yayın workflow'unda zorunlu kontrol olarak bağlıdır.
 - Hızlı otomasyon hesap başına command sınırını doldurduğu için probe komutları aynı hesabı kullanan iki login arasında tempolandı. Üretim hız sınırı değiştirilmedi. İlk dört başarılı sistem tekrarlanmadı; kalan üçü aynı izole image/volume üzerinde tamamlandı ve önceki hata kaydı kanıtta korundu.
+- **0.45.0 hosted yayını:** tempolu probe yedi sistemin **21 oturumunu tek çalıştırmada** tamamladı; active stop/recreate, checkpoint ve sıfır artık süreç yeniden doğrulandı. Yayın öncesi backend/server-lifetime kontrolleri de geçti.
 - Tüm oyunlar izole, yerelde üretilmiş `ORIGINAL-ISOLATED` fixture'lardır. Kullanıcı ROM'u veya internet medyası geliştirme doğrulamasında çalıştırılmadı. Browser suite çalıştırılmadı.
 - Bu fixture'lardan yalnız NES/GBA konsolun ses donanımında ton üretir; onlarda çözülmüş PCM'nin sıfırdan farklı olduğu da aranır. Diğerleri sessizdir; Opus negotiation doğrulanır, Selkies'in sessiz PCM'yi göndermemesi ses arızası sayılmaz.
 - İlk **OpenGL ön denemesinin** GBA tanısında standart yol yaklaşık **64–68 ms**, Selkies **42–56 ms** input→decoded-frame örnekleri verdi. **VM + aiortc tanısıdır; çözünürlükler de farklıdır (240×160 / 640×480).** Son SDL2 yolunun eşdeğer kalite benchmark'ı, fiziksel TV gecikmesi veya Selkies'in her durumda üstün olduğu sonucu değildir. Varsayılan **standart** kalır.

@@ -2,7 +2,7 @@
 
 ## Automatic-update channel
 
-**Published and verified 2026-10-23:** the recipe tracks **`ghcr.io/lumax90/homeos:stable`**, Linux **amd64**, starting with **0.44.0**. The immutable `0.44.0` and source-commit tags are also available. Publication, upgrade and automatic-update receipts are recorded in [AUTO-UPDATE-044](../../docs/container-auto-updates-044.md). [Package page](https://github.com/users/lumax90/packages/container/package/homeos).
+**Published and verified 2026-10-24:** the recipe tracks **`ghcr.io/lumax90/homeos:stable`**, Linux **amd64**, now **0.45.0**. The immutable version and source-commit tags are also available. [Current batch and publication digest](../../docs/playback-streaming-batch-045.md); [automatic-update design and initial transition](../../docs/container-auto-updates-044.md). [Package page](https://github.com/users/lumax90/packages/container/package/homeos).
 
 ## First installation
 
@@ -52,7 +52,7 @@ Automatic database rollback is not enabled. For an unexpected failed deployment,
 
 ## Experimental game streaming backend
 
-The upcoming batch includes an optional **Selkies 2.1.0** backend for the initial seven retro systems. In Games settings, open **Emulation settings → Advanced streaming preference** to choose it for the current browser/profile. The choice applies to the next game session; **Standard remains the default** until device acceptance.
+**0.45.0** includes an optional **Selkies 2.1.0** backend for the initial seven retro systems. In Games settings, open **Emulation settings → Advanced streaming preference** to choose it for the current browser/profile. The choice applies to the next game session; **Standard remains the default** until device acceptance.
 
 Only the selected publisher runs. Selkies's screen/audio processes start with its game session and stop on exit; the installed package additionally occupies disk space. It uses Home's existing web address and game media ports, with the same core binaries and save identities. See [implementation and acceptance status](../../docs/selkies-streaming.md).
 

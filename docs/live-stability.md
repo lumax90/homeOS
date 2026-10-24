@@ -1,6 +1,6 @@
 # Canlı TV akıcılığı — LIVE-STABILITY-01
 
-Tarih: **2026-10-23**. Gereksinimler **EXT-01/02, PLY-02/03/06, USR-03, OPS-08**. Durum: **0.44.0 tabanı üzerinde yerel kaynakta hazır; toplu yayın ve gerçek kanal/cihaz kabulü bekliyor**.
+Tarih: **2026-10-23**. Gereksinimler **EXT-01/02, PLY-02/03/06, USR-03, OPS-08**. Durum: **2026-10-24'te 0.45.0 / stable ile yayımlandı; gerçek kanal/cihaz kabulü bekliyor**. [Yayın kaydı](playback-streaming-batch-045.md).
 
 ## Neden ve yaklaşım
 
@@ -27,7 +27,7 @@ Tarih: **2026-10-23**. Gereksinimler **EXT-01/02, PLY-02/03/06, USR-03, OPS-08**
 - **28 Node kontrolü:** canlı tampon hedefi, sınırlı retry, sağlıklı dönem şartı, iptal/eski yanıt sahipliği, genel tarayıcı yetenekleri/transport ve yerelleştirme.
 - Frontend/worker/PWA build ve actionlint geçti.
 - **Linux non-root, read-only-rootfs konteyner / FFmpeg 6.1.1:** sekiz gerçek HTTP kontrolü geçti — remux, yalnız ses dönüşümü, özel sentetik HLS kaynağının 503 hatasından toparlanma, actor/CSRF, idempotent start, fMP4 Range=206/anonim ret, kaynak iptali, kaynak byte'ları ve kullanıcı oturumu korunumu.
-- Gelecek image yayınına Node ve gerçek canlı protokol kontrolü eklendi. Hosted yayın kullanıcı toplu push istediğinde çalışacaktır.
+- Node ve gerçek canlı protokol kontrolleri **0.45.0 hosted image yayını sırasında da geçti**.
 
 Kanıtlar `artifacts/live-stability/` altında yereldir. Araçlar `tools/verification/verify-live-stability.py` ve `live-fixture-origin.mjs`; kaynak medya yerel üretilir, origin özel test ağındadır. İnternet medya edinimi veya otomatik tarayıcı süiti çalıştırılmadı. Gerçek kanal kaynağının uzun süreli erişilebilirliği ve kullanıcı tarayıcısındaki akıcılık **ACCEPT-LIVE-STABILITY-01** kapsamındadır.
 

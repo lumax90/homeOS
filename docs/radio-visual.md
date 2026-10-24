@@ -1,6 +1,6 @@
 # Radyo ve görsel mod — RADIO-VISUAL-01
 
-Tarih: **2026-10-23**. Gereksinimler **MUS-11/12, PLY-03/06, USR-03, CLI-01/05, OPS-09**. Durum: **0.44.0 tabanı üzerinde yerel kaynak çalışması; toplu yayın ve kullanıcı tarayıcı kabulü bekliyor**.
+Tarih: **2026-10-23**. Gereksinimler **MUS-11/12, PLY-03/06, USR-03, CLI-01/05, OPS-09**. Durum: **2026-10-24'te 0.45.0 / stable ile yayımlandı; kullanıcı tarayıcı kabulü bekliyor**. [Yayın kaydı](playback-streaming-batch-045.md).
 
 ## Kullanıcı geri bildirimi ve tasarım
 
@@ -27,9 +27,9 @@ Radyo görsel modunda **tek medya öğesi ve tek birleşik A/V akışı** kullan
 - **15 Node kontrolü** geçti: sahne/oynatma niyeti, stale yanıt, mevcut sahne kataloğu, tercihler ve yerelleştirme.
 - Frontend/worker/PWA build geçti. Gerçek stok video veya internet radyo yayını geliştirme doğrulamasında açılmadı; medya fixture'ları yalnız izole testlerde üretildi.
 - Linux image build ve **UID/GID 1654 altında FFmpeg 6.1.1 ile 26 kontrol, sıfır atlanan** geçti. Görsel hazırlama/ses ayırma, tek A/V çıktı ve lease/iptal kapsamı gerçek native araçlarla doğrulandı. Son HTTP opt-in kontrolü Windows tarafındaki toplamı **27** yaptı.
-- Gelecek toplu yayın için radyo native/izin testleri ve Node sahne kontrolleri workflow'a eklendi. Gerçek fullscreen görünümü, ses/görüntü geçişi ve hedef tarayıcı kabulü kullanıcıya aittir.
+- Radyo native/izin testleri ve Node sahne kontrolleri **0.45.0 hosted yayını sırasında da geçti**. Gerçek fullscreen görünümü, ses/görüntü geçişi ve hedef tarayıcı kabulü kullanıcıya aittir.
 
-Yerel kanıtlar: `artifacts/radio-visual/`. Normal kaynak kataloglarında sentetik içerik yoktur. Değişiklikler toplu commit/push için yerelde tutulur.
+Yerel kanıtlar: `artifacts/radio-visual/`; yayın kanıtları `artifacts/release-045/`. Normal kaynak kataloglarında sentetik içerik yoktur.
 
 ## Kaynak ve lisans kaydı
 

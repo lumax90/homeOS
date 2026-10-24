@@ -1,6 +1,6 @@
 # Genel tarayıcı oynatma verimliliği — PLAY-04
 
-Tarih: **2026-10-23**. Gereksinimler **PLY-01/02/03/05/06, CLI-01-A, OPS-08**. Durum: **0.44.0 tabanı üzerinde yerel kaynak iyileştirmesi; toplu yayın ve kullanıcı kabulü bekliyor**.
+Tarih: **2026-10-23**. Gereksinimler **PLY-01/02/03/05/06, CLI-01-A, OPS-08**. Durum: **2026-10-24'te 0.45.0 / stable ile yayımlandı; gerçek cihaz/kaynak kabulü bekliyor**. [Yayın kaydı](playback-streaming-batch-045.md).
 
 ## Yönlendirme ve kaynak
 
@@ -26,7 +26,7 @@ Kullanıcı, film oynatmanın genel Home/tarayıcı akışında iyileştirilmesi
 - **Gerçek Linux non-root konteyner / FFmpeg 6.1.1:** yerel üretilen 3840×2160 HEVC Main10/HDR fixture'ı fMP4'e taşındı; görüntü codec/çözünürlük/piksel/transfer bilgisi korundu ve AC-3 5.1 ses AAC stereo oldu. Init/segment Range=206, anonim ret, üretim beklet/devam/askıdayken kapat, kaynak byte'ları ve oturum korunumu geçti. Yedi kontrol: `tools/verification/verify-playback-efficiency.py`.
 - Windows gerçek FFmpeg 9.0.2 testleri ses dönüşümü, HDR, askı/devam, kapatma ve HTTP izin/range çıktılarını doğrular. Geçici sentetik kaynaklar yalnız izole test dizinlerindedir.
 - Son kaynak durumuyla frontend/worker/PWA ve Linux image build geçti; yedi gerçek non-root konteyner kontrolü son görüntü üzerinde yeniden geçti.
-- Gelecek yayınlar için workflow'a saf Node yetenek/transport kontrolleri ve gerçek konteyner 4K/üretim testi eklendi. Aynı izole Node konteyner komutunun 10 testi ve actionlint geçti; hosted yayın toplu push aşamasındadır.
+- Workflow'daki Node yetenek/transport ve gerçek konteyner 4K/üretim kontrolleri **0.45.0 hosted yayını sırasında da geçti**. Aynı izole Node konteyner komutunun 10 testi ve actionlint ilk dilimde doğrulanmıştı.
 
 Yerel kanıtlar: `artifacts/playback-efficiency/`. Kullanıcının gerçek filmleriyle sürekli oynatma, uzun duraklatma, ileri/geri sarma ve farklı tarayıcılar **ACCEPT-PLAY-04** kapsamındadır. İnternet medya indirmesi veya otomatik browser suite çalıştırılmadı.
 

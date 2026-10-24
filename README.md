@@ -12,7 +12,7 @@ Music/Games/Live TV arayüzü, kişisel kütüphane, IPTV ve sunucuda ROM yürü
 
 **CasaOS / Intel-AMD x64:** [Compose dosyasını](https://raw.githubusercontent.com/lumax90/homeOS/main/deploy/casaos/docker-compose.yml) CasaOS **Custom Install → Import** ekranına aktar. **`ghcr.io/lumax90/homeos:stable`** imajı ve scoped güncelleyici kurulur. Doğrulanan uygulama güncellemeleri boştayken yedek alınarak otomatik uygulanır. Mevcut sürüm-sabitli kurulumlar için tek seferlik Compose geçişi gerekir. Kendi sunucunun adresiyle **`http://SUNUCU-IP:5080`** üzerinden bağlan. [Kurulum/güncelleme kılavuzu](deploy/casaos/README.md).
 
-**109 backend +68 Node**, yedi özgün sistemle gerçek LAN WebRTC görüntü/ses/kumanda ve kayıt, read-only medya range/HLS, container kapanış/yeniden oluşturma ve mevcut verinin korunumu doğrulandı. [Kanıt ve kapsam](docs/headless-lan-043.md). **Public imajın hesapsız indirme ve temiz kurulum kontrolleri geçti.** Fiziksel cihaz/gerçek oyun kabulü, ARM64 native, Umbrel mağaza paketi ve nihai dağıtım lisansı açık konulardır. Gamepad/PWA gibi tarayıcı özellikleri bazı cihazlarda güvenilir HTTPS ister.
+**0.45.0 public `stable` yayını doğrulandı:** 151 yerel backend +57 Node, 138 hosted backend, gerçek 4K/Live TV/otomatik güncelleme kontrolleri ve yedi sistemde 21 oyun oturumu/kayıt geçişi geçti. [Yayın, imaj digest'i ve kapsam](docs/playback-streaming-batch-045.md). Fiziksel cihaz/gerçek oyun kabulü, ARM64 native, Umbrel mağaza paketi ve nihai dağıtım lisansı açık konulardır. Gamepad/PWA gibi tarayıcı özellikleri bazı cihazlarda güvenilir HTTPS ister.
 
 ## 0.27 geliştirme birleşimi — tarihsel kayıt
 
