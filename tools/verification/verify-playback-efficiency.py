@@ -53,12 +53,14 @@ class Client:
 
 def wait(read, predicate, seconds=45):
     deadline = time.monotonic() + seconds
+    value = None
     while time.monotonic() < deadline:
         value = read()
         if predicate(value):
             return value
         time.sleep(.2)
-    raise RuntimeError('Verification deadline exceeded.')
+    (root / 'timeout-state.json').write_text(json.dumps(value, indent=2))
+    raise RuntimeError('Verification deadline exceeded; the last observed state was retained.')
 
 try:
     fixture('isolated-4k-hdr.mkv', True)
@@ -116,7 +118,11 @@ try:
     assert paused['state'] != 'failed' and paused['telemetry']['windowEndSeconds'] < 40
     time.sleep(1)
     assert client.call(path)['telemetry']['windowEndSeconds'] == paused['telemetry']['windowEndSeconds']
-    client.call(path + '/heartbeat', {'positionSeconds': paused['telemetry']['windowEndSeconds'] - 4, 'paused': False})
+    # Published segments can lag FFmpeg's in-flight progress by one mux target
+    # plus an audio-frame fraction. Leaving a whole target unconsumed need not
+    # cross the producer's resume hysteresis. Simulate a player consuming up to
+    # the available edge, without seeking beyond published content.
+    client.call(path + '/heartbeat', {'positionSeconds': paused['telemetry']['windowEndSeconds'] - .25, 'paused': False})
     wait(lambda: client.call(path), lambda state: state['telemetry']['windowEndSeconds'] > paused['telemetry']['windowEndSeconds'] + 3)
     wait(lambda: client.call(path), lambda state: state['telemetry']['throttled'])
     client.call(path, method='DELETE')

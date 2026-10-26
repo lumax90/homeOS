@@ -58,22 +58,24 @@ jobs:
       - name: Verify approval bridge without Docker or network access
         run: python3 tests/unit/test_managed_updater.py
 
-      - name: Verify radio visual media and permission boundaries
-        env:
-          HOME_TEST_FFMPEG: /usr/bin/ffmpeg
-          HOME_TEST_FFPROBE: /usr/bin/ffprobe
+      - name: Locate hosted FFmpeg verification tools
+        timeout-minutes: 10
         run: |
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends ffmpeg
+          if ! command -v ffmpeg >/dev/null || ! command -v ffprobe >/dev/null; then
+            sudo apt-get -o Acquire::Retries=2 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30 update
+            sudo apt-get -o Acquire::Retries=2 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30 install -y --no-install-recommends ffmpeg
+          fi
+          printf 'HOME_TEST_FFMPEG=%s\nHOME_TEST_FFPROBE=%s\n' "$(command -v ffmpeg)" "$(command -v ffprobe)" >> "$GITHUB_ENV"
+          ffmpeg -version
+
+      - name: Verify radio visual media and permission boundaries
+        run: |
           dotnet test tests/HomeServer.Tests/HomeServer.Tests.csproj -c Release --no-restore --filter 'FullyQualifiedName~RadioVisualTests|FullyQualifiedName~RadioTests|FullyQualifiedName~MusicExperienceTests' --logger 'trx;LogFileName=radio-visual.trx' --results-directory "$RUNNER_TEMP/home-backend-verification" --nologo
 
       - name: Verify native stream selection and save contract
         run: dotnet test tests/HomeServer.Tests/HomeServer.Tests.csproj -c Release --no-restore --filter 'FullyQualifiedName~NativeSelkiesTests|FullyQualifiedName~NativeRuntimeAdapterTests|FullyQualifiedName~NativeHostIntegrationTests|FullyQualifiedName~NativeInputBufferTests' --logger 'trx;LogFileName=selkies-boundaries.trx' --results-directory "$RUNNER_TEMP/home-backend-verification" --nologo
 
       - name: Verify film and live playback planning and lifecycle
-        env:
-          HOME_TEST_FFMPEG: /usr/bin/ffmpeg
-          HOME_TEST_FFPROBE: /usr/bin/ffprobe
         run: dotnet test tests/HomeServer.Tests/HomeServer.Tests.csproj -c Release --no-restore --filter 'FullyQualifiedName~PlaybackEfficiencyTests|FullyQualifiedName~DolbyVisionAnalysisTests|FullyQualifiedName~MediaRuntimeCompatibilityTests|FullyQualifiedName~PlaybackWindowTests|FullyQualifiedName~PlaybackLifecycleTests|FullyQualifiedName~PlaybackQuotaTests|FullyQualifiedName~LiveStabilityTests|FullyQualifiedName~LiveTvProtocolTests|FullyQualifiedName~LiveTvExperienceTests' --logger 'trx;LogFileName=playback-live.trx' --results-directory "$RUNNER_TEMP/home-backend-verification" --nologo
 
       - name: Verify new catalogue and import-location data boundaries
@@ -223,6 +225,7 @@ jobs:
             ${{ runner.temp }}/home-media-verification/runtime-version.txt
             ${{ runner.temp }}/home-media-verification/movie/result.json
             ${{ runner.temp }}/home-media-verification/movie/container.log
+            ${{ runner.temp }}/home-media-verification/movie/timeout-state.json
             ${{ runner.temp }}/home-media-verification/live/result.json
             ${{ runner.temp }}/home-media-verification/live/container.log
             ${{ runner.temp }}/home-selkies-verification/*.json

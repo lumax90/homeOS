@@ -26,3 +26,9 @@ Docker reuses unchanged image layers; this is not a file-level delta-package imp
 Previous local slice checks: **21 backend, 8 Python bridge, 3 Node** passed; client/worker/PWA/localization and backend compilation passed. Device testing belongs to the user. New real Docker approval/backup/replacement checks are required by the hosted publication workflow before stable promotion; no browser automation or multi-system gaming benchmark is repeated.
 
 Commit, hosted workflow, image digest, final verification and anonymous `stable`/version/source-tag identity are recorded here when publication completes. No household deployment is claimed by registry publication alone.
+
+### First qualification attempt
+
+Workflow **40327937133** failed closed before publication on the existing movie resume probe. Its heartbeat left one full mux target unconsumed; in-flight encoder progress plus an audio-frame fraction can keep that position above the resume hysteresis. A focused window regression reproduces this contract. The probe now advances the simulated consumer to within 0.25 seconds of the published edge; it still requires new production, renewed backpressure, account/range/source preservation and cleanup. Production media logic is unchanged. Failed waits retain their last observed state for diagnosis.
+
+The same run's roughly 32-minute radio step was dominated by a slow hosted Ubuntu package transfer, not the radio tests (longest test about 5.8 seconds). Hosted checks now prefer already installed FFmpeg tools and bound fallback package-transfer timeouts; the released media runtime remains source/hash pinned. A corrected source revision must pass the gates before stable promotion.

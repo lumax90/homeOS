@@ -58,6 +58,18 @@ public sealed class PlaybackWindowTests
         using (var list = window.Playlist()) using (var reader = new StreamReader(list)) Assert.DoesNotContain("#EXT-X-MEDIA-SEQUENCE:0\n", reader.ReadToEnd());
     }
     [Fact]
+    public void ResumeUsesTheConsumerPlayheadNotJustTheLastPublishedSegmentBoundary()
+    {
+        using var home = new TestWorkspace(); var root = AppFiles.DirectoryIn(home.Root, "in-flight-progress");
+        Publish(root, 0, 2);
+        var window = new PlaybackWindow(root, 1024 * 1024, 0, 0, aheadSeconds: 12);
+        window.Progress(16.032, 4); Assert.True(window.Control(false));
+        var published = window.Telemetry(true).WindowEndSeconds;
+        window.Touch(published - 4); Assert.True(window.Control(true));
+        window.Touch(published - .25); Assert.False(window.Control(true));
+        Assert.Equal(published, window.Telemetry(false).WindowEndSeconds);
+    }
+    [Fact]
     public void DecoderConfigurationRecordsProvideRealProfileAndBitDepthIdentifiers()
     {
         var probe = MediaTools.ParseProbe("""
