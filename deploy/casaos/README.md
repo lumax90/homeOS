@@ -2,9 +2,7 @@
 
 ## Automatic-update channel
 
-**0.47.0 publication preparation — 2026-10-26:** the revised helper implements [owner-approved updates](../../docs/managed-updates.md), with automatic idle installation opt-in rather than default. It requires the qualifying **0.47.0** image containing `/app/managed-updater.py`; **0.46.0 does not contain it**. Do not apply this revised recipe before [0.47 publication](../../docs/release-047.md) completes. Existing household installations have not been changed.
-
-**Published and verified 2026-10-26:** the recipe tracks **`ghcr.io/lumax90/homeos:stable`**, Linux **amd64**, now **0.46.0 / schema44**. Immutable version/source tags remain available. This update includes Selkies browser-signalling/HLS startup fixes, series-first browse/episode selection, readable future imports, inline trailer/gallery details and source-built Jellyfin-FFmpeg with retained source/notices. [Current release and digest](../../docs/release-046.md); [automatic-update design and initial transition](../../docs/container-auto-updates-044.md). [Package page](https://github.com/users/lumax90/packages/container/package/homeos).
+**Published and verified 2026-10-26:** the recipe tracks **`ghcr.io/lumax90/homeos:stable`**, Linux **amd64**, now **0.47.0 / schema44**. Updates are checked in the background and require **Download and update → Confirm** by default; automatic idle installation is a separate opt-in. An existing installation needs the helper/configuration transition once. **0.46.0 and older images do not contain the new bridge.** [Current release, digest and verification](../../docs/release-047.md); [update design](../../docs/managed-updates.md). [Package page](https://github.com/users/lumax90/packages/container/package/homeos). Registry publication does not modify an existing household installation.
 
 ## First installation
 
@@ -42,9 +40,9 @@ To add existing media, add a **read-only** mapping on the **home** service, e.g.
 
 Application-code pushes to `main` start the release workflow. Backend admission/backup checks, the image/native proof, fresh installation and actual automatic-update tests must pass before a candidate can move `stable`. Documentation-only changes do not redeploy the application. Immutable version/source tags remain available.
 
-The release-metadata checker runs **at startup and every 15 minutes**. In the pending revised recipe, default installation requires the owner's **Download and update → Confirm** action in Home; an independent automatic-idle option can be enabled explicitly. The helper reports connection status and pulls only the approved digest, then invokes Watchtower without another registry pull. Current public images retain the earlier automatic behaviour described below; do not confuse their installed helper with the unpublished approval bridge:
+The release-metadata checker runs **at startup and every 15 minutes**. Default installation requires the owner's **Download and update → Confirm** action in Home; an independent automatic-idle option can be enabled explicitly. The helper reports connection status and pulls only the approved digest, then invokes Watchtower without another registry pull:
 
-1. It pulls a changed image and runs Home's private pre-update control.
+1. It downloads the approved image while Home keeps running, then runs Home's private pre-update control when idle.
 2. Active games, media/radio/TV playback, transfers, recording and running jobs defer the update. API admission/background claims are fenced while a consistent application backup is prepared.
 3. Home is replaced with the approved cached image using its existing configuration, mounts and three-minute shutdown allowance. The 0.47 approval bridge does not replace itself or the completed initializer.
 
