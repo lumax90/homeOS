@@ -22,6 +22,8 @@ Güncelleme: **2026-10-26**. Güncel yayın **0.46.0 / şema44**, Linux amd64 **
 
 ## Aktif iş kartları
 
+- [x] README-OVERVIEW-01 — CLI-01 / OPS-09: **2026-10-26** ana README kısa İngilizce ürün/kurulum özetiyle yenilendi; kullanıcı koleksiyonu ile telif sahipliği ayrıldı, lawful-transfer/sağlayıcı koşulları ve mevcut bileşen lisansları açıklandı. Jellyfin README yalnız yapı referansı; metin/lisans kopyalanmadı. Runtime/hane kurulumu değişmedi. [Kayıt](../readme-overview.md).
+
 - [ ] BATCH-047 — **2026-10-26 kullanıcı commit/push/yayın yetkisi verdi**. UPDATE-CONSENT-01, 0.47.0 / mevcut şema44 altında yayıma hazırlanıyor; hosted gerçek Docker onaysız/approved-digest/busy/backup/replacement kapısı geçmeden stable taşınmaz. Hane cihaz testleri ve eski Compose verileri korunarak tek helper kurulumu ayrıca kullanıcıyla yapılacak. [Yayın kaydı](../release-047.md).
 
 - [x] UPDATE-CONSENT-01 — OPS-10, OPS-03/04/05/09, CLI-01/05, GAM-19: **2026-10-26 yerel uygulama**; metadata-only otomatik kontrol, owner bildirimi/onay diyalogu, exact digest kalıcı onay/iptal, helper heartbeat, ayrı default-kapalı otomatik kurulum ve mevcut backup/busy sınırı. Pinned Watchtower no-pull/run-once köprüsü eklendi; **21 backend +8 Python +3 Node** odaklı kontrol ve frontend/worker/PWA/localization build geçti. Yayın/hane kurulumu yapılmadı; Linux gerçek bridge/Compose ve cihaz kabul kapıları açık. [Tasarım/durum](../managed-updates.md).
