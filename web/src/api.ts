@@ -57,9 +57,12 @@ export interface MediaItem {
   matchRevision: number;
   episodes: MediaEpisodeSegment[];
   moviePart: { editionId: string; name: string; number: number; count: number } | null;
+  catalogGroup?: {key:string;kind:string;title:string;fileCount:number;episodeCount:number;seasonCount:number;addedAt:string}|null;
 }
 
-export interface CatalogPage { items: MediaItem[]; total: number; offset: number; limit: number }
+export interface CatalogPage { items: MediaItem[]; total: number; offset: number; limit: number; fileTotal?:number|null }
+export interface LibrarySeriesPage {item:MediaItem;items:{file:MediaItem;season:number|null;episode:number|null;title:string}[];total:number;offset:number;limit:number;seasons:number[]}
+export interface CatalogMedia {trailers:{key:string;name:string;site:string;type:string;official:boolean;language:string|null}[];images:{url:string;previewUrl:string;width:number;height:number}[];trailerError:string|null;imageError:string|null}
 export interface DiscoveryPersonalPage { items: ContentEntry[]; total: number; offset: number; limit: number }
 export interface Stats { libraries: number; items: number; videos: number; audio: number; sizeBytes: number; activeJobs: number }
 export interface ScanJob {
@@ -282,6 +285,8 @@ export interface MediaStreamInfo {
   channels: number | null; channelLayout: string | null; sampleRate: number | null; bitRate: number | null;
   profile: string | null; pixelFormat: string | null; colorTransfer: string | null; colorPrimaries: string | null;
   dolbyVision: boolean; colorSpace?: string | null; level?: number | null; frameRate?: number | null; bitDepth?: number | null;
+  dolbyVisionConfig?: {profile:number;level:number;baseLayerCompatibilityId:number|null;baseLayerPresent:boolean|null;enhancementLayerPresent:boolean|null;rpuPresent:boolean|null}|null;
+  baseCodecString?:string|null;
   codecTag?: string | null; codecString?: string | null;
 }
 export interface SubtitleTrack { id: string; language: string; title: string; format: string; origin: string; forced: boolean; hearingImpaired: boolean; playable: boolean; burnable: boolean; image: boolean; score: number | null }

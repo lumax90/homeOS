@@ -63,7 +63,7 @@ public sealed partial class MediaStore(HomePaths paths)
         Execute(db, "PRAGMA journal_mode=WAL;");
         var version = Convert.ToInt32(Scalar(db, "PRAGMA user_version;"), CultureInfo.InvariantCulture);
         string[] migrations = ["001_initial", "002_metadata", "003_downloads", "004_product_catalog", "005_media_playback", "006_import_review", "007_household", "008_automation", "009_operations", "010_music", "011_subtitle_provider", "012_usenet", "013_personal_catalog", "014_transfer_policies", "015_library_lifecycle", "016_music_releases", "017_music_acquisition", "018_music_automation", "019_music_audio", "020_catalog_identity", "021_subtitle_versions", "022_subtitle_sync", "023_playback_quotas", "024_notification_delivery", "025_web_push", "026_offline_media", "027_watch_rooms", "028_download_budgets", "029_episode_catalog", "030_music_catalog"];
-        migrations=[..migrations,"031_product_work","032_playback_segments","033_receivers","034_operations","035_source_adapters","036_live_tv","037_shelves","038_integration_lifecycle","039_source_catalog","040_games","041_native_roms","042_multisystem_roms","043_live_experience"];
+        migrations=[..migrations,"031_product_work","032_playback_segments","033_receivers","034_operations","035_source_adapters","036_live_tv","037_shelves","038_integration_lifecycle","039_source_catalog","040_games","041_native_roms","042_multisystem_roms","043_live_experience","044_readable_imports"];
         if (version > migrations.Length) throw new InvalidOperationException("Veritabanı bu Home sürümünden daha yeni.");
         for (var index = version; index < migrations.Length; index++)
         {
@@ -170,15 +170,17 @@ public sealed partial class MediaStore(HomePaths paths)
     {
         offset = Math.Max(0, offset);
         limit = Math.Clamp(limit, 1, 120);
-        var filter = " WHERE l.enabled=1 AND " + LibraryAccess + " AND " + MediaAccess + " AND ($q='' OR m.search_text LIKE $pattern ESCAPE '~' OR c.search_text LIKE $pattern ESCAPE '~' OR mt.search_text LIKE $pattern ESCAPE '~' OR mtm.search_text LIKE $pattern ESCAPE '~' OR cp.search_text LIKE $pattern ESCAPE '~' OR lm.search_text LIKE $pattern ESCAPE '~' OR EXISTS(SELECT 1 FROM content_aliases ca WHERE ca.content_id=c.id AND ca.search_text LIKE $pattern ESCAPE '~') OR EXISTS(SELECT 1 FROM content_names cn WHERE cn.content_id=c.id AND cn.search_text LIKE $pattern ESCAPE '~')) AND ($kind='' OR m.kind=$kind) AND ($library='' OR m.library_id=$library)";
-        var q = MediaPaths.SearchKey(search?.Trim() ?? "");
-        var escaped = q.Replace("~", "~~").Replace("%", "~%").Replace("_", "~_");
-        (string, object?)[] args = [("$q", q), ("$pattern", "%" + escaped + "%"), ("$kind", kind ?? ""),
-            ("$library", libraryId ?? ""), ("$limit", limit), ("$offset", offset), ..ViewerArgs(viewer)];
+        var filter=CatalogFilter;var args=CatalogArgs(search,kind,libraryId,offset,limit,viewer);
         using var db = Open();
         var total = Convert.ToInt32(Scalar(db, "SELECT COUNT(*) FROM media m JOIN libraries l ON l.id=m.library_id LEFT JOIN media_matches mm ON mm.media_id=m.id LEFT JOIN content c ON c.id=mm.content_id LEFT JOIN content_presentation cp ON cp.content_id=c.id LEFT JOIN music_tracks mt ON mt.media_id=m.id LEFT JOIN music_track_matches mtm ON mtm.media_id=m.id LEFT JOIN local_metadata lm ON lm.media_id=m.id AND json_extract(l.options_json,'$.readLocalMetadata')=1" + filter, args), CultureInfo.InvariantCulture);
         var items = Query(db, MediaSelect + filter + " ORDER BY m.added_at DESC, m.id LIMIT $limit OFFSET $offset", ReadMedia, args);
         return new CatalogPage(items, total, offset, limit);
+    }
+    private static string CatalogFilter=>" WHERE l.enabled=1 AND " + LibraryAccess + " AND " + MediaAccess + " AND ($q='' OR m.search_text LIKE $pattern ESCAPE '~' OR c.search_text LIKE $pattern ESCAPE '~' OR mt.search_text LIKE $pattern ESCAPE '~' OR mtm.search_text LIKE $pattern ESCAPE '~' OR cp.search_text LIKE $pattern ESCAPE '~' OR lm.search_text LIKE $pattern ESCAPE '~' OR EXISTS(SELECT 1 FROM content_aliases ca WHERE ca.content_id=c.id AND ca.search_text LIKE $pattern ESCAPE '~') OR EXISTS(SELECT 1 FROM content_names cn WHERE cn.content_id=c.id AND cn.search_text LIKE $pattern ESCAPE '~')) AND ($kind='' OR m.kind=$kind) AND ($library='' OR m.library_id=$library)";
+    private static (string,object?)[] CatalogArgs(string? search,string? kind,string? library,int offset,int limit,Account? viewer)
+    {
+        var q=MediaPaths.SearchKey(search?.Trim()??"");var escaped=q.Replace("~","~~").Replace("%","~%").Replace("_","~_");
+        return [("$q",q),("$pattern","%"+escaped+"%"),("$kind",kind??""),("$library",library??""),("$offset",offset),("$limit",limit),..ViewerArgs(viewer)];
     }
 
     public MediaItem? GetMedia(string id, Account? viewer = null)
@@ -187,14 +189,18 @@ public sealed partial class MediaStore(HomePaths paths)
         return Query(db, MediaSelect + " WHERE m.id=$id AND l.enabled=1 AND " + LibraryAccess + " AND " + MediaAccess, ReadMedia, [("$id", id), ..ViewerArgs(viewer)]).FirstOrDefault();
     }
 
-    public IReadOnlyList<MediaItem> GetContinueWatching(Account? viewer = null)
+    public IReadOnlyList<MediaItem> GetContinueWatching(Account? viewer = null,bool groupSeries=false)
     {
         using var db = Open();
+        if(groupSeries)RegisterCatalogFunctions(db);
+        var series="(m.kind='video' AND (c.kind='show' OR (c.id IS NULL AND home_series_key(m.relative_path,lm.metadata_json) IS NOT NULL)))";
+        var partition=groupSeries?$"CASE WHEN {series} THEN ({CatalogKeySql}) ELSE COALESCE(cw.source_media_id,mm.content_id,m.id) END":"COALESCE(cw.source_media_id,mm.content_id,m.id)";
+        var episode=groupSeries?$"CASE WHEN {series} THEN '' ELSE CASE WHEN cw.source_media_id IS NULL THEN COALESCE(mm.episode_id,'') ELSE '' END END":"CASE WHEN cw.source_media_id IS NULL THEN COALESCE(mm.episode_id,'') ELSE '' END";
+        var latest=groupSeries?$"CASE WHEN {series} THEN COALESCE(cw.updated_at,w.updated_at) END DESC,":"";
         var select = MediaSelect.Replace("FROM media m JOIN libraries l", """
-            ,COALESCE(cw.updated_at,w.updated_at) AS playback_updated,
-             ROW_NUMBER() OVER(PARTITION BY COALESCE(cw.source_media_id,mm.content_id,m.id),CASE WHEN cw.source_media_id IS NULL THEN COALESCE(mm.episode_id,'') ELSE '' END
-               ORDER BY CASE WHEN cw.source_media_id=m.id THEN 0 ELSE 1 END,m.height DESC,m.id) AS resume_rank
-            FROM media m JOIN libraries l
+             ,COALESCE(cw.updated_at,w.updated_at) AS playback_updated,
+             """+$"ROW_NUMBER() OVER(PARTITION BY {partition},{episode} ORDER BY {latest} CASE WHEN cw.source_media_id=m.id THEN 0 ELSE 1 END,m.height DESC,m.id) AS resume_rank "+"""
+             FROM media m JOIN libraries l
             """, StringComparison.Ordinal);
         return Query(db, "WITH resume AS (" + select + $" WHERE ({MediaPosition})>2 AND ({MediaWatched})=0 AND m.available=1 AND l.enabled=1 AND "
             + LibraryAccess + " AND " + MediaAccess + ") SELECT * FROM resume WHERE resume_rank=1 ORDER BY playback_updated DESC LIMIT 12", ReadMedia, ViewerArgs(viewer));

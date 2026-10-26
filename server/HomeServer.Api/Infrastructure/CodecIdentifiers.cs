@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Text.Json;
+using HomeServer.Core;
 
 namespace HomeServer.Infrastructure;
 
@@ -21,15 +22,35 @@ public static class CodecIdentifiers
             if (pixel.EndsWith(bits + "le", StringComparison.Ordinal) || pixel.EndsWith(bits + "be", StringComparison.Ordinal)) return bits;
         return pixel is "yuv420p" or "yuvj420p" or "yuv422p" or "yuv444p" or "nv12" ? 8 : null;
     }
-    public static string? FromProbe(JsonElement stream)
+    public static DolbyVisionInfo? DolbyVisionFromProbe(JsonElement stream)
+    {
+        if(!stream.TryGetProperty("side_data_list",out var list)||list.ValueKind!=JsonValueKind.Array)return null;
+        foreach(var data in list.EnumerateArray())
+        {
+            int? Number(string name)=>data.TryGetProperty(name,out var value)&&int.TryParse(value.ToString(),CultureInfo.InvariantCulture,out var number)?number:null;
+            bool? Flag(string name)=>Number(name) switch{0=>false,1=>true,_=>null};
+            if(Number("dv_profile") is not{}profile||profile is <0 or >127||Number("dv_level") is not{}level||level is <0 or >63)continue;
+            var compatibility=Number("dv_bl_signal_compatibility_id");
+            return new(profile,level,compatibility is >=0 and <=15?compatibility:null,Flag("bl_present_flag"),Flag("el_present_flag"),Flag("rpu_present_flag"));
+        }
+        return null;
+    }
+    public static string? FromProbe(JsonElement stream,bool allowDolbyVision=true)
     {
         string? Text(string name) => stream.TryGetProperty(name, out var item) && item.ValueKind == JsonValueKind.String ? item.GetString() : null;
         int? Number(string name) => stream.TryGetProperty(name, out var item) && int.TryParse(item.ToString(), CultureInfo.InvariantCulture, out var number) ? number : null;
         var codec = Text("codec_name"); var bytes = ExtraData(Text("extradata"));
-        if (stream.TryGetProperty("side_data_list", out var list) && list.ValueKind == JsonValueKind.Array)
-            foreach (var data in list.EnumerateArray())
-                if (data.TryGetProperty("dv_profile", out var profile) && data.TryGetProperty("dv_level", out var level))
-                    return $"{(codec == "av1" ? "dav1" : "dvh1")}.{profile.GetInt32():D2}.{level.GetInt32():D2}";
+        if (allowDolbyVision && DolbyVisionFromProbe(stream) is{}dolbyVision)
+        {
+            var prefix=codec switch
+            {
+                "hevc"=>Text("codec_tag_string")=="dvhe"?"dvhe":"dvh1",
+                "h264"=>Text("codec_tag_string")=="dvav"?"dvav":"dva1",
+                "av1"=>"dav1",
+                _=>null
+            };
+            return prefix is null?null:$"{prefix}.{dolbyVision.Profile:D2}.{dolbyVision.Level:D2}";
+        }
         if (codec == "h264")
         {
             if (bytes.Length >= 4 && bytes[0] == 1) return "avc1." + Convert.ToHexString(bytes.AsSpan(1, 3));

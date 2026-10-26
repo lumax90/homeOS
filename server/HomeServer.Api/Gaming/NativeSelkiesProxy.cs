@@ -7,13 +7,18 @@ namespace HomeServer.Gaming;
 /// <summary>Only the leased viewer and signalling surface is published at Home's origin.</summary>
 public static class NativeSelkiesProxy
 {
+    private const string SignallingAsset="api/webrtc/signaling";
     private const string Page="""
         <!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Home</title></head>
         <body><div id="app"></div><script type="module" src="./home-viewer.js"></script></body></html>
         """;
+    // The released browser uses a trailing slash; raw protocol clients may not.
+    // Canonicalise this one route only, never arbitrary API or filesystem paths.
+    public static string? CanonicalAsset(string? asset)=>asset==SignallingAsset+"/"?SignallingAsset:asset;
     public static bool Allowed(string? asset)
     {
-        if(string.IsNullOrEmpty(asset)||asset is "index.html" or "home-viewer.js" or "api/status" or "api/health" or "api/turn" or "api/webrtc/signaling")return true;
+        asset=CanonicalAsset(asset);
+        if(string.IsNullOrEmpty(asset)||asset is "index.html" or "home-viewer.js" or "api/status" or "api/health" or "api/turn"||asset==SignallingAsset)return true;
         if(asset.Length>512||asset.Any(c=>!char.IsAsciiLetterOrDigit(c)&&c is not('/' or '.' or '-' or '_'))||asset.Split('/').Any(part=>part is "" or "." or ".."))return false;
         if(asset.StartsWith("api/",StringComparison.Ordinal))return false;
         var extension=Path.GetExtension(asset);
@@ -23,15 +28,16 @@ public static class NativeSelkiesProxy
     {
         app.MapMethods("/game-native/{id}/selkies/{**asset}",["GET","HEAD"],async(string id,string? asset,NativeGameManager games,CurrentAccount actor,IWebHostEnvironment environment,HttpContext context,CancellationToken token)=>
         {
+            asset=CanonicalAsset(asset);
             if(!Allowed(asset))throw new DomainException("Oyun yayın kaynağı bulunamadı.",404);
             var session=games.RequireSelkies(id,actor.User,actor.SessionId??"");
             using var lifetime=CancellationTokenSource.CreateLinkedTokenSource(token,session.Lifetime);
             using var abort=session.Lifetime.Register(context.Abort);
             context.Response.Headers.CacheControl="no-store";
             context.Response.Headers["X-Content-Type-Options"]="nosniff";
-            if(asset=="api/webrtc/signaling")
+            if(asset==SignallingAsset&&context.WebSockets.IsWebSocketRequest)
             {
-                if(!context.WebSockets.IsWebSocketRequest||context.Request.Headers.Origin.ToString()!=session.Origin)
+                if(context.Request.Headers.Origin.ToString()!=session.Origin)
                     throw new DomainException("Oyun giriş bağlantısı bu istemcide kullanılamaz.",403);
                 await Signalling(session,context,lifetime.Token);return;
             }
@@ -47,9 +53,12 @@ public static class NativeSelkiesProxy
                 var path=Path.Combine(environment.WebRootPath??Path.Combine(environment.ContentRootPath,"wwwroot"),"native","selkies-viewer.js");
                 await Results.File(path,"text/javascript; charset=utf-8").ExecuteAsync(context);return;
             }
+            // Selkies also makes a plain authenticated GET to signalling before
+            // retrying. Preserve its 204/409/503 response, not a fabricated 403.
             using var request=session.ReadRequest(asset,context.Request.Method=="HEAD");
             using var response=await session.Http.SendAsync(request,HttpCompletionOption.ResponseHeadersRead,lifetime.Token);
             context.Response.StatusCode=(int)response.StatusCode;
+            if(response.Headers.RetryAfter is{} retry)context.Response.Headers.RetryAfter=retry.ToString();
             if(response.Content.Headers.ContentLength>32L*1024*1024)throw new DomainException("Oyun yayın kaynağı çok büyük.",502);
             context.Response.ContentType=response.Content.Headers.ContentType?.ToString()??"application/octet-stream";
             if(context.Request.Method=="HEAD")return;
@@ -65,7 +74,7 @@ public static class NativeSelkiesProxy
         {
             using var upstream=new ClientWebSocket();upstream.Options.Proxy=null;upstream.Options.SetRequestHeader("Origin",session.Origin);
             using var budget=CancellationTokenSource.CreateLinkedTokenSource(token);
-            await upstream.ConnectAsync(new Uri(session.Target("api/webrtc/signaling").Replace("http://","ws://",StringComparison.Ordinal)),budget.Token);
+            await upstream.ConnectAsync(new Uri(session.Target(SignallingAsset).Replace("http://","ws://",StringComparison.Ordinal)),budget.Token);
             using var browser=await context.WebSockets.AcceptWebSocketAsync();
             var incoming=Copy(browser,upstream,budget.Token);var outgoing=Copy(upstream,browser,budget.Token);
             await Task.WhenAny(incoming,outgoing);budget.Cancel();

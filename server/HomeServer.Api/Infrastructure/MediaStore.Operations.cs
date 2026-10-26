@@ -5,7 +5,7 @@ namespace HomeServer.Infrastructure;
 
 public sealed partial class MediaStore
 {
-    public const int LatestSchema=43;
+    public const int LatestSchema=44;
     public SystemJob QueueBackup()
     {
         lock (_writeGate)

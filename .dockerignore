@@ -25,5 +25,9 @@ node_modules
 **/wwwroot
 tests/*
 !tests/native
+!tests/HomeServer.Tests
+tests/HomeServer.Tests/*
+!tests/HomeServer.Tests/*.cs
+!tests/HomeServer.Tests/*.csproj
 .git
 **/*.log

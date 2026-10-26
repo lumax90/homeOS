@@ -1,0 +1,32 @@
+{
+  "format": 1,
+  "reviewedAt": "2026-10-26",
+  "name": "jellyfin-ffmpeg",
+  "linuxBuildProfile": "Home source build; exact signed Ubuntu shared-library source packages retained; autodetection disabled",
+  "version": "8.1.3-1",
+  "sourceCommit": "253db2a7b0a8045c54ce68ce33d7f601229b1822",
+  "sourceUrl": "https://github.com/jellyfin/jellyfin-ffmpeg/tree/253db2a7b0a8045c54ce68ce33d7f601229b1822",
+  "sourceArchive": {
+    "url": "https://codeload.github.com/jellyfin/jellyfin-ffmpeg/tar.gz/253db2a7b0a8045c54ce68ce33d7f601229b1822",
+    "bytes": 17786719,
+    "sha256": "2d2619b15611f4f7b7bd73074b50039f4d1c4953888ac9e19bc47d95c95f0281"
+  },
+  "distribution": {
+    "correspondingSourceVerified": true,
+    "verifiedAt": "2026-10-26",
+    "note": "Source-built Linux profile: pinned FFmpeg source/build recipe, exact signed Ubuntu non-system dependency sources/descriptors and copyright notices retained. Archive hashes and all declared dependency source versions verified; final image repeats this verification. The original vendor binary bundle is not distributed."
+  },
+  "license": "GPL-3.0-or-later; bundled components retain their individual notices",
+  "packages": {
+    "linux-x64": {
+      "url": "https://github.com/jellyfin/jellyfin-ffmpeg/releases/download/v8.1.3-1/jellyfin-ffmpeg8_8.1.3-1-noble_amd64.deb",
+      "bytes": 52574218,
+      "sha256": "188fa8b31f7e0ded9dadd1d11d1cd05482a7f03cec4e5c0af80aae21fde44ce4"
+    },
+    "win-x64": {
+      "url": "https://github.com/jellyfin/jellyfin-ffmpeg/releases/download/v8.1.3-1/jellyfin-ffmpeg_8.1.3-1_portable_win64-clang-gpl.zip",
+      "bytes": 68034152,
+      "sha256": "3691f8b2d4c39c511b5faff1c8c4687bd782dac823e63ba69f0755f7ce1af9ce"
+    }
+  }
+}

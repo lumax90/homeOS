@@ -25,6 +25,25 @@ COPY deploy/selkies/runtime.json deploy/selkies/runtime.json
 COPY tools/stage-selkies.mjs tools/stage-selkies.mjs
 RUN node tools/stage-selkies.mjs /selkies.deb
 
+FROM node-tools AS media-package
+WORKDIR /src
+COPY deploy/media/runtime.json deploy/media/runtime.json
+COPY tools/stage-media-runtime.mjs tools/stage-media-runtime.mjs
+RUN node tools/stage-media-runtime.mjs /jellyfin-ffmpeg.deb linux-x64 \
+    && node tools/stage-media-runtime.mjs /jellyfin-ffmpeg-source.tar.gz source
+
+FROM mcr.microsoft.com/dotnet/sdk:10.0.401-noble@sha256:e70cdb7f80b0348f5cb85f19a8f670fca061f033d57eed12fa003d58b0e06317 AS media-build
+ARG TARGETARCH
+RUN test "$TARGETARCH" = amd64 \
+    && sed -i 's/^Types: deb$/Types: deb deb-src/' /etc/apt/sources.list.d/ubuntu.sources \
+    && apt-get update && apt-get install -y --no-install-recommends \
+       build-essential pkg-config nasm ca-certificates libx264-dev libx265-dev libvpx-dev libopus-dev \
+       libmp3lame-dev libdav1d-dev libvorbis-dev libass-dev libzimg-dev libgnutls28-dev \
+       zlib1g-dev libxml2-dev libfreetype6-dev libfontconfig1-dev libfribidi-dev libharfbuzz-dev
+COPY --from=media-package /jellyfin-ffmpeg-source.tar.gz /jellyfin-ffmpeg-source.tar.gz
+COPY deploy/media/build-runtime.sh /build-media-runtime.sh
+RUN bash /build-media-runtime.sh /jellyfin-ffmpeg-source.tar.gz
+
 FROM mcr.microsoft.com/dotnet/sdk:10.0.401-noble@sha256:e70cdb7f80b0348f5cb85f19a8f670fca061f033d57eed12fa003d58b0e06317 AS selkies-build
 ARG TARGETARCH
 RUN test "$TARGETARCH" = amd64 && apt-get update && apt-get install -y --no-install-recommends \
@@ -81,6 +100,20 @@ COPY tests/native/ tests/native/
 RUN --mount=type=cache,id=home-nuget,target=/root/.nuget/packages \
     dotnet publish tools/Home.NativeLinuxProbe/Home.NativeLinuxProbe.csproj -c Release -r linux-x64 --self-contained true -o /native-probe --nologo
 
+FROM build AS media-tests
+COPY --from=media-build /app/MediaRuntime/ /app/MediaRuntime/
+COPY --from=media-build /media-runtime-dependencies.txt /tmp/media-runtime-dependencies.txt
+COPY deploy/media/runtime-dependencies.sh /tmp/media-runtime-dependencies.sh
+RUN bash /tmp/media-runtime-dependencies.sh /tmp/media-runtime-dependencies.txt
+COPY tests/HomeServer.Tests/ tests/HomeServer.Tests/
+ENV HOME_TEST_FFMPEG=/app/MediaRuntime/bin/ffmpeg \
+    HOME_TEST_FFPROBE=/app/MediaRuntime/bin/ffprobe
+RUN --mount=type=cache,id=home-nuget,target=/root/.nuget/packages \
+    dotnet test tests/HomeServer.Tests/HomeServer.Tests.csproj -c Release \
+    --filter 'FullyQualifiedName~MediaRuntimeCompatibilityTests|FullyQualifiedName~DolbyVisionBaseLayerTests|FullyQualifiedName~DolbyVisionAnalysisTests|FullyQualifiedName~PlaybackEfficiencyTests|FullyQualifiedName~PlaybackLifecycleTests|FullyQualifiedName~PlaybackWindowTests|FullyQualifiedName~PlaybackQuotaTests' \
+    --logger 'trx;LogFileName=media-runtime.trx' --results-directory /media-runtime-reports --nologo \
+    && printf '%s\n' 'Pinned Jellyfin-FFmpeg: native compatibility/base-layer/preservation/lifecycle checks passed.' > /media-runtime-tested.txt
+
 FROM scratch AS verification-tools
 COPY --from=build /native-probe/ /native-probe/
 
@@ -103,6 +136,16 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && cp /usr/share/doc/libsdl2-2.0-0/copyright /app/licenses/SDL2-copyright.txt \
     && chown 1654:1654 /data && rm -rf /var/lib/apt/lists/* && rm /tmp/home-selkies.deb
 COPY --from=build /publish/ /app/
+COPY --from=media-build /app/MediaRuntime/ /app/MediaRuntime/
+COPY --from=media-build /media-runtime-dependencies.txt /app/MediaRuntime/licenses/runtime-dependencies.txt
+COPY deploy/media/runtime-dependencies.sh /app/MediaRuntime/runtime-dependencies.sh
+RUN bash /app/MediaRuntime/runtime-dependencies.sh /app/MediaRuntime/licenses/runtime-dependencies.txt
+COPY deploy/media/runtime.json /app/MediaRuntime/source.json
+COPY deploy/media/install.sh /app/MediaRuntime/install.sh
+COPY deploy/media/verify-source.sh /app/MediaRuntime/verify-source.sh
+COPY --from=media-package /jellyfin-ffmpeg-source.tar.gz /app/MediaRuntime/licenses/upstream-source.tar.gz
+COPY --from=media-tests /media-runtime-tested.txt /app/MediaRuntime/test-proof.txt
+RUN bash /app/MediaRuntime/install.sh
 COPY --from=native-runtime --chown=0:0 /app/NativeRuntime/ /app/NativeRuntime/
 COPY --from=native-runtime-check /native-runtime-checked.txt /app/NativeRuntime/runtime-lock-check.txt
 COPY --from=selkies-build /selkies/ /app/SelkiesRuntime/
@@ -117,8 +160,8 @@ LABEL org.opencontainers.image.source="https://github.com/lumax90/homeOS" \
 ARG HOME_SOURCE_REVISION=local
 ENV Home__DataPath=/data \
     HOME_SOURCE_REVISION=$HOME_SOURCE_REVISION \
-    Home__FfmpegPath=/usr/bin/ffmpeg \
-    Home__FfprobePath=/usr/bin/ffprobe \
+    Home__FfmpegPath=/app/MediaRuntime/bin/ffmpeg \
+    Home__FfprobePath=/app/MediaRuntime/bin/ffprobe \
     Home__Par2Path=/usr/bin/par2 \
     Home__Games__NativeRuntimePath=/app/NativeRuntime \
     Home__Games__SelkiesRuntimePath=/app/SelkiesRuntime \

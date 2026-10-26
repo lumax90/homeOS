@@ -12,13 +12,14 @@ public interface IMediaProbe
 
 public sealed class MediaTools(IConfiguration configuration, HomePaths paths, ILogger<MediaTools> logger) : IMediaProbe
 {
+    public const int CurrentAnalysisVersion=3;
     private readonly string? _ffmpeg = Find(configuration["Home:FfmpegPath"], "ffmpeg");
     private readonly string? _ffprobe = Find(configuration["Home:FfprobePath"], "ffprobe");
     private readonly SemaphoreSlim _operations = new(2, 2);
     public bool FfmpegAvailable => _ffmpeg is not null;
     public bool FfprobeAvailable => _ffprobe is not null;
     public string FfmpegExecutable => _ffmpeg ?? throw new DomainException("FFmpeg sunucuda yapılandırılmadı.", 409);
-    private const string ProbeEntries = "format=duration,format_name,bit_rate,start_time:format_tags:stream=index,codec_type,codec_name,codec_tag_string,width,height,channels,channel_layout,sample_rate,bit_rate,profile,level,avg_frame_rate,pix_fmt,color_transfer,color_primaries,color_space,bits_per_raw_sample,bits_per_sample,extradata:stream_tags=language,title:stream_disposition=default,forced,hearing_impaired,attached_pic:stream_side_data=side_data_type,dv_profile,dv_level:chapter=id,start_time,end_time:chapter_tags=title";
+    private const string ProbeEntries = "format=duration,format_name,bit_rate,start_time:format_tags:stream=index,codec_type,codec_name,codec_tag_string,width,height,channels,channel_layout,sample_rate,bit_rate,profile,level,avg_frame_rate,pix_fmt,color_transfer,color_primaries,color_space,bits_per_raw_sample,bits_per_sample,extradata:stream_tags=language,title:stream_disposition=default,forced,hearing_impaired,attached_pic:stream_side_data=side_data_type,dv_profile,dv_level,dv_bl_signal_compatibility_id,bl_present_flag,el_present_flag,rpu_present_flag:chapter=id,start_time,end_time:chapter_tags=title";
 
     public async Task<ProbeResult?> ProbeAsync(string path, CancellationToken cancellationToken)
     {
@@ -87,7 +88,7 @@ public sealed class MediaTools(IConfiguration configuration, HomePaths paths, IL
                     Long(value, "bit_rate"), Text(value, "profile"), Text(value, "pix_fmt"), Text(value, "color_transfer"), Text(value, "color_primaries"),
                     value.TryGetProperty("side_data_list", out var sideData) && sideData.EnumerateArray().Any(data => Text(data, "side_data_type")?.Contains("DOVI", StringComparison.OrdinalIgnoreCase) == true), Text(value, "color_space"),
                     Int(value, "level"), CodecIdentifiers.FrameRate(Text(value, "avg_frame_rate")), CodecIdentifiers.BitDepth(Text(value, "pix_fmt"), Int(value, "bits_per_raw_sample")),
-                    Text(value, "codec_tag_string"), CodecIdentifiers.FromProbe(value)));
+                     Text(value, "codec_tag_string"), CodecIdentifiers.FromProbe(value),CodecIdentifiers.DolbyVisionFromProbe(value),CodecIdentifiers.FromProbe(value,allowDolbyVision:false)));
             }
         }
         var chapters = new List<MediaChapter>();
@@ -106,7 +107,7 @@ public sealed class MediaTools(IConfiguration configuration, HomePaths paths, IL
         var audio = streams.Where(s => s.Kind == "audio").OrderByDescending(s => s.IsDefault).FirstOrDefault();
         return new ProbeResult(duration is >= 0 ? duration : null, video?.Width, video?.Height, video?.Codec, audio?.Codec,
             streams.Where(s => s.Kind == "audio").Select(s => s.Language).Distinct().ToArray(), streams.ToArray(), chapters.ToArray(), Text(format, "format_name"), Long(format, "bit_rate"), Number(format, "start_time") ?? 0,
-            video is null && audio is not null ? Music.MusicTags.Read(root) : null, AnalysisVersion: 1);
+            video is null && audio is not null ? Music.MusicTags.Read(root) : null, AnalysisVersion: CurrentAnalysisVersion);
     }
 
     public async Task<double> KeyframeBeforeAsync(AnalyzedMedia media, int videoIndex, double position, CancellationToken token)

@@ -30,12 +30,25 @@ public sealed class NativeSelkiesTests
     [InlineData("api/upload")]
     [InlineData("api/files/manifest.json")]
     [InlineData("api/screenshot")]
+    [InlineData("api/webrtc/signaling//")]
+    [InlineData("api/webrtc/signaling/../tokens")]
+    [InlineData("api/webrtc/signaling/%2f")]
     [InlineData("../tokens.json")]
     [InlineData("src/../../tokens.json")]
     [InlineData("src/%2e%2e/tokens.json")]
     [InlineData("src\\..\\tokens.json")]
     [InlineData("https://example.invalid/script.js")]
     public void ViewerProxyCannotBecomeAGenericDesktopOrFileManagementGateway(string path)=>Assert.False(NativeSelkiesProxy.Allowed(path));
+    [Theory]
+    [InlineData("api/webrtc/signaling")]
+    [InlineData("api/webrtc/signaling/")]
+    public void ReleasedBrowserAndRawProtocolSignallingUseTheSameExactAllowedRoute(string path)
+    {
+        Assert.True(NativeSelkiesProxy.Allowed(path));
+        Assert.Equal("api/webrtc/signaling",NativeSelkiesProxy.CanonicalAsset(path));
+        Assert.Equal("api/tokens/",NativeSelkiesProxy.CanonicalAsset("api/tokens/"));
+        Assert.False(NativeSelkiesProxy.Allowed("api/tokens/"));
+    }
     [Fact]
     public async Task AnAbsentAlternatePackageDoesNotCreateStateOrStartAnything()
     {
@@ -46,6 +59,7 @@ public sealed class NativeSelkiesTests
         await using var app=new Factory(home);using var client=app.CreateClient();
         Assert.Equal(HttpStatusCode.Unauthorized,(await client.GetAsync("/api/games/native/backends")).StatusCode);
         Assert.Equal(HttpStatusCode.Unauthorized,(await client.GetAsync("/game-native/fixture/selkies/")).StatusCode);
+        Assert.Equal(HttpStatusCode.Unauthorized,(await client.GetAsync("/game-native/fixture/selkies/api/webrtc/signaling/")).StatusCode);
     }
     [Fact]
     public void LegacyRequestsKeepStandardAndUnknownBackendsCannotSelectExecutablePaths()

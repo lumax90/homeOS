@@ -170,6 +170,12 @@ export function Player({ item, onClose, onNext, onPrevious, onEnded, queueLength
       {page && (settings || roomPanel || room) && <aside className="watch-inspector" aria-label="Oynatma tercihleri"><header><h2>Oynatma tercihleri</h2><Button isIconOnly variant="ghost" aria-label="Kapat" onPress={() => { setSettings(false); setRoomPanel(false); }}><X size={18} /></Button></header>
         {roomController && (roomPanel || room) && <WatchPlayerPanel controller={roomController} ready={!!playback.session && !playback.busy} onPrepare={playback.arm} />}
         {settings && <div className="home-form">
+          {sourceVideo?.dolbyVision&&<section aria-label="Kaynak görüntü bilgisi"><h3>Dolby Vision</h3>
+            {sourceVideo.codecString&&<p className="field-hint">{t('Codec kimliği')}: {sourceVideo.codecString}</p>}
+            {sourceVideo.dolbyVisionConfig&&<><p className="field-hint">{t('Dolby Vision profili')}: {sourceVideo.dolbyVisionConfig.profile} · {t('Seviye')}: {sourceVideo.dolbyVisionConfig.level}</p>
+              <p className="field-hint">{t('Temel katman uyumluluk kimliği')}: {sourceVideo.dolbyVisionConfig.baseLayerCompatibilityId??'—'}</p>
+              <p className="field-hint">{t('Geliştirme katmanı')}: {sourceVideo.dolbyVisionConfig.enhancementLayerPresent===null?'—':sourceVideo.dolbyVisionConfig.enhancementLayerPresent?t('Var'):t('Yok')}</p></>}
+          </section>}
           {playback.session && <section aria-label="Oynatma bilgisi"><h3>{mode}</h3>
             {sourceVideo && <p className="field-hint">{t('Görüntü')}: {sourceVideo.codec.toUpperCase()} → {playback.session.videoCodec?.toUpperCase() ?? sourceVideo.codec.toUpperCase()}{video.current?.videoHeight ? ` · ${video.current.videoWidth} × ${video.current.videoHeight}` : ''}</p>}
             {sourceAudio && <p className="field-hint">{t('Ses')}: {sourceAudio.codec.toUpperCase()} → {playback.session.audioCodec?.toUpperCase() ?? sourceAudio.codec.toUpperCase()}</p>}

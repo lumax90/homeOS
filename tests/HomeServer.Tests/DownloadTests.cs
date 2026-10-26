@@ -127,7 +127,7 @@ public sealed class DownloadTests
         var scan = home.Store.TryClaimJob()!;
         await home.Scanner.ScanAsync(scan, timeout.Token);
         Assert.Single(home.Store.GetCatalog(null, null, imported.ImportedLibraryId, 0, 60).Items);
-        var published = Path.Combine(files.LibraryRoot, record.Id, "Local transfer.wav");
+        var published = Path.Combine(files.LibraryRoot,home.Store.DownloadImportFile(record.Id,"Local transfer.wav"));
         Assert.Equal(original, await File.ReadAllBytesAsync(published, timeout.Token));
         await importer.ImportAsync(record, session, timeout.Token);
         Assert.Single(Directory.GetDirectories(files.LibraryRoot));

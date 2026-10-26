@@ -15,6 +15,8 @@ import { SubtitleMediaPanel, SubtitleSyncPanel } from './SubtitleTools';
 import { SegmentEditor } from './PlaybackSegments';
 import { ReceiverPanel } from './Receivers';
 import { OfflineDownloadAction } from './Offline';
+import {ContentPeople}from'./CatalogFeeds';
+import {ContentMedia}from'./ContentMedia';
 import './title-page.css';
 import { usePageTitle } from '../usePageTitle';
 
@@ -51,6 +53,7 @@ export function MediaDetails({ selection = null, mediaId, onClose, onPlay, onSet
         {content?.genres.length ? <div className="genre-list">{content.genres.slice(0, 4).map(genre => <span key={genre}>{genre}</span>)}</div> : null}
         <p className="detail-description">{content ? content.episodeOverview || content.overview || 'Sağlayıcıda açıklama bulunmuyor.' : 'Kendi kütüphanendeki bu içerik sunucundan oynatılır. Ses, altyazı ve medya bilgileri dosyanın kendisinden okunur.'}</p>
         {content && <a className="content-source" href={content.providerUrl} target="_blank" rel="noreferrer">Bilgiler: {content.provider === 'tvmaze' ? 'TVmaze · CC BY-SA' : 'TMDB'} <ExternalLink size={12} /></a>}
+        {content&&<><ContentPeople key={content.id+'-people'} metadata={content} expanded/><ContentMedia key={content.id+'-media'} metadata={content}/></>}
         {entry.data && <CatalogSourceLinks metadata={entry.data.metadata} />}
         {item.isDemo && content && <p className="demo-match-note">Bu oynatılabilir dosya bir örnektir; eşleştirilen yapımın tam videosu değildir.</p>}
         <div className="detail-actions"><Button className="play-button detail-play" onPress={() => onPlay(item)} isDisabled={!item.available}><Play size={17} fill="currentColor" />{item.positionSeconds > 0 && !item.isWatched ? 'Kaldığın yerden devam et' : 'Oynat'}</Button>{account.role === 'admin' && item.kind === 'video' && <Button className="metadata-match-button" variant="ghost" onPress={() => setMatching(true)}><Sparkles size={16} />{content ? 'Eşleştirmeyi değiştir' : 'Bilgileri eşleştir'}</Button>}</div>

@@ -49,7 +49,38 @@ test('aborted capability probes cannot produce a stale playback command', async 
   const controller = new AbortController(); controller.abort();
   await assert.rejects(playbackCapabilities('mp4', tracks, options, environment, controller.signal), {name: 'AbortError'});
 });
+test('Dolby Vision support is probed with its exact identifier only for original-file playback',async()=>{
+  const source={...tracks,streams:[{...tracks.streams[0],dolbyVision:true,codecString:'dvh1.05.06'},{...tracks.streams[1],codec:'aac',codecString:'mp4a.40.2',channels:2}]};
+  const checked:string[]=[];const client=await playbackCapabilities('mp4',source,options,{...environment,canPlayType:mime=>{checked.push(mime);return mime.includes('dvh1')?'probably':environment.canPlayType(mime);}});
+  assert.ok(checked.some(mime=>mime.includes('dvh1.05.06')));assert.equal(client.capabilities.formats.find(format=>format.transport==='direct')!.original,true);
+  assert.equal(client.capabilities.formats.some(format=>format.transport!=='direct'&&(format.original||format.videoCopy)),false);
+});
 test('buffer measurement excludes disconnected future ranges', () => {
   assert.equal(playbackBuffer({currentTime: 4, buffered: {length: 2, start: i => [0, 30][i], end: i => [10, 40][i]}}), 6);
   assert.equal(playbackBuffer({currentTime: 20, buffered: {length: 2, start: i => [0, 30][i], end: i => [10, 40][i]}}), 0);
+});
+test('P8.1 offers a distinct HDR10 base-layer path with unsupported TrueHD audio, never false full-DV preservation',async()=>{
+  const source={...tracks,streams:[{...tracks.streams[0],dolbyVision:true,codecString:'dvh1.08.01',baseCodecString:'hvc1.2.4.L153.B0',colorPrimaries:'bt2020',
+    dolbyVisionConfig:{profile:8,level:1,baseLayerCompatibilityId:1,baseLayerPresent:true,enhancementLayerPresent:false,rpuPresent:true}},
+    {...tracks.streams[1],codec:'truehd'}]};
+  const checked:string[]=[];
+  const client=await playbackCapabilities('mp4',source,options,{...environment,isTypeSupported:mime=>{checked.push(mime);return !mime.includes('dvh1');}});
+  const format=client.capabilities.formats.find(f=>f.container==='mp4'&&f.transport==='hls.js')!;
+  assert.equal(format.baseVideoCopy,true);assert.equal(format.baseOriginal,false);assert.equal(format.videoCopy,false);assert.equal(format.original,false);
+  assert.ok(checked.some(mime=>mime.includes('hvc1.2.4.L153.B0')&&mime.includes('mp4a.40.2')));
+});
+test('unknown layers, P5, P7/EL and HLG P8.4 do not borrow the verified HDR10 base-copy path',async()=>{
+  for(const config of [null,{profile:5,baseLayerCompatibilityId:0},{profile:7,baseLayerCompatibilityId:1,enhancementLayerPresent:true},{profile:8,baseLayerCompatibilityId:4}]){
+    const source={...tracks,streams:[{...tracks.streams[0],dolbyVision:true,codecString:'dvh1.05.06',baseCodecString:'hvc1.2.4.L153.B0',colorPrimaries:'bt2020',dolbyVisionConfig:config},tracks.streams[1]]} as MediaTracks;
+    const client=await playbackCapabilities('mp4',source,options,environment);
+    assert.equal(client.capabilities.formats.some(f=>f.baseOriginal||f.baseVideoCopy),false);
+  }
+});
+test('the base-layer still obeys exact MediaCapabilities HDR/codec rejection and cancellation',async()=>{
+  const source={...tracks,streams:[{...tracks.streams[0],dolbyVision:true,codecString:'dvh1.08.01',baseCodecString:'hvc1.2.4.L153.B0',colorPrimaries:'bt2020',
+    dolbyVisionConfig:{profile:8,level:1,baseLayerCompatibilityId:1,baseLayerPresent:true,enhancementLayerPresent:false,rpuPresent:true}},tracks.streams[1]]};
+  const client=await playbackCapabilities('mp4',source,options,{...environment,decodingInfo:async()=>({supported:false})});
+  assert.equal(client.capabilities.formats.some(f=>f.baseOriginal||f.baseVideoCopy),false);
+  const controller=new AbortController();controller.abort();
+  await assert.rejects(playbackCapabilities('mp4',source,options,environment,controller.signal),{name:'AbortError'});
 });

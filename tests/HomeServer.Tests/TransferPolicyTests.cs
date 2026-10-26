@@ -85,7 +85,7 @@ public sealed class TransferPolicyTests
             Assert.False(actual.Complete); Assert.Single(session.Files);
             await session.StopAsync(); Assert.Equal(wanted, await File.ReadAllBytesAsync(session.Files[0].FullPath, timeout.Token));
             var importer = new DownloadImporter(paths, home.Store, new EventHub()); await importer.ImportAsync(record, session, timeout.Token);
-            published = Path.Combine(paths.LibraryRoot, record.Id, file.Path); Assert.Equal(wanted, await File.ReadAllBytesAsync(published, timeout.Token));
+            published = Path.Combine(paths.LibraryRoot,home.Store.DownloadImportFile(record.Id,file.Path)); Assert.Equal(wanted, await File.ReadAllBytesAsync(published, timeout.Token));
         }
         var paused = home.Store.SetDownloadIntent(record.Id, "paused");
         home.Store.CleanDownloadPayload(record.Id, paused.Revision, () => engine.CleanPayload(record.Id));

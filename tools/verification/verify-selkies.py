@@ -80,7 +80,8 @@ async def import_fixture(home, system, fixtures):
 
 async def connect_selkies(home, launch, ticket, pc):
     prefix = urlparse(launch["url"]).path.rstrip("/")
-    socket = await home.client.ws_connect(home.base + prefix + "/api/webrtc/signaling", origin=home.base)
+    # Match the released browser URL, including its trailing slash.
+    socket = await home.client.ws_connect(home.base + prefix + "/api/webrtc/signaling/", origin=home.base)
     await socket.send_str("HELLO client " + json.dumps({"client_type": "viewer", "client_slot": -1,
         "client_strict_viewer": True, "client_token": ticket, "display_id": "primary", "client_tab_id": secrets.token_hex(8),
         "resume_key": secrets.token_hex(16), "fullcolor_codecs": [], "tenbit_codecs": []}))

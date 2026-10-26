@@ -36,6 +36,8 @@ import { MainNavigation } from './components/MainNavigation';
 import { useController, useControllerCommands } from './controller/react';
 import { controllerScope } from './controller/dom';
 import type { SettingsSection } from './settingsModel';
+import { catalogGroups,catalogCardKey,catalogTitle } from './catalogGroups';
+import {LibrarySeries}from'./components/LibrarySeries';
 
 type View = Section;
 type Selection = { item: MediaItem; origin: string };
@@ -182,25 +184,25 @@ function Workspace({ session }: { session: Session }) {
   const libraries = useQuery({ queryKey: ['libraries'], queryFn: () => request<Library[]>('/libraries') });
   const jobs = useQuery({ queryKey: ['jobs'], queryFn: () => request<ScanJob[]>('/jobs'), enabled: session.role === 'admin' });
   const downloads = useQuery({ queryKey: ['downloads'], queryFn: () => request<Download[]>('/downloads'), enabled: session.canAcquire });
-  const continuing = useQuery({ queryKey: ['continue'], queryFn: () => request<MediaItem[]>('/continue') });
+  const continuing = useQuery({ queryKey: ['continue'], queryFn: () => request<MediaItem[]>('/continue?grouped=true') });
   const savedQueue = useQuery({ queryKey: ['queue'], queryFn: () => request<{ items: MediaItem[]; index: number; shuffle: boolean; repeat: string }>('/queue') });
   useEffect(() => { if (savedQueue.data && !queueLoaded.current) { queueLoaded.current = true; setQueue(savedQueue.data.items); setQueueIndex(savedQueue.data.index); setShuffle(savedQueue.data.shuffle); setRepeat(savedQueue.data.repeat); } }, [savedQueue.data]);
   const catalog = useInfiniteQuery({
     queryKey: ['catalog', debounced, kind, libraryFilter],
     initialPageParam: 0,
-    queryFn: ({ pageParam }) => request<CatalogPage>(`/catalog?${new URLSearchParams({ q: debounced, kind, library: libraryFilter, offset: String(pageParam), limit: '60' })}`),
+    queryFn: ({ pageParam }) => request<CatalogPage>(`/catalog?${new URLSearchParams({ q: debounced, kind, library: libraryFilter, offset: String(pageParam), limit: '60',grouped:'true' })}`),
     getNextPageParam: last => last.offset + last.items.length < last.total ? last.offset + last.items.length : undefined,
   });
   const files = catalog.data?.pages.flatMap(page => page.items) ?? [];
-  const groups = new Map<string, MediaItem>();
-  for (const file of files) {
-    const key = file.content ? `${file.content.id}:${file.content.seasonNumber}:${file.content.episodeNumber}` : file.id;
-    if (!groups.has(key)) groups.set(key, file);
-  }
-  const items = [...groups.values()];
+  const items = catalogGroups(files);
+  // Home has its own unfiltered, fresh catalog page. Library filters and loaded
+  // pagination must not become an invisible filter on manually imported files.
+  const homeCatalog = useQuery({queryKey:['catalog','home-recent'],enabled:view==='home',
+    queryFn:({signal})=>request<CatalogPage>('/catalog?offset=0&limit=60&grouped=true',{signal})});
+  const homeItems = catalogGroups(homeCatalog.data?.items??[]);
   const total = catalog.data?.pages[0]?.total ?? 0;
   const activeJobs = jobs.data?.filter(job => ['queued', 'running'].includes(job.status)) ?? [];
-  const featured = items.find(item => item.available && item.kind === 'video' && item.hasThumbnail) ?? items[0];
+  const featured = homeItems.find(item => item.available && item.kind === 'video' && item.hasThumbnail) ?? homeItems[0];
   const isDemo = !!libraries.data?.some(library => library.isDemo);
 
   useEffect(() => { const timer = setTimeout(() => setDebounced(search), 220); return () => clearTimeout(timer); }, [search]);
@@ -330,6 +332,7 @@ function Workspace({ session }: { session: Session }) {
       }}>
         {route.kind === 'title' && <ContentPage provider={route.provider} kind={route.contentKind} id={route.id} onBack={() => navigation.back('/' + view)} onSearch={searchContent} onPlay={play} notify={notify} />}
         {route.kind === 'media' && <MediaDetails mediaId={route.id} onClose={() => navigation.back('/' + view)} onPlay={play} onSettings={() => openSettings('metadata')} onOffline={() => navigate('offline')} />}
+        {route.kind==='series'&&<LibrarySeries key={route.id} id={route.id} onBack={()=>navigation.back('/'+view)} onPlay={play}/>}
         {route.kind === 'game' && <Suspense fallback={<div className="games-hero-skeleton home-skeleton" />}><GameDetails id={route.id} onBack={() => navigation.back('/games')} onOpen={navigation.visit} notify={notify} /></Suspense>}
         {route.kind === 'not-found' && <div className="search-empty"><CircleAlert size={28} /><h1>Sayfa bulunamadı.</h1><Button onPress={() => navigate('library')}>Kütüphaneye dön</Button></div>}
         {route.kind === 'watch' && playing?.id !== route.id && <div className="connection-screen">{watchLoadError ? <><CircleAlert size={28} /><p className="form-error">{watchLoadError}</p><Button onPress={() => navigation.back('/library')}>Geri</Button></> : <><LoaderCircle className="spin" /><p>Oynatman hazırlanıyor…</p></>}</div>}
@@ -348,20 +351,20 @@ function Workspace({ session }: { session: Session }) {
         {view === 'tracking' && <TrackingView onOpen={chooseContent} onSearch={searchContent} onDiscover={() => navigate(session.canDiscover ? 'discover' : 'library')} />}
         {(view === 'downloads' || view === 'activity') && <div className="filter-pills product-subnav"><button className={view === 'downloads' ? 'filter-pill selected' : 'filter-pill'} onClick={() => navigate('downloads')}><ArrowDownToLine size={14} /> İndirmeler</button><button className={view === 'activity' ? 'filter-pill selected' : 'filter-pill'} onClick={() => navigate('activity')}><Activity size={14} /> Aktivite</button></div>}
 
-        {view !== 'offline' && (catalog.error || stats.error) && <div className="inline-error" role="alert"><CircleAlert size={18} /><span>{catalog.error?.message || stats.error?.message}</span><Button size="sm" variant="ghost" onPress={() => client.invalidateQueries()}>Yeniden dene</Button></div>}
+        {view !== 'offline' && ((view==='home'?homeCatalog.error:catalog.error) || stats.error) && <div className="inline-error" role="alert"><CircleAlert size={18} /><span>{(view==='home'?homeCatalog.error:catalog.error)?.message || stats.error?.message}</span><Button size="sm" variant="ghost" onPress={() => client.invalidateQueries()}>Yeniden dene</Button></div>}
 
         {view === 'home' && <>
           {featured ? <motion.section className="feature" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
             <div className="feature-art"><Artwork item={featured} eager mode="backdrop" /></div><div className="feature-shade" />
-            <div className="feature-copy"><span className="feature-overline"><span className="feature-rule" /> KÜTÜPHANENDEN BİR HİKÂYE</span><h2>{featured.title}</h2><div className="feature-meta"><span>{featured.isDemo ? 'Örnek içerik' : featured.libraryName}</span><span className="meta-dot">·</span><span>{duration(featured.durationSeconds)}</span><span className="quality-badge">{resolution(featured)}</span></div><p className="feature-description">{featured.content ? featured.content.episodeOverview || featured.content.overview : <>Kendi arşivinden. İstediğin zaman.<br />Biraz dur, güzel bir şey aç.</>}</p><div className="feature-actions"><Button className="play-button" onPress={() => play(featured)} isDisabled={!featured.available}><Play size={17} fill="currentColor" /> Şimdi oynat</Button><Button className="feature-info-button" onPress={() => chooseMedia({ item: featured, origin: `feature-${featured.id}` })}><Info size={18} /> Ayrıntılar</Button></div></div>
+            <div className="feature-copy"><span className="feature-overline"><span className="feature-rule" /> KÜTÜPHANENDEN BİR HİKÂYE</span><h2>{catalogTitle(featured)}</h2><div className="feature-meta"><span>{featured.isDemo ? 'Örnek içerik' : featured.libraryName}</span><span className="meta-dot">·</span><span>{featured.catalogGroup?.kind==='show'?`${featured.catalogGroup.episodeCount} bölüm`:duration(featured.durationSeconds)}</span><span className="quality-badge">{resolution(featured)}</span></div><p className="feature-description">{featured.content ? featured.catalogGroup?.kind==='show'?featured.content.overview:featured.content.episodeOverview || featured.content.overview : <>Kendi arşivinden. İstediğin zaman.<br />Biraz dur, güzel bir şey aç.</>}</p><div className="feature-actions"><Button className="play-button" onPress={() => featured.catalogGroup?.kind==='show'?chooseMedia({item:featured,origin:`feature-${catalogCardKey(featured)}`}):play(featured)} isDisabled={!featured.available}>{featured.catalogGroup?.kind==='show'?<Layers3 size={17}/>:<Play size={17} fill="currentColor"/>}{featured.catalogGroup?.kind==='show'?'Bölümleri gör':'Şimdi oynat'}</Button><Button className="feature-info-button" onPress={() => chooseMedia({ item: featured, origin: `feature-${catalogCardKey(featured)}` })}><Info size={18} /> Ayrıntılar</Button></div></div>
             <Glass className="feature-note"><HardDrive size={18} /><div><strong>Tam burada, evinde.</strong><span>{bytes(stats.data?.sizeBytes ?? 0)} · Kendi depolama alanında</span></div><span className="status-dot" /></Glass>
-            <span className="feature-index">01 <span>/ {String(total).padStart(2, '0')}</span></span>
-          </motion.section> : !catalog.isPending && (session.role === 'admin' ? <EmptyLibrary active={activeJobs.length > 0} onAdd={() => setAddOpen(true)} onActivity={() => navigate('activity')} /> : <div className="search-empty"><Layers3 size={32} /><h2>Paylaşılan kütüphanende henüz medya yok.</h2><p>Yöneticin sana kütüphane erişimi verdiğinde içeriklerini burada göreceksin.</p></div>)}
-          {catalog.isPending && <div className="feature-skeleton home-skeleton" />}
+            <span className="feature-index">01 <span>/ {String(homeCatalog.data?.total??0).padStart(2, '0')}</span></span>
+          </motion.section> : !homeCatalog.isPending && !homeCatalog.error && (session.role === 'admin' ? <EmptyLibrary active={activeJobs.length > 0} onAdd={() => setAddOpen(true)} onActivity={() => navigate('activity')} /> : <div className="search-empty"><Layers3 size={32} /><h2>Paylaşılan kütüphanende henüz medya yok.</h2><p>Yöneticin sana kütüphane erişimi verdiğinde içeriklerini burada göreceksin.</p></div>)}
+          {homeCatalog.isPending && <div className="feature-skeleton home-skeleton" />}
 
           {!!continuing.data?.length && <section className="media-section continue-section"><SectionTitle title="Kaldığın yerden" subtitle="Hikâyen seni bekliyor." /><div className="continue-grid">{continuing.data.map(item => <button className="continue-card" key={item.id} onClick={() => play(item)}><div className="continue-art"><Artwork item={item} /><span className="continue-play"><Play size={19} fill="currentColor" /></span></div><div className="continue-info"><strong>{item.title}</strong><span>{duration(Math.max(0, (item.durationSeconds ?? 0) - item.positionSeconds))} kaldı</span><div className="progress-track"><span style={{ width: `${Math.min(100, item.positionSeconds / (item.durationSeconds || 1) * 100)}%` }} /></div></div></button>)}</div></section>}
 
-          {(items.length > 0 || catalog.isPending) && <section className="media-section"><SectionTitle title="Yeni eklenenler" subtitle="Arşivinden son gelenler." action={<Button variant="ghost" className="section-link" onPress={() => navigate('library')}>Tümünü gör <ArrowRight size={16} /></Button>} /><div className="poster-grid">{catalog.isPending ? Array.from({ length: 6 }, (_, i) => <div key={i} className="poster-skeleton home-skeleton" />) : items.slice(0, 6).map(item => <MediaCard key={item.id} item={item} origin={`home-${item.id}`} onSelect={chooseMedia} />)}</div></section>}
+          {(homeItems.length > 0 || homeCatalog.isPending) && <section className="media-section"><SectionTitle title="Yeni eklenenler" subtitle="Arşivinden son gelenler." action={<Button variant="ghost" className="section-link" onPress={() => navigate('library')}>Tümünü gör <ArrowRight size={16} /></Button>} /><div className="poster-grid">{homeCatalog.isPending ? Array.from({ length: 6 }, (_, i) => <div key={i} className="poster-skeleton home-skeleton" />) : homeItems.slice(0, 6).map(item => <MediaCard key={catalogCardKey(item)} item={item} origin={`home-${catalogCardKey(item)}`} onSelect={chooseMedia} />)}</div></section>}
 
           <div className="home-bottom"><div className="home-bottom-copy"><div className="small-home-symbol"><House size={22} /></div><div><h3>İyi ki evdesin.</h3><p>İzlediklerin, dinlediklerin ve kaldığın yer. Hepsi bir arada.</p></div></div><div className="home-bottom-stats"><span><Film size={16} /> {stats.data?.videos ?? 0} video</span><span><Music2 size={16} /> {stats.data?.audio ?? 0} ses</span><span><Folder size={16} /> {stats.data?.libraries ?? 0} klasör</span></div></div>
         </>}
@@ -370,8 +373,8 @@ function Workspace({ session }: { session: Session }) {
           <div className="library-toolbar"><div className="search-box"><Search size={19} /><input ref={queryInput} aria-label="Kütüphanende ara" placeholder="Kütüphanende bir şey bul…" value={search} onChange={event => setSearch(event.target.value)} /><kbd>⌘ K</kbd>{search && <button aria-label="Aramayı temizle" onClick={() => setSearch('')}><X size={16} /></button>}</div><div className="view-switch" aria-label="Görünüm"><button className={layout === 'grid' ? 'active' : ''} aria-label="Kart görünümü" aria-pressed={layout === 'grid'} onClick={() => setLayout('grid')}><Grid2X2 size={18} /></button><button className={layout === 'list' ? 'active' : ''} aria-label="Liste görünümü" aria-pressed={layout === 'list'} onClick={() => setLayout('list')}><List size={20} /></button></div></div>
           <div className="filter-row"><div className="filter-pills">{[{ id: '', label: 'Tümü', icon: Layers3 }, { id: 'video', label: 'Videolar', icon: Film }, { id: 'audio', label: 'Müzik', icon: Music2 }].map(({ id, label, icon: Icon }) => <button key={id} onClick={() => setKind(id)} className={kind === id ? 'filter-pill selected' : 'filter-pill'} aria-pressed={kind === id}><Icon size={15} />{label}{id === '' && <span>{stats.data?.items ?? 0}</span>}</button>)}</div><label className="library-filter"><span className="sr-only">Kütüphane filtresi</span><select value={libraryFilter} onChange={e => setLibraryFilter(e.target.value)}><option value="">Tüm kütüphaneler</option>{libraries.data?.map(library => <option value={library.id} key={library.id}>{library.name}</option>)}</select></label></div>
           {catalog.isPending ? <div className="poster-grid">{Array.from({ length: 6 }, (_, i) => <div key={i} className="poster-skeleton home-skeleton" />)}</div> : items.length ? <>
-            <div className={layout === 'grid' ? 'poster-grid library-grid' : 'media-list'}>{items.map(item => layout === 'grid' ? <MediaCard key={item.id} item={item} origin={`library-${item.id}`} onSelect={chooseMedia} /> : <button className="media-list-row" key={item.id} data-home-focus={item.id} onClick={() => chooseMedia({ item, origin: `list-${item.id}` })}><div className="media-list-art"><Artwork item={item} /></div><div className="media-list-title"><strong>{item.title}</strong><span>{item.libraryName}{item.isDemo ? ' · Örnek içerik' : ''}</span></div><span>{duration(item.durationSeconds)}</span><span className="list-resolution">{resolution(item)}</span><span className="list-size">{bytes(item.sizeBytes)}</span>{item.available ? <Play size={17} /> : <CircleAlert size={17} />}</button>)}</div>
-            <div className="catalog-footer"><span>{items.length} içerik · {files.length} / {total} dosya</span>{catalog.hasNextPage && <Button className="secondary-button" onPress={() => catalog.fetchNextPage()} isDisabled={catalog.isFetchingNextPage}>Daha fazla göster</Button>}</div>
+            <div className={layout === 'grid' ? 'poster-grid library-grid' : 'media-list'}>{items.map(item => layout === 'grid' ? <MediaCard key={catalogCardKey(item)} item={item} origin={`library-${catalogCardKey(item)}`} onSelect={chooseMedia} /> : <button className="media-list-row" key={catalogCardKey(item)} data-home-focus={catalogCardKey(item)} onClick={() => chooseMedia({ item, origin: `list-${catalogCardKey(item)}` })}><div className="media-list-art"><Artwork item={item} /></div><div className="media-list-title"><strong>{catalogTitle(item)}</strong><span>{item.libraryName}{item.isDemo ? ' · Örnek içerik' : ''}</span></div><span>{item.catalogGroup?.kind==='show'?`${item.catalogGroup.episodeCount} bölüm`:duration(item.durationSeconds)}</span><span className="list-resolution">{resolution(item)}</span><span className="list-size">{item.catalogGroup?.kind==='show'?`${item.catalogGroup.seasonCount} sezon`:bytes(item.sizeBytes)}</span>{item.available ? <Play size={17} /> : <CircleAlert size={17} />}</button>)}</div>
+            <div className="catalog-footer"><span>{items.length} / {total} içerik · {catalog.data?.pages[0]?.fileTotal??total} dosya</span>{catalog.hasNextPage && <Button className="secondary-button" onPress={() => catalog.fetchNextPage()} isDisabled={catalog.isFetchingNextPage}>Daha fazla göster</Button>}</div>
           </> : <div className="search-empty"><Search size={32} strokeWidth={1.3} /><h2>{search || kind || libraryFilter ? 'Henüz bir eşleşme yok.' : 'Kütüphanen içerik bekliyor.'}</h2><p>{search || kind || libraryFilter ? 'Başka bir arama veya filtre deneyebilirsin.' : session.role === 'admin' ? 'Medya klasörünü bağladığında içeriklerin burada görünecek.' : 'Yöneticinin paylaştığı medya burada görünecek.'}</p>{(search || kind || libraryFilter || session.role === 'admin') && <Button variant="ghost" onPress={() => { if (search || kind || libraryFilter) { setSearch(''); setKind(''); setLibraryFilter(''); } else setAddOpen(true); }}>{search || kind || libraryFilter ? 'Filtreleri temizle' : 'Kütüphane ekle'}<ArrowRight size={16} /></Button>}</div>}
         </>}
 
@@ -407,17 +410,18 @@ function SectionTitle({ title, subtitle, action }: { title: string; subtitle: st
 function SettingsIcon() { return <Layers3 size={16} />; }
 
 function MediaCard({ item, origin, onSelect }: { item: MediaItem; origin: string; onSelect: (selection: Selection) => void }) {
-  return <motion.a href={appUrl(detailsPath(item))} data-home-focus={item.id} className={`media-card ${!item.available ? 'media-card--unavailable' : ''}`} onClick={event => { if (event.button === 0 && !event.ctrlKey && !event.metaKey && !event.shiftKey && !event.altKey) { event.preventDefault(); event.currentTarget.focus({ preventScroll: true }); onSelect({ item, origin }); } }} whileHover={{ y: -5 }} whileTap={{ scale: 0.98 }} aria-label={`${item.title} ayrıntıları`}>
+  const series=item.catalogGroup?.kind==='show';
+  return <motion.a href={appUrl(detailsPath(item))} data-home-focus={catalogCardKey(item)} className={`media-card ${!item.available ? 'media-card--unavailable' : ''}`} onClick={event => { if (event.button === 0 && !event.ctrlKey && !event.metaKey && !event.shiftKey && !event.altKey) { event.preventDefault(); event.currentTarget.focus({ preventScroll: true }); onSelect({ item, origin }); } }} whileHover={{ y: -5 }} whileTap={{ scale: 0.98 }} aria-label={`${catalogTitle(item)} ayrıntıları`}>
     <motion.div className="poster" layoutId={origin}>
       <Artwork item={item} /><div className="poster-shade" />
-      <span className="poster-topline"><span className="quality-badge">{resolution(item)}</span>{item.isWatched && <span className="watched-badge" aria-label="İzlendi"><CheckCheck size={15} /></span>}</span>
+      <span className="poster-topline"><span className="quality-badge">{resolution(item)}</span>{!series&&item.isWatched && <span className="watched-badge" aria-label="İzlendi"><CheckCheck size={15} /></span>}</span>
       {item.isDemo && !item.content && <div className="demo-poster-title"><span>HOME ORIGINAL SAMPLE</span><strong>{item.title}</strong></div>}
-      {item.content && item.content.versionCount > 1 && <span className="poster-versions"><Layers3 size={11} />{item.content.versionCount} sürüm</span>}
-      <span className="poster-play"><Play size={23} fill="currentColor" /></span>
+      {!series&&item.content && item.content.versionCount > 1 && <span className="poster-versions"><Layers3 size={11} />{item.content.versionCount} sürüm</span>}
+      <span className="poster-play">{series?<Layers3 size={23}/>:<Play size={23} fill="currentColor"/>}</span>
       {!item.available && <span className="unavailable-label"><CircleAlert size={13} /> Dosya erişilemiyor</span>}
-      {item.positionSeconds > 0 && !item.isWatched && <div className="poster-progress"><span style={{ width: `${Math.min(100, item.positionSeconds / (item.durationSeconds || 1) * 100)}%` }} /></div>}
+      {!series&&item.positionSeconds > 0 && !item.isWatched && <div className="poster-progress"><span style={{ width: `${Math.min(100, item.positionSeconds / (item.durationSeconds || 1) * 100)}%` }} /></div>}
     </motion.div>
-    <span className="media-card-title">{item.title}</span><span className="media-card-meta">{item.isDemo ? 'Örnek içerik' : item.libraryName}<span>·</span>{duration(item.durationSeconds)}</span>
+    <span className="media-card-title">{catalogTitle(item)}</span><span className="media-card-meta">{item.isDemo ? 'Örnek içerik' : item.libraryName}<span>·</span>{series?`${item.catalogGroup!.episodeCount} bölüm`:duration(item.durationSeconds)}</span>
   </motion.a>;
 }
 

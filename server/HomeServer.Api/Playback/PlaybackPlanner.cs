@@ -4,7 +4,7 @@ namespace HomeServer.Playback;
 
 public static class PlaybackPlanner
 {
-    public static PlaybackDecision Decide(AnalyzedMedia media, PlaybackStart request, bool ffmpegAvailable, long sessionBudget, bool toneMappingAvailable = false, SubtitleTrack? selectedSubtitle = null, bool completeFile = false)
+    public static PlaybackDecision Decide(AnalyzedMedia media, PlaybackStart request, bool ffmpegAvailable, long sessionBudget, bool toneMappingAvailable = false, SubtitleTrack? selectedSubtitle = null, bool completeFile = false, bool dolbyVisionStripAvailable = false)
     {
         var client = request.Client;
         if (client is null || client.Containers is null || client.VideoCodecs is null || client.AudioCodecs is null
@@ -34,7 +34,8 @@ public static class PlaybackPlanner
         if (capabilities is not null)
         {
             if (capabilities.Formats is null || capabilities.Formats.Length > 12 || capabilities.Formats.Any(format => format is null
-                || format.Container is not ("mp4" or "m4v" or "webm" or "mkv" or "mov" or "avi" or "mp3" or "m4a" or "flac" or "ogg" or "opus" or "wav" or "ts")
+                || format.Container is not ("mp4" or "m4v" or "webm" or "mkv" or "mov" or "avi" or "mp3" or "m4a" or "flac" or "ogg" or "opus" or "wav" or "ts"
+                    or "m2ts" or "mts" or "mpg" or "mpeg" or "vob" or "wmv" or "asf" or "3gp" or "3g2" or "aac" or "wma")
                 || format.Transport is not ("direct" or "hls.js" or "native-hls")
                 || format.Transport != "direct" && format.Container is not ("mp4" or "ts")))
                 throw new DomainException("İstemci oynatma profili geçersiz.");
@@ -63,14 +64,19 @@ public static class PlaybackPlanner
             (video is null || video.Codec == "h264" && videoSupported) && (audio is null || client.AudioCodecs.Contains("aac")),
             (video is null || client.VideoCodecs.Contains("h264")) && (audio is null || audio.Codec == "aac" && audioSupported && (audio.Channels ?? 2) <= 2),
             (video is null || client.VideoCodecs.Contains("h264")) && (audio is null || client.AudioCodecs.Contains("aac")))];
-        var choices = new List<(PlaybackFormatSupport Format, bool Video, bool Audio)>();
+        var choices = new List<(PlaybackFormatSupport Format, bool Video, bool Audio, bool Base)>();
         foreach (var format in formats)
         {
             var mayCopyVideo = !tooTall && !tooLarge && !request.ForceCompatible && !burn && video?.DolbyVision != true;
-            if (mayCopyVideo && format.Original) choices.Add((format, true, true));
-            if (mayCopyVideo && format.VideoCopy) choices.Add((format, true, audio is null));
-            if (!request.ForceCompatible && format.AudioCopy) choices.Add((format, video is null, true));
-            if (format.Compatible) choices.Add((format, video is null, audio is null));
+            if (mayCopyVideo && format.Original) choices.Add((format, true, true, false));
+            if (mayCopyVideo && format.VideoCopy) choices.Add((format, true, audio is null, false));
+            if (!tooTall && !tooLarge && !request.ForceCompatible && !burn && dolbyVisionStripAvailable && DolbyVisionBaseLayer.CanUseHdr10(video) && format.Container == "mp4")
+            {
+                if (format.BaseOriginal) choices.Add((format, true, true, true));
+                if (format.BaseVideoCopy) choices.Add((format, true, audio is null, true));
+            }
+            if (!request.ForceCompatible && format.AudioCopy) choices.Add((format, video is null, true, false));
+            if (format.Compatible) choices.Add((format, video is null, audio is null, false));
         }
         if (choices.Count == 0) throw new DomainException("Bu tarayıcı için uyumlu bir görüntü/ses taşıma yolu bulunamadı.", 409);
         var choice = choices.OrderByDescending(value => value.Video).ThenByDescending(value => value.Audio)
@@ -85,6 +91,7 @@ public static class PlaybackPlanner
         if (tooTall || tooLarge || request.ForceCompatible) reasons.Add("Seçtiğin uyumluluk/kalite sınırı uygulanıyor.");
         if (request.ForceRemux) reasons.Add("Doğrudan dosya yerine uyumlu akış kapsayıcısı kullanılıyor.");
         if (burn) reasons.Add(selectedSubtitle!.Image ? "Resim altyazısı videoya işleniyor." : "Altyazı stili videoya işleniyor.");
+        if (choice.Base) reasons.Add("Dolby Vision yerine HDR10 uyumlu temel görüntü katmanı kullanılıyor.");
         var toneMap = video is not null && !copyVideo && video.ColorTransfer is "smpte2084" or "arib-std-b67";
         if (!copyVideo && video is not null && video.ColorTransfer is null && (video.ColorPrimaries == "bt2020" || video.ColorSpace is "bt2020nc" or "bt2020c"))
             throw new DomainException("Geniş renk alanlı videonun aktarım bilgisi bilinmiyor; otomatik renk dönüşümü yapılamıyor.", 409);
@@ -98,6 +105,6 @@ public static class PlaybackPlanner
         return new PlaybackDecision(copyVideo ? copyAudio ? "remux" : "audio-transcode" : "video-transcode", reasons.ToArray(), video?.Index, audio?.Index,
             video is null ? null : copyVideo ? video.Height : Math.Min(video.Height ?? 1080, request.MaxHeight ?? 1080), maximumBitrate, copyVideo, copyAudio, toneMap,
             Container: choice.Format.Container, Transport: choice.Format.Transport == "legacy" ? null : choice.Format.Transport,
-            VideoCodec: video is null ? null : copyVideo ? video.Codec : "h264", AudioCodec: audio is null ? null : copyAudio ? audio.Codec : "aac");
+            VideoCodec: video is null ? null : copyVideo ? video.Codec : "h264", AudioCodec: audio is null ? null : copyAudio ? audio.Codec : "aac", StripDolbyVision: choice.Base);
     }
 }

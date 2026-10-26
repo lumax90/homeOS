@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useEffect,useRef,useState } from 'react';
 import { Button } from '@heroui/react';
 import { useMutation,useQuery,useQueryClient } from '@tanstack/react-query';
 import { ExternalLink,RefreshCw,Search,Users } from 'lucide-react';
-import { mutate,request,type ProviderContent } from '../api';
+import { mutate,request,type ProviderContent,type ContentMatch } from '../api';
 import { ProductJobs } from './ProductJobs';
+import {creditsInRow}from'../contentMedia';
 
 interface Person { provider:string;id:number;name:string;image:string|null;department:string|null;biography:string|null;url:string }
 interface Feed { id:string;provider:string;kind:string;externalId:string;collectionId:string;name:string;enabled:boolean;requestNew:boolean;roleFilter:string;profileId:string;revision:number;lastError:string|null }
@@ -18,10 +19,17 @@ export function PeopleBrowser({onOpen,collectionId}:{onOpen:(metadata:ProviderCo
  <div className="tracking-grid">{works.data?.items.map(row=><article className="tracking-card" key={`${row.metadata.kind}:${row.metadata.providerId}`}><button className="tracking-poster" onClick={()=>onOpen(row.metadata)}>{row.metadata.posterUrl&&<img src={row.metadata.posterUrl} alt="" loading="lazy"/>}</button><div><button className="tracking-title" onClick={()=>onOpen(row.metadata)}>{row.metadata.title}</button><p>{row.roles.join(' · ')}</p></div></article>)}</div><div className="content-actions"><Button variant="ghost" isDisabled={offset===0} onPress={()=>setOffset(value=>Math.max(0,value-50))}>Önceki</Button><Button variant="ghost" isDisabled={!works.data||offset+50>=works.data.total} onPress={()=>setOffset(value=>value+50)}>Sonraki</Button></div></>}
  {(rows.error||works.error)&&<p className="form-error">{rows.error?.message||works.error?.message}</p>}</section>;
 }
-export function ContentPeople({metadata,expanded=false}:{metadata:ProviderContent;expanded?:boolean}){
- const [open,setOpen]=useState(expanded);const [visible,setVisible]=useState(18);const rows=useQuery({queryKey:['content-people',metadata.provider,metadata.kind,metadata.providerId],enabled:open,queryFn:({signal})=>request<{person:Person;role:string;department:string}[]>(`/discovery/${metadata.provider}/${metadata.kind}/${metadata.providerId}/credits`,{signal})});
+export function ContentPeople({metadata,expanded=false}:{metadata:Pick<ContentMatch,'provider'|'kind'|'providerId'>;expanded?:boolean}){
+ const [open,setOpen]=useState(expanded);const [more,setMore]=useState(false),[visible,setVisible]=useState(36),[columns,setColumns]=useState(1);const host=useRef<HTMLDivElement>(null);
+ const creditsId=`content-credits-${metadata.provider}-${metadata.kind}-${metadata.providerId}`;
+ const rows=useQuery({queryKey:['content-people',metadata.provider,metadata.kind,metadata.providerId],enabled:open,queryFn:({signal})=>request<{person:Person;role:string;department:string}[]>(`/discovery/${metadata.provider}/${metadata.kind}/${metadata.providerId}/credits`,{signal})});
+ useEffect(()=>{setMore(false);setVisible(36);},[metadata.provider,metadata.kind,metadata.providerId]);
+ useEffect(()=>{if(!expanded||!open||!host.current)return;const element=host.current;const measure=()=>setColumns(creditsInRow(element.clientWidth));measure();const observer=new ResizeObserver(measure);observer.observe(element);return()=>observer.disconnect();},[expanded,open,rows.data?.length]);
  return <section className={`personal-content ${expanded?'title-people':''}`}>{expanded?<h2>Oyuncular ve yapım ekibi</h2>:<Button variant="ghost" onPress={()=>setOpen(value=>!value)} aria-expanded={open}><Users size={15}/> Oyuncular ve yapım ekibi</Button>}
- {open&&<><div className={expanded?'title-credits':'artist-grid'}>{rows.data?.slice(0,visible).map((row,index)=><a href={row.person.url} target="_blank" rel="noreferrer" key={`${row.person.id}:${index}`}>{expanded&&row.person.image&&<img src={row.person.image} alt="" loading="lazy"/>}<strong>{row.person.name}</strong><small>{row.role} · {row.department}</small></a>)}</div>{rows.data&&rows.data.length>visible&&<Button variant="ghost" onPress={()=>setVisible(value=>value+36)}>Diğer katkılar</Button>}</>}{rows.error&&<p className="form-error">{rows.error.message}</p>}</section>;
+ {open&&<><div id={creditsId} ref={host} className={expanded?'title-credits':'artist-grid'}>{rows.data?.slice(0,expanded&&!more?columns:visible).map((row,index)=><a href={row.person.url} target="_blank" rel="noreferrer" key={`${row.person.id}:${index}`}>{expanded&&<div className="title-credit-photo">{row.person.image?<img src={row.person.image} alt="" loading="lazy"/>:<Users size={30}/>}</div>}<strong>{row.person.name}</strong><small>{row.role} · {row.department}</small></a>)}</div>
+ {rows.data&&rows.data.length>(expanded&&!more?columns:visible)&&<Button variant="ghost" aria-expanded={more} aria-controls={creditsId} onPress={()=>{setMore(true);if(!expanded||more)setVisible(value=>value+36);}}>Daha fazlasını göster</Button>}
+ {expanded&&more&&<Button variant="ghost" aria-expanded={more} aria-controls={creditsId} onPress={()=>{setMore(false);setVisible(36);}}>Daha az göster</Button>}
+ </>}{rows.error&&<p className="form-error">{rows.error.message}</p>}</section>;
 }
 function FeedCreate({collectionId,person,role='all'}:{collectionId:string;person?:Person;role?:string}){
  const client=useQueryClient();const [kind,setKind]=useState('list');const [external,setExternal]=useState('');const [enabled,setEnabled]=useState(false);const [requests,setRequests]=useState(false);

@@ -73,15 +73,15 @@ public sealed partial class MediaStore
     }
     public (string Path, long Length)? EditedMusicImport(string downloadId, string originalRelative)
     {
-        using var db = Open(); var original = Path.Combine(downloadId, DownloadFiles.ValidateRelative(originalRelative));
+        using var db = Open();var directory=DownloadImportDirectory(downloadId);var original = DownloadImportFile(downloadId,originalRelative);
         var id = Scalar(db, "SELECT media_id FROM music_tasks WHERE kind='tags' AND status='completed' AND json_extract(plan_json,'$.originalPath')=$original ORDER BY created_at LIMIT 1", ("$original", original)) as string;
         if (id is null) return null;
         var media = GetMedia(id); if (media is null) return null;
         var journal = Query(db, MusicTaskSelect + " WHERE media_id=$media AND kind IN ('tags','restore-tags') AND status='completed' ORDER BY updated_at DESC,id DESC LIMIT 1", ReadMusicTask, ("$media", id)).FirstOrDefault();
         if (journal?.PlanJson is null) return null;
         var plan = JsonSerializer.Deserialize<MusicTagPlan>(journal.PlanJson, WebJson)!;
-        if (media.RelativePath != plan.TargetPath || !media.RelativePath.StartsWith(downloadId + Path.DirectorySeparatorChar, StringComparison.Ordinal)) return null;
+        if (media.RelativePath != plan.TargetPath || !media.RelativePath.StartsWith(directory + Path.DirectorySeparatorChar, StringComparison.Ordinal)) return null;
         var path = MediaPaths.ResolveFile(GetLibrary(media.LibraryId)!.Path, media.RelativePath);
-        return StateFolders.Hash(path) == plan.TargetHash ? (media.RelativePath[(downloadId.Length + 1)..], new FileInfo(path).Length) : null;
+        return StateFolders.Hash(path) == plan.TargetHash ? (media.RelativePath[(directory.Length + 1)..], new FileInfo(path).Length) : null;
     }
 }

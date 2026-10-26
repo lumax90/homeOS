@@ -10,6 +10,7 @@ public sealed class EncodingSupport(MediaTools tools, MediaStore store)
     private readonly SemaphoreSlim _gate = new(1, 1);
     private EncodingCapabilities? _capabilities;
     private bool _hardwareFailed;
+    private bool? _dolbyVisionStrip;
     public string Preference => store.GetSetting("playback.encoder") ?? "auto";
     public void SetPreference(string value)
     {
@@ -36,6 +37,24 @@ public sealed class EncodingSupport(MediaTools tools, MediaStore store)
     {
         if (Preference == "software" || _hardwareFailed) return "libx264";
         return (await InspectAsync(token)).Nvenc ? "h264_nvenc" : "libx264";
+    }
+    public async Task<bool> DolbyVisionStripAsync(CancellationToken token)
+    {
+        await _gate.WaitAsync(token);
+        try
+        {
+            if (_dolbyVisionStrip is { } cached) return cached;
+            if (!tools.FfmpegAvailable) return false;
+            try
+            {
+                var help=await MediaProcess.RunAsync(tools.FfmpegExecutable,["-hide_banner","-h","bsf=hevc_metadata"],TimeSpan.FromSeconds(10),token);
+                var supported=help.Contains("remove_dovi",StringComparison.Ordinal);_dolbyVisionStrip=supported;return supported;
+            }
+            catch (OperationCanceledException) when (token.IsCancellationRequested) { throw; }
+            catch (Exception ex) when (ex is InvalidOperationException or OperationCanceledException or System.ComponentModel.Win32Exception)
+            { _dolbyVisionStrip=false; return false; }
+        }
+        finally { _gate.Release(); }
     }
     private async Task<bool> TestAsync(string[] arguments, CancellationToken token)
     {

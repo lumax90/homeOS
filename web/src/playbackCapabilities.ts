@@ -1,6 +1,6 @@
 import type { MediaStreamInfo, MediaTracks } from './api.ts';
 
-export interface FormatSupport { container: string; transport: 'direct' | 'hls.js' | 'native-hls'; original: boolean; videoCopy: boolean; audioCopy: boolean; compatible: boolean }
+export interface FormatSupport { container: string; transport: 'direct' | 'hls.js' | 'native-hls'; original: boolean; videoCopy: boolean; audioCopy: boolean; compatible: boolean; baseOriginal?:boolean; baseVideoCopy?:boolean }
 export interface CapabilityEnvironment {
   canPlayType(mime: string): string;
   mseSupported: boolean;
@@ -9,7 +9,9 @@ export interface CapabilityEnvironment {
 }
 export interface PlaybackProfileOptions { audioStream: number | null; maxHeight: number | null; maxBitrate: number | null }
 const fileMime: Record<string, string> = { mp4: 'video/mp4', m4v: 'video/mp4', mov: 'video/mp4', mkv: 'video/x-matroska', webm: 'video/webm', avi: 'video/x-msvideo',
-  mp3: 'audio/mpeg', m4a: 'audio/mp4', flac: 'audio/flac', ogg: 'audio/ogg', opus: 'audio/ogg', wav: 'audio/wav', ts: 'video/mp2t' };
+  mp3: 'audio/mpeg', m4a: 'audio/mp4', flac: 'audio/flac', ogg: 'audio/ogg', opus: 'audio/ogg', wav: 'audio/wav', ts: 'video/mp2t',
+  m2ts:'video/mp2t',mts:'video/mp2t',mpg:'video/mpeg',mpeg:'video/mpeg',vob:'video/mpeg',wmv:'video/x-ms-wmv',asf:'video/x-ms-asf',
+  '3gp':'video/3gpp','3g2':'video/3gpp2',aac:'audio/aac',wma:'audio/x-ms-wma' };
 const audioIds: Record<string, string> = { aac: 'mp4a.40.2', mp3: 'mp4a.6B', ac3: 'ac-3', eac3: 'ec-3', opus: 'opus', flac: 'flac', vorbis: 'vorbis' };
 const muxVideo = ['h264', 'hevc', 'vp9', 'av1'], muxAudio = ['aac', 'mp3', 'ac3', 'eac3'];
 
@@ -26,23 +28,30 @@ function identifier(stream: MediaStreamInfo | undefined): string | undefined {
   return undefined;
 }
 
+export function dolbyVisionHdr10Base(video:MediaStreamInfo|undefined):string|undefined{
+  const config=video?.dolbyVisionConfig;
+  if(!video?.dolbyVision||video.codec!=='hevc'||video.colorTransfer!=='smpte2084'||video.colorPrimaries!=='bt2020'
+    ||config?.profile!==8||config.baseLayerCompatibilityId!==1||config.baseLayerPresent!==true||config.enhancementLayerPresent!==false||config.rpuPresent!==true)return undefined;
+  return video.baseCodecString&&/^hvc1\.[a-zA-Z0-9.\-]{1,90}$/.test(video.baseCodecString)?video.baseCodecString:undefined;
+}
+
 /** Probe the actual source/selected tracks per delivery path. No user-agent or TV-brand list. */
 export async function playbackCapabilities(container: string, tracks: MediaTracks, options: PlaybackProfileOptions, environment: CapabilityEnvironment, signal?: AbortSignal) {
   const video = tracks.streams.find(stream => stream.kind === 'video');
   const audios = tracks.streams.filter(stream => stream.kind === 'audio');
   const audio = options.audioStream === null ? audios.find(stream => stream.isDefault) ?? audios[0] : audios.find(stream => stream.index === options.audioStream);
-  const videoId = identifier(video), audioId = identifier(audio);
+  const videoId = identifier(video), audioId = identifier(audio), baseId=dolbyVisionHdr10Base(video);
   const formats: FormatSupport[] = [];
   const native = !!environment.canPlayType('application/vnd.apple.mpegurl');
   const pending = new Map<string, Promise<boolean>>();
-  const supported = (format: string, transport: FormatSupport['transport'], copyVideo: boolean, copyAudio: boolean): Promise<boolean> => {
+  const supported = (format: string, transport: FormatSupport['transport'], copyVideo: boolean, copyAudio: boolean, useBase=false): Promise<boolean> => {
     if (signal?.aborted) return Promise.reject(signal.reason ?? new DOMException('Playback cancelled', 'AbortError'));
-    const v = video ? copyVideo ? videoId : 'avc1.64002A' : undefined;
+    const v = video ? copyVideo ? useBase?baseId:videoId : 'avc1.64002A' : undefined;
     const a = audio ? copyAudio ? audioId : 'mp4a.40.2' : undefined;
     const rawAudio = !video && transport === 'direct' && ['mp3', 'flac', 'ogg', 'opus', 'wav'].includes(format);
     if (video && !v || audio && !a && !rawAudio) return Promise.resolve(false);
     if (transport !== 'direct') {
-      if (copyVideo && video?.dolbyVision) return Promise.resolve(false); // This muxer path has not verified dynamic-metadata preservation.
+      if (copyVideo && video?.dolbyVision&&!useBase) return Promise.resolve(false); // Full DV preservation remains unverified; base copy is a distinct output.
       if (video && copyVideo && !muxVideo.includes(video.codec) || audio && copyAudio && !muxAudio.includes(audio.codec)) return Promise.resolve(false);
       // hls.js transmuxes supported TS streams into MP4; HEVC/VP9/AV1 use the fMP4 path.
       if (format === 'ts' && video && copyVideo && video.codec !== 'h264' && (transport !== 'native-hls' || video.codec !== 'hevc')) return Promise.resolve(false);
@@ -80,18 +89,20 @@ export async function playbackCapabilities(container: string, tracks: MediaTrack
   await Promise.all((['hls.js', 'native-hls'] as const).map(async transport => {
     if (transport === 'hls.js' && !environment.mseSupported || transport === 'native-hls' && !native) return;
     for (const format of ['mp4', 'ts']) {
-      const [original, videoCopy, audioCopy, compatible] = await Promise.all([
-        supported(format, transport, true, true), supported(format, transport, true, false), supported(format, transport, false, true), supported(format, transport, false, false),
+      const [original, videoCopy, audioCopy, compatible,baseOriginal,baseVideoCopy] = await Promise.all([
+         supported(format, transport, true, true), supported(format, transport, true, false), supported(format, transport, false, true), supported(format, transport, false, false),
+         baseId&&format==='mp4'?supported(format,transport,true,true,true):Promise.resolve(false),
+         baseId&&format==='mp4'?supported(format,transport,true,false,true):Promise.resolve(false),
       ]);
-      formats.push({ container: format, transport, original, videoCopy, audioCopy, compatible });
+      formats.push({ container: format, transport, original, videoCopy, audioCopy, compatible,baseOriginal,baseVideoCopy });
     }
   }));
   if (signal?.aborted) throw signal.reason ?? new DOMException('Playback cancelled', 'AbortError');
   return {
     containers: formats.filter(format => format.transport === 'direct' && format.original).map(format => format.container),
-    videoCodecs: [...new Set([...(video && formats.some(format => format.original || format.videoCopy) ? [video.codec] : []), ...(formats.some(format => format.compatible || format.audioCopy) ? ['h264'] : [])])],
-    audioCodecs: [...new Set([...(audio && formats.some(format => format.original || format.audioCopy) ? [audio.codec] : []), ...(formats.some(format => format.compatible || format.videoCopy) ? ['aac'] : [])])],
-    hls: formats.some(format => format.transport !== 'direct' && (format.original || format.videoCopy || format.audioCopy || format.compatible)),
+    videoCodecs: [...new Set([...(video && formats.some(format => format.original || format.videoCopy ||format.baseVideoCopy||format.baseOriginal) ? [video.codec] : []), ...(formats.some(format => format.compatible || format.audioCopy) ? ['h264'] : [])])],
+    audioCodecs: [...new Set([...(audio && formats.some(format => format.original || format.audioCopy||format.baseOriginal) ? [audio.codec] : []), ...(formats.some(format => format.compatible || format.videoCopy||format.baseVideoCopy) ? ['aac'] : [])])],
+    hls: formats.some(format => format.transport !== 'direct' && (format.original || format.videoCopy || format.audioCopy || format.compatible||format.baseOriginal||format.baseVideoCopy)),
     maxAudioChannels: Math.max(2, Math.min(16, audio?.channels ?? 2)),
     capabilities: { fingerprint: tracks.fingerprint, videoStream: video?.index ?? null, audioStream: audio?.index ?? null, formats },
   };

@@ -116,9 +116,26 @@ test('scroll input stays inside its active dialog and trigger scrolling does not
   f.controller.command('scrolldown');assert.equal(dialog.scrollOptions.top,90);assert.equal(f.win.scrollOptions,undefined);assert.equal(button.clicks,0);
   f.controller.command('seekforward');assert.equal(dialog.scrollOptions.top,180);f.stop();
 });
-test('unsupported/insecure gamepad access does not disable remote navigation, and disabled support cancels text entry',async()=>{
-  const env=controllerDom();env.win.isSecureContext=false;const c=new ControllerRuntime();const stop=c.start();const input=env.doc.body.add(new env.Input());input.focus();
+test('missing gamepad API on HTTP does not disable remote navigation, and disabled support cancels text entry',async()=>{
+  const env=controllerDom();env.win.isSecureContext=false;delete env.nav.getGamepads;const c=new ControllerRuntime();const stop=c.start();const input=env.doc.body.add(new env.Input());input.focus();
   assert.equal(c.getSnapshot().capability,'insecure');c.command('confirm','remote');assert.equal(c.getSnapshot().keyboard,input);c.setPreferences({enabled:false});await Promise.resolve();assert.equal(c.getSnapshot().keyboard,null);assert.equal(c.getSnapshot().mode,'pointer');assert.equal(c.command('confirm'),false);stop();
+});
+test('HTTP browsers that actually expose gamepads can activate navigation without a blanket secure-context gate',()=>{
+  const env=controllerDom();env.win.isSecureContext=false;const c=new ControllerRuntime();const stop=c.start();const button=env.doc.body.add(new env.Element('button'));button.focus();
+  const pad={index:0,id:'original-http-pad',mapping:'standard',connected:true,axes:[0,0],buttons:Array.from({length:17},()=>({pressed:false,value:0}))};
+  env.pads.push(pad);env.win.fire('gamepadconnected');assert.equal(c.getSnapshot().capability,'available');assert.equal(c.getSnapshot().mode,'pointer');
+  pad.buttons[0]={pressed:true,value:1};env.frame();assert.equal(c.getSnapshot().mode,'controller');assert.equal(button.clicks,1);
+  const release=c.acquireGameplay();env.frame();assert.equal(button.clicks,1);assert.equal(env.frames.size,0);release();stop();
+});
+test('real gamepad refusal over HTTP stays fail-closed and can be reprobed after focus returns',()=>{
+  const env=controllerDom();env.win.isSecureContext=false;env.nav.getGamepads=()=>{throw new DOMException('original policy refusal','SecurityError');};
+  const c=new ControllerRuntime();const stop=c.start();assert.equal(c.getSnapshot().capability,'insecure');assert.equal(env.timers.size,0);assert.equal(env.frames.size,0);
+  const button=env.doc.body.add(new env.Element('button'));button.focus();env.nav.getGamepads=()=>env.pads;
+  const pad={index:0,id:'original-http-pad',mapping:'standard',connected:true,axes:[0,0],buttons:Array.from({length:17},()=>({pressed:false,value:0}))};env.pads.push(pad);
+  env.win.fire('focus');assert.equal(c.getSnapshot().capability,'available');assert.equal(button.clicks,0);pad.buttons[0]={pressed:true,value:1};env.frame();assert.equal(button.clicks,1);stop();
+});
+test('missing gamepad API on a trusted origin reports unsupported without starting a polling loop',()=>{
+  const env=controllerDom();delete env.nav.getGamepads;const c=new ControllerRuntime();const stop=c.start();assert.equal(c.getSnapshot().capability,'unsupported');assert.equal(env.timers.size,0);assert.equal(env.frames.size,0);stop();
 });
 test('preferences persist per base path and cross-tab disabling stops controller commands',async()=>{
   const f=fixture();const button=f.doc.body.add(new f.Element('button'));button.focus();f.controller.setPreferences({deadzone:.5});await Promise.resolve();

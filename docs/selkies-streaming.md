@@ -2,6 +2,10 @@
 
 Tarih: **2026-10-24**. Gereksinimler **GAM-05/10/11/14/19, CLI-01/05, OPS-09**. **0.45.0 / stable ile deneysel seçenek olarak yayımlandı; gerçek cihaz kabulü bekliyor.** [Yayın kaydı](playback-streaming-batch-045.md). Kullanıcı ikinci yöntemi onayladı; iyi cihaz sonuçları alınırsa Selkies'i daha sonra varsayılan yapma kararı ayrıca verilecek. Kullanıcı PC tarayıcısında gecikmenin TV'den daha az olduğunu bildirdi.
 
+**2026-10-25 yönlendirmesi:** Kullanıcı Selkies'in zaten kurulduğunu hatırlattı ve gerçek denemeleri kendisi yapıp sorunları bildireceğini belirtti. Kurulum/entegrasyon eksik iş olarak yeniden açılmıyor; tekrar otomatik oturum/latency benchmark turları yapılmıyor. Cihaz kabulü kullanıcıya ait, geliştirme onun raporunu bekleyen bir kuyruk değil. Standart/Selkies varsayılanı bu mesajla değiştirilmedi.
+
+**2026-10-26 cihaz raporu:** Kullanıcı Selkies'i seçince viewer açılışı signaling **404** ile kesildi. [SELKIES-SIGNAL-02](selkies-signalling-followup.md) yayımlı tarayıcının trailing-slash adresini Home'un allowlist'inin reddettiğini belirledi; iki tam adres biçimi ve normal HTTP probe yerelde düzeltildi/derlendi. **Henüz yayımlanmadı**; eski oturum kanıtları bu yeni cihaz hata raporunun yerine geçmez.
+
 ## Kullanıcıya sunulan seçim
 
 - **Oyunlar → Ayarlar → Emülasyon ayarları → Gelişmiş yayın tercihi → Yayın altyapısı**.

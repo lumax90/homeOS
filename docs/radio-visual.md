@@ -31,6 +31,12 @@ Radyo görsel modunda **tek medya öğesi ve tek birleşik A/V akışı** kullan
 
 Yerel kanıtlar: `artifacts/radio-visual/`; yayın kanıtları `artifacts/release-045/`. Normal kaynak kataloglarında sentetik içerik yoktur.
 
+## 2026-10-25 kullanıcı geri bildirimi
+
+- Kullanıcı güncellenmiş arayüzü TV'de gördüğünü ve PC tarayıcısında önceki hatalarda iyileşme olduğunu bildirdi. TV'de film hata vererek açılmadı; radyo takıldı ve başlatılamadı. Kullanıcı TV kontrollerini tekrarlayacak; hata metni/neden ve cihaz kabulü henüz kesinleşmedi. Bu geri bildirim otomatik güncelleyicinin kurulu/çalışıyor olduğunun kanıtı değildir.
+- Kullanıcının istemediği tam ekran hazırlık açıklaması (`Preparing the visual; radio can keep playing.`) **yerel kaynakta kaldırıldı**. Hazırlıkta mevcut poster/plak davranışı ve gerçek hata/retry kontrolleri korunur; yerine başka açıklama/banner eklenmedi. Bu küçük UI değişikliği henüz yayımlanmadı.
+- Kontrol: **15 Node/yerelleştirme testi ve frontend/worker/PWA build geçti**. Bu UI kontrolü TV'deki film/radyo açılış sorunlarının çözümü veya cihaz kabulü değildir.
+
 ## Kaynak ve lisans kaydı
 
 - Mevcut [stok görsel provenansı](music-refinements-0411.md): CC BY 2.0/3.0, CC BY-SA 3.0/4.0 ve CC0. Yerelde hazırlanan video/poster türevleri kaynak lisansı ve atfıyla ilişkilidir; yeni dataset benimsenmedi.

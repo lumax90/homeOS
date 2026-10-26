@@ -6,7 +6,7 @@ namespace HomeServer.Infrastructure;
 
 public static class MediaProcess
 {
-    public const string MediaFormats = "mov,matroska,webm,avi,mp3,flac,ogg,wav,aiff,mpegts,mpeg";
+    public const string MediaFormats = "mov,matroska,webm,avi,mp3,flac,ogg,wav,aiff,mpegts,mpeg,asf,aac";
 
     public static Process Start(string executable, IEnumerable<string> arguments, bool captureOutput = true, string? workingDirectory = null, bool redirectInput = false,IReadOnlyDictionary<string,string>? environment=null)
     {

@@ -42,6 +42,28 @@ public sealed class LibraryTests
     }
 
     [Fact]
+    public async Task ManagedDownloadRescanFindsManualNamedFoldersWithoutImportMarkersAndPreservesExistingMedia()
+    {
+        using var home=new TestWorkspace();var root=Path.Combine(home.Paths.Data,"downloads","library");Directory.CreateDirectory(root);
+        var imported=Path.Combine(root,new string('a',32));Directory.CreateDirectory(imported);var original=Path.Combine(imported,"ORIGINAL Imported.mp4");await File.WriteAllBytesAsync(original,[1,2,3,4]);
+        var library=home.Store.EnsureDownloadLibrary(root);await home.Scan(library.Id);var first=Assert.Single(home.Store.GetCatalog(null,null,null,0,60).Items);
+        home.Store.SaveProbe(first.Id,new(100,320,180,"h264","aac"),false);home.Store.SaveProgress(first.Id,new(27,100));
+        var files=new List<string>();
+        foreach(var title in new[]{"ORIGINAL Manual One (1998)","ORIGINAL Manual Two (1999)"})
+        {
+            var directory=Path.Combine(root,title);Directory.CreateDirectory(directory);var file=Path.Combine(directory,title+".mkv");await File.WriteAllBytesAsync(file,[9,8,7]);files.Add(file);
+            Assert.False(File.Exists(Path.Combine(directory,".home-import.json")));
+        }
+        // Copying bytes is not a download/import command and does not itself queue a scan.
+        Assert.DoesNotContain(home.Store.GetJobs(),job=>job.Status=="queued");Assert.Single(home.Store.GetCatalog(null,null,null,0,60).Items);
+        await home.Scan(library.Id);await home.Scan(library.Id);
+        var catalog=home.Store.GetCatalog(null,null,null,0,60);Assert.Equal(3,catalog.Total);Assert.All(catalog.Items,item=>Assert.True(item.Available));
+        Assert.Equal(27,home.Store.GetMedia(first.Id)!.PositionSeconds);Assert.Equal(first.RelativePath,home.Store.GetMedia(first.Id)!.RelativePath);
+        Assert.Equal(new byte[]{1,2,3,4},await File.ReadAllBytesAsync(original));foreach(var file in files)Assert.Equal(new byte[]{9,8,7},await File.ReadAllBytesAsync(file));
+        Assert.False(home.Store.GetLibraryConfiguration(library.Id).Options.WatchChanges);
+    }
+
+    [Fact]
     public async Task MissingFileIsRetainedAndRecoversWithTheSameIdentity()
     {
         using var home = new TestWorkspace();

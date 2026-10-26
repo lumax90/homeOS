@@ -94,7 +94,7 @@ public sealed partial class MediaStore
             {
                 var edited = EditedMusicImport(downloadId, file.RelativePath);
                 var row = Query(db, "SELECT m.id,mt.album_id,mm.release_track_id FROM media m JOIN music_tracks mt ON mt.media_id=m.id LEFT JOIN music_track_matches mm ON mm.media_id=m.id WHERE m.library_id=$library AND m.path_key=$path AND m.size_bytes=$size AND m.available=1",
-                    r => (Id: r.GetString(0), Album: r.GetString(1), Match: Text(r, 2)), ("$library", download.ImportedLibraryId), ("$path", MediaPaths.Key(Path.Combine(downloadId, edited?.Path ?? file.RelativePath))), ("$size", edited?.Length ?? file.Length)).SingleOrDefault();
+                    r => (Id: r.GetString(0), Album: r.GetString(1), Match: Text(r, 2)), ("$library", download.ImportedLibraryId), ("$path", MediaPaths.Key(DownloadImportFile(downloadId,edited?.Path??file.RelativePath))), ("$size", edited?.Length ?? file.Length)).SingleOrDefault();
                 if (row.Id is null) throw new DomainException("Doğrulanan ses dosyası katalogda bulunamadı.");
                 var expected = work.Release.Tracks.Single(track => track.Disc == file.Disc && track.Position == file.Position);
                 if (row.Match is not null && row.Match != expected.Id) throw new DomainException("Dosya kullanıcı tarafından başka recording'e eşlenmiş.");

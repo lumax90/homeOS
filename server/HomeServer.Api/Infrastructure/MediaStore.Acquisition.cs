@@ -92,7 +92,7 @@ public sealed partial class MediaStore
             var mappings = new List<(string MediaId, string? EpisodeId, string[] Episodes, int? Part, bool Existing)>();
             foreach (var file in expected)
             {
-                var path = MediaPaths.Key(Path.Combine(downloadId, file.Path));
+                var path = MediaPaths.Key(DownloadImportFile(downloadId,file.Path));
                 var media = Query(db, """
                     SELECT m.id,m.size_bytes,m.available,l.enabled,mm.content_id,mm.episode_id
                     FROM media m JOIN libraries l ON l.id=m.library_id LEFT JOIN media_matches mm ON mm.media_id=m.id

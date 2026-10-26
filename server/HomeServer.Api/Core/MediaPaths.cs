@@ -12,8 +12,13 @@ public static partial class MediaPaths
         [".webm"] = ("video", "video/webm"), [".mkv"] = ("video", "video/x-matroska"),
         [".mov"] = ("video", "video/quicktime"), [".avi"] = ("video", "video/x-msvideo"),
         [".ts"] = ("video", "video/mp2t"),
+        [".m2ts"] = ("video", "video/mp2t"), [".mts"] = ("video", "video/mp2t"),
+        [".mpg"] = ("video", "video/mpeg"), [".mpeg"] = ("video", "video/mpeg"), [".vob"] = ("video", "video/mpeg"),
+        [".wmv"] = ("video", "video/x-ms-wmv"), [".asf"] = ("video", "video/x-ms-asf"),
+        [".3gp"] = ("video", "video/3gpp"), [".3g2"] = ("video", "video/3gpp2"),
         [".mp3"] = ("audio", "audio/mpeg"), [".m4a"] = ("audio", "audio/mp4"),
         [".m4b"] = ("audio", "audio/mp4"),
+        [".aac"] = ("audio", "audio/aac"), [".wma"] = ("audio", "audio/x-ms-wma"),
         [".flac"] = ("audio", "audio/flac"), [".ogg"] = ("audio", "audio/ogg"),
         [".opus"] = ("audio", "audio/ogg"), [".wav"] = ("audio", "audio/wav"), [".oga"] = ("audio", "audio/ogg"),
         [".aif"] = ("audio", "audio/aiff"), [".aiff"] = ("audio", "audio/aiff")

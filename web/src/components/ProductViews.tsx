@@ -9,6 +9,7 @@ import { AutomationHistory, AutomationPanel } from './Automation';
 import { CollectionsView, PersonalContentPanel } from './PersonalCatalog';
 import { CatalogIdentityPanel, CatalogSourceLinks, EpisodeNumberingPanel, MoviePartsPanel } from './CatalogControls';
 import { ContentPeople,PeopleBrowser } from './CatalogFeeds';
+import {ContentMedia}from'./ContentMedia';
 import { appUrl } from '../base';
 import './title-page.css';
 import { usePageTitle } from '../usePageTitle';
@@ -86,7 +87,8 @@ function ContentBody({ selected, onSearch, onPlay, notify }: ContentActions & { 
       <p className="detail-description">{metadata.overview || 'Sağlayıcıda açıklama bulunmuyor.'}</p><a className="content-source" href={metadata.providerUrl} target="_blank" rel="noreferrer">{metadata.provider.toUpperCase()} kaynak sayfası <ExternalLink size={12} /></a>
       <CatalogSourceLinks metadata={metadata} />
       </section>
-      <ContentPeople metadata={metadata} expanded/>
+       <ContentPeople metadata={metadata} expanded/>
+       <ContentMedia key={`${metadata.provider}:${metadata.kind}:${metadata.providerId}`} metadata={metadata}/>
       {details.error && <p className="form-error" role="alert">{details.error.message}</p>}
       <div className="content-availability"><span className={saved?.fileCount ? 'status-dot' : 'status-dot offline'} /><strong>{saved?.fileCount ? `${saved.fileCount} dosya kütüphanende` : files.data?.length ? 'Kayıtlı dosyalara şu anda erişilemiyor' : 'Henüz kütüphanende yok'}</strong>{saved?.requested && <span>{saved.requestStatus === 'pending' ? 'Onay bekliyor' : 'Takipte'}</span>}</div>
       <details className="title-management"><summary>Takip ve edinme tercihleri</summary><div className="title-management-body"><div className="content-preferences">

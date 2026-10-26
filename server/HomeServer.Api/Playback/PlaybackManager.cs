@@ -49,7 +49,10 @@ public sealed partial class PlaybackManager(HomePaths paths, MediaStore store, M
         if (input.ClientRevision < 0) throw new DomainException("Oynatma revizyonu geçersiz.");
         var selectedSubtitle = input.SubtitleId is null ? null : subtitles?.GetSource(media, input.SubtitleId).Track ?? throw new DomainException("Altyazı oynatma hizmeti kullanılamıyor.", 409);
         var burn = selectedSubtitle is not null && (selectedSubtitle.Image || input.BurnSubtitle);
-        var plan = PlaybackPlanner.Decide(media, input, tools.FfmpegAvailable, _budget, toneMappingAvailable: true, selectedSubtitle);
+        var hasBaseReport=input.Client?.Capabilities?.Formats?.Any(format=>format is not null&&(format.BaseOriginal||format.BaseVideoCopy))==true;
+        var strip=hasBaseReport&&DolbyVisionBaseLayer.CanUseHdr10(media.Probe.Streams?.FirstOrDefault(stream=>stream.Kind=="video"))
+            &&encoding is not null&&await encoding.DolbyVisionStripAsync(token);
+        var plan = PlaybackPlanner.Decide(media, input, tools.FfmpegAvailable, _budget, toneMappingAvailable: true, selectedSubtitle, dolbyVisionStripAvailable: strip);
         if (plan.ToneMap && (encoding is null || !(await encoding.InspectAsync(token)).ToneMapping))
             throw new DomainException("HDR renk bilgisi veya tone mapping filtresi bu profilde uygun değil.", 409);
         await _starts.WaitAsync(token);
@@ -384,6 +387,11 @@ public sealed partial class PlaybackManager(HomePaths paths, MediaStore store, M
                 "-force_key_frames", "expr:gte(t,n_forced*4)", "-flags", "+cgop", "-fpsmax", "60", "-profile:v", "high"]);
             if (!plan.CopyVideo && encoder == "h264_nvenc") result.AddRange(["-forced-idr", "1"]);
             if (plan.ToneMap) result.AddRange(["-color_primaries", "bt709", "-color_trc", "bt709", "-colorspace", "bt709"]);
+            if (plan.StripDolbyVision)
+            {
+                if(!plan.CopyVideo||plan.VideoCodec!="hevc"||plan.Container!="mp4")throw new DomainException("Dolby Vision temel katman planı geçersiz.");
+                result.AddRange(["-bsf:v","hevc_metadata=remove_dovi=1"]);
+            }
         }
         if (plan.AudioStream is { } audio)
         {

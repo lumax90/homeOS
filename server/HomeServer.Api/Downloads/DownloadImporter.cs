@@ -23,7 +23,14 @@ public sealed class DownloadImporter(DownloadFiles paths, MediaStore store, Even
             if (media.Length == 0) throw new DomainException("İndirilen pakette desteklenen medya dosyası yok.");
             var libraryRoot = music is null ? paths.LibraryRoot : paths.MusicLibraryRoot;
             var library = store.EnsureDownloadLibrary(libraryRoot, music is not null);
-            var target = Path.Combine(libraryRoot, DownloadFiles.ValidId(download.Id));
+            var legacy=Path.Combine(libraryRoot,DownloadFiles.ValidId(download.Id));
+            var title=DownloadImportNaming.Title(download,store,out var year,out var season);
+            // Published legacy locations are never renamed. The reservation also
+            // survives a crash after Directory.Move but before RecordImport.
+            var proposed=music is not null||download.ImportedAt is not null||Directory.Exists(legacy)?download.Id:DownloadImportNaming.DirectoryName(title,download.Id,year,season);
+            var directory=store.ReserveDownloadImportDirectory(download.Id,download.Revision,proposed);
+            var target=Path.Combine(libraryRoot,directory);
+            if(File.Exists(target))throw new DomainException("Hedef klasörde başka bir dosya var. Üzerine yazılmadı.",409);
             if (Directory.Exists(target)) await ValidatePublishedAsync(target, download, media, token);
             else
             {

@@ -17,7 +17,11 @@ export class ControllerRuntime {
   private movingFocus=false;private dockReturn?:{element:HTMLElement;identity:string;route:string};private dockFocus?:HTMLElement;
   constructor() {
     let preferences = defaultControllerPreferences; try { preferences = validPreferences(JSON.parse(localStorage.getItem(this.key) ?? '{}')); } catch { /* Local storage can be unavailable. */ }
-    this.snapshot = { mode: 'pointer', source: 'remote', preferences, capability: !window.isSecureContext ? 'insecure' : typeof navigator.getGamepads !== 'function' ? 'unsupported' : 'available', devices: [], keyboard: null, binding: null, gameplay: false };
+    this.snapshot = { mode: 'pointer', source: 'remote', preferences, capability: this.gamepadCapability(), devices: [], keyboard: null, binding: null, gameplay: false };
+  }
+  private gamepadCapability():ControllerSnapshot['capability'] {
+    try { return typeof navigator.getGamepads === 'function' ? 'available' : window.isSecureContext ? 'unsupported' : 'insecure'; }
+    catch { return window.isSecureContext ? 'blocked' : 'insecure'; }
   }
   getSnapshot = () => this.snapshot;
   subscribe = (listener: () => void) => { this.listeners.add(listener); return () => { this.listeners.delete(listener); }; };
@@ -183,10 +187,10 @@ export class ControllerRuntime {
       const intention = intents.find(intent => !intent.repeat) ?? intents.find(intent => intent.index === this.owner);
       if (!binding && intention) { this.owner = intention.index; this.command(intention.action); }
       if (devices.length) this.frame = requestAnimationFrame(this.poll); else this.timer = window.setTimeout(this.poll, 1000);
-    } catch { this.reader.clear(); this.update({ capability: 'blocked', devices: [] }); }
+    } catch { this.reader.clear(); this.pointer(); this.update({ capability: window.isSecureContext ? 'blocked' : 'insecure', devices: [] }); }
   };
   private pause = () => { this.reader.suspend(); cancelAnimationFrame(this.frame); clearTimeout(this.timer); this.frame = 0; this.timer = 0; };
-  private resume = () => { this.reader.suspend(); this.poll(); this.scheduleRepair(); };
+  private resume = () => { this.reader.suspend(); const capability=this.gamepadCapability();if(capability!==this.snapshot.capability)this.update({capability});this.poll();this.scheduleRepair(); };
   private movement = (event: PointerEvent) => { if (event.isTrusted && (Math.abs(event.movementX) + Math.abs(event.movementY) > 2)) this.pointer(); };
   private pointerDown = (event: PointerEvent) => { if (event.isTrusted) this.pointer(); };
   private focusIn = () => { if(!this.movingFocus)this.preferredX=undefined;if (this.snapshot.mode === 'controller') { const target = document.activeElement as HTMLElement | null; if (target?.dataset.homeFocus) this.remembered.set(this.routeKey(), focusIdentity(target)); this.scheduleRepair(); } };

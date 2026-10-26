@@ -2,6 +2,11 @@ name: Publish Home container
 
 on:
   workflow_dispatch:
+    inputs:
+      full_verification:
+        description: "Run the long multi-system Selkies comparison suite"
+        type: boolean
+        default: false
   push:
     branches: [main]
     tags: ["v*"]
@@ -16,6 +21,7 @@ on:
       - "tools/**"
       - "deploy/native/**"
       - "deploy/selkies/**"
+      - "deploy/media/**"
       - "deploy/casaos/prepare-data.sh"
       - "docs/licenses/**"
       - "tests/**"
@@ -64,7 +70,10 @@ jobs:
         env:
           HOME_TEST_FFMPEG: /usr/bin/ffmpeg
           HOME_TEST_FFPROBE: /usr/bin/ffprobe
-        run: dotnet test tests/HomeServer.Tests/HomeServer.Tests.csproj -c Release --no-restore --filter 'FullyQualifiedName~PlaybackEfficiencyTests|FullyQualifiedName~PlaybackWindowTests|FullyQualifiedName~PlaybackLifecycleTests|FullyQualifiedName~PlaybackQuotaTests|FullyQualifiedName~LiveStabilityTests|FullyQualifiedName~LiveTvProtocolTests|FullyQualifiedName~LiveTvExperienceTests' --logger 'trx;LogFileName=playback-live.trx' --results-directory "$RUNNER_TEMP/home-backend-verification" --nologo
+        run: dotnet test tests/HomeServer.Tests/HomeServer.Tests.csproj -c Release --no-restore --filter 'FullyQualifiedName~PlaybackEfficiencyTests|FullyQualifiedName~DolbyVisionAnalysisTests|FullyQualifiedName~MediaRuntimeCompatibilityTests|FullyQualifiedName~PlaybackWindowTests|FullyQualifiedName~PlaybackLifecycleTests|FullyQualifiedName~PlaybackQuotaTests|FullyQualifiedName~LiveStabilityTests|FullyQualifiedName~LiveTvProtocolTests|FullyQualifiedName~LiveTvExperienceTests' --logger 'trx;LogFileName=playback-live.trx' --results-directory "$RUNNER_TEMP/home-backend-verification" --nologo
+
+      - name: Verify new catalogue and import-location data boundaries
+        run: dotnet test tests/HomeServer.Tests/HomeServer.Tests.csproj -c Release --no-restore --filter 'FullyQualifiedName~CatalogCardsTests|FullyQualifiedName~DownloadImportDirectoryTests|FullyQualifiedName~ContentMediaTests' --logger 'trx;LogFileName=catalogue-import.trx' --results-directory "$RUNNER_TEMP/home-backend-verification" --nologo
 
       - name: Read release identity
         id: release
@@ -127,17 +136,12 @@ jobs:
           docker run --rm --network none
           --mount "type=bind,source=$GITHUB_WORKSPACE,target=/src,readonly" --workdir /src
           node:24-bookworm-slim@sha256:55fb5f5a527ea2c5c4a95f963e48ef90aa38c7b346054fdc8ee9957a2b55d205
-          node --test tests/unit/playback-transport.test.ts tests/unit/playback-capabilities.test.ts tests/unit/live-tv.test.ts tests/unit/live-recovery.test.ts tests/unit/radio-visual.test.ts tests/unit/music-experience.test.ts tests/unit/native-streaming.test.ts
+          node --test tests/unit/playback-transport.test.ts tests/unit/playback-capabilities.test.ts tests/unit/movie-hls-config.test.ts tests/unit/catalog-groups.test.ts tests/unit/content-media.test.ts tests/unit/media-runtime.test.mjs tests/unit/live-tv.test.ts tests/unit/live-recovery.test.ts tests/unit/radio-visual.test.ts tests/unit/music-experience.test.ts tests/unit/native-streaming.test.ts
 
-      - name: Verify 4K preservation and bounded playback production
+      - name: Verify pinned media runtime and movie/live protocol boundaries
         env:
           RELEASE_IMAGE: ${{ steps.release.outputs.tag }}
-        run: python3 tools/verification/verify-playback-efficiency.py "$RELEASE_IMAGE" "$RUNNER_TEMP/home-playback-verification"
-
-      - name: Verify live stream preservation and temporary failure recovery
-        env:
-          RELEASE_IMAGE: ${{ steps.release.outputs.tag }}
-        run: python3 tools/verification/verify-live-stability.py "$RELEASE_IMAGE" "$RUNNER_TEMP/home-live-verification"
+        run: python3 tools/verification/verify-media-runtime.py "$RELEASE_IMAGE" "$RUNNER_TEMP/home-media-verification"
 
       - name: Verify automatic replacement and busy deferral
         env:
@@ -145,6 +149,7 @@ jobs:
         run: python3 tools/verification/verify-auto-update.py "$RELEASE_IMAGE" "$RUNNER_TEMP/home-auto-update-verification"
 
       - name: Verify optional Selkies streaming and cross-backend saves
+        if: github.event_name == 'workflow_dispatch' && inputs.full_verification
         env:
           RELEASE_IMAGE: ${{ steps.release.outputs.tag }}
         run: |
@@ -152,6 +157,14 @@ jobs:
           python3 -m venv "$RUNNER_TEMP/home-stream-protocol-env"
           "$RUNNER_TEMP/home-stream-protocol-env/bin/pip" install aiortc==1.15.0 aiohttp==3.14.5
           python3 tools/verification/verify-selkies-container.py "$RELEASE_IMAGE" "$RUNNER_TEMP/home-selkies-verification" --python "$RUNNER_TEMP/home-stream-protocol-env/bin/python"
+
+      - name: Require complete media-runtime corresponding source before publication
+        run: |
+          python3 - <<'PY'
+          import json
+          pin = json.load(open('deploy/media/runtime.json'))
+          assert pin['distribution']['correspondingSourceVerified'], 'Media runtime source/licence publication gate remains open.'
+          PY
 
       - name: Publish candidate and promote the verified stable channel
         id: publish
@@ -164,7 +177,7 @@ jobs:
           docker push --platform linux/amd64 "$RELEASE_IMAGE"
           git fetch --no-tags --depth=1 origin main
           current="$(git rev-parse FETCH_HEAD)"
-          if [[ "$GITHUB_REF" == refs/heads/main || "$GITHUB_REF_TYPE" == tag ]] && git diff --quiet "$GITHUB_SHA" "$current" -- Dockerfile .dockerignore Directory.Build.props 'package*.json' server web tools deploy/native deploy/selkies deploy/casaos/prepare-data.sh docs/licenses tests .github/workflows/publish-container.yml; then
+          if [[ "$GITHUB_REF" == refs/heads/main || "$GITHUB_REF_TYPE" == tag ]] && git diff --quiet "$GITHUB_SHA" "$current" -- Dockerfile .dockerignore Directory.Build.props 'package*.json' server web tools deploy/native deploy/selkies deploy/media deploy/casaos/prepare-data.sh docs/licenses tests .github/workflows/publish-container.yml; then
             node tools/verify-container-channel.mjs "$IMAGE" "$VERSION"
             if ! docker buildx imagetools inspect "$IMAGE:$VERSION" >/dev/null 2>&1; then
               docker tag "$RELEASE_IMAGE" "$IMAGE:$VERSION"
@@ -198,6 +211,12 @@ jobs:
             ${{ runner.temp }}/home-playback-verification/container.log
             ${{ runner.temp }}/home-live-verification/result.json
             ${{ runner.temp }}/home-live-verification/container.log
+            ${{ runner.temp }}/home-media-verification/result.json
+            ${{ runner.temp }}/home-media-verification/runtime-version.txt
+            ${{ runner.temp }}/home-media-verification/movie/result.json
+            ${{ runner.temp }}/home-media-verification/movie/container.log
+            ${{ runner.temp }}/home-media-verification/live/result.json
+            ${{ runner.temp }}/home-media-verification/live/container.log
             ${{ runner.temp }}/home-selkies-verification/*.json
             ${{ runner.temp }}/home-selkies-verification/*.log
           if-no-files-found: ignore

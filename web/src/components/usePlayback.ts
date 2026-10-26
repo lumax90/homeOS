@@ -8,6 +8,7 @@ import { useSession } from './SessionContext';
 import type { WatchPlayer } from '../watch/types';
 import { selectPlaybackTransport } from '../playbackTransport';
 import { browserCapabilityEnvironment, playbackCapabilities } from '../playbackCapabilities';
+import { movieHlsConfig } from '../movieHlsConfig';
 
 export interface PlaybackOptions { audioStream: number | null; maxHeight: number | null; maxBitrate: number | null; forceCompatible: boolean; forceRemux: boolean; subtitleId: string | null; burnSubtitle: boolean; subtitleDelaySeconds: number }
 const defaultOptions: PlaybackOptions = { audioStream: null, maxHeight: null, maxBitrate: null, forceCompatible: false, forceRemux: false, subtitleId: null, burnSubtitle: false, subtitleDelaySeconds: 0 };
@@ -103,11 +104,7 @@ export function usePlayback(item: MediaItem, playbackKey = 0, coordination: { ma
       if (transport === 'direct' || transport === 'native-hls') {
         element.src = appUrl(plan.url); element.load();
       } else if (transport === 'hls.js') {
-        const hls = new HlsPlayer({ workerPath: appUrl(workerUrl), enableWorker: true, lowLatencyMode: false,
-          startPosition: Math.max(0, plan.requestedStartSeconds - plan.startSeconds), maxBufferLength: 30, maxMaxBufferLength: 60,
-          backBufferLength: 30, maxBufferSize: 32 * 1024 * 1024,
-          // A file producer may wait for the viewer. It is not a clock-driven live broadcast.
-          liveMaxUnchangedPlaylistRefresh: Infinity, liveMaxLatencyDurationCount: Infinity, maxLiveSyncPlaybackRate: 1 });
+        const hls = new HlsPlayer(movieHlsConfig(plan.requestedStartSeconds - plan.startSeconds,appUrl(workerUrl)));
         hlsRef.current = hls;
         hls.on(HlsPlayer.Events.ERROR, (_event, data) => {
           if (!data.fatal || !alive.current || epoch !== generation.current) return;

@@ -500,9 +500,10 @@ api.MapPost("/libraries/{id}/scan", (string id, MediaStore store, EventHub event
     events.Publish("jobs.changed");
     return Results.Accepted($"/api/jobs/{job.Id}", job);
 }).RequireAuthorization("admin");
-api.MapGet("/catalog", (string? q, string? kind, string? library, int? offset, int? limit, MediaStore store, CurrentAccount actor) =>
-    Results.Ok(store.GetCatalog(q, kind, library, offset ?? 0, limit ?? 60, actor.User)));
-api.MapGet("/continue", (MediaStore store, CurrentAccount actor) => Results.Ok(store.GetContinueWatching(actor.User)));
+api.MapGet("/catalog", (string? q, string? kind, string? library, int? offset, int? limit, bool? grouped, MediaStore store, CurrentAccount actor) =>
+    Results.Ok(grouped==true?store.GetCatalogCards(q,kind,library,offset??0,limit??60,actor.User):store.GetCatalog(q, kind, library, offset ?? 0, limit ?? 60, actor.User)));
+api.MapGet("/media/{id}/series",(string id,int? season,int? offset,int? limit,MediaStore store,CurrentAccount actor)=>Results.Ok(store.GetLibrarySeries(id,season,offset??0,limit??60,actor.User)));
+api.MapGet("/continue", (bool? grouped,MediaStore store, CurrentAccount actor) => Results.Ok(store.GetContinueWatching(actor.User,grouped==true)));
 api.MapGet("/media/{id}", (string id, CurrentAccount actor) => Results.Ok(actor.RequireMedia(id)));
 api.MapMethods("/media/{id}/stream", ["GET", "HEAD"], (string id, string? playbackId, MediaStore store, CurrentAccount actor, PlaybackSessions playback) =>
 {

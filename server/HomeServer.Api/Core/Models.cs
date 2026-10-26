@@ -13,8 +13,11 @@ public sealed record MediaItem(
     double? DurationSeconds, int? Width, int? Height, string? VideoCodec,
     string? AudioCodec, bool Available, string AddedAt, string ModifiedAt,
     bool HasThumbnail, double PositionSeconds, bool IsWatched, bool IsDemo,
-    string SourceTitle = "", ContentMatch? Content = null, int MatchRevision = 0, MediaEpisodeSegment[]? Episodes = null, MoviePart? MoviePart = null);
-public sealed record CatalogPage(IReadOnlyList<MediaItem> Items, int Total, int Offset, int Limit);
+    string SourceTitle = "", ContentMatch? Content = null, int MatchRevision = 0, MediaEpisodeSegment[]? Episodes = null, MoviePart? MoviePart = null, CatalogGroup? CatalogGroup = null);
+public sealed record CatalogGroup(string Key,string Kind,string Title,int FileCount,int EpisodeCount,int SeasonCount,string AddedAt);
+public sealed record CatalogPage(IReadOnlyList<MediaItem> Items, int Total, int Offset, int Limit, int? FileTotal = null);
+public sealed record SeriesFile(MediaItem File,int? Season,int? Episode,string Title);
+public sealed record LibrarySeriesPage(MediaItem Item,IReadOnlyList<SeriesFile> Items,int Total,int Offset,int Limit,int[] Seasons);
 public sealed record LibraryStats(int Libraries, int Items, int Videos, int Audio, long SizeBytes, int ActiveJobs);
 public sealed record ScanJob(
     string Id, string LibraryId, string LibraryName, string Status,

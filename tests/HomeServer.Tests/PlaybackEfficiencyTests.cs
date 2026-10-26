@@ -79,6 +79,17 @@ public sealed class PlaybackEfficiencyTests
         Assert.Equal("remux", PlaybackPlanner.Decide(source, new(source.Media.Id, client), true, 100 * 1024 * 1024).Mode);
     }
 
+    [Fact]
+    public void DolbyVisionOriginalCanStayDirectButUnverifiedConversionCannotBecomeOrdinaryHdrToneMapping()
+    {
+        var source=Source("mp4","aac",hdr:true);var streams=source.Probe.Streams!;
+        source=source with{Probe=source.Probe with{Streams=[streams[0] with{DolbyVision=true,CodecString="dvh1.05.06"},streams[1]]}};
+        var client=Client(source,new("mp4","direct",true,false,false,false),new("mp4","hls.js",false,false,false,true));
+        Assert.Equal("direct",PlaybackPlanner.Decide(source,new(source.Media.Id,client),true,100_000,toneMappingAvailable:true).Mode);
+        var error=Assert.Throws<DomainException>(()=>PlaybackPlanner.Decide(source,new(source.Media.Id,client,ForceRemux:true),true,100_000,toneMappingAvailable:true));
+        Assert.Equal(409,error.StatusCode);Assert.Contains("Dolby Vision",error.Message);
+    }
+
     [MediaFact]
     public async Task RealHevcHdrFmp4KeepsVideoPropertiesConvertsAudioAndPreservesSourceBytes()
     {
