@@ -13,6 +13,12 @@ public static class OperationsEndpoints
         group.MapGet("/updates", (UpdateService updates) => Results.Ok(updates.Status()));
         group.MapGet("/container-updates", (ContainerUpdateCoordinator updates) => Results.Ok(updates.Status()));
         group.MapPut("/container-updates", (ContainerUpdatePreferences input, ContainerUpdateCoordinator updates) => { updates.Configure(input); return Results.Ok(updates.Status()); });
+        group.MapPost("/container-updates/check", async (ContainerReleaseChecks checks, ContainerUpdateCoordinator updates, CancellationToken token) =>
+        { await checks.CheckAsync(token); return Results.Ok(updates.Status()); });
+        group.MapPost("/container-updates/apply", async (ContainerUpdateApproval input, ContainerUpdateCoordinator updates, CancellationToken token) =>
+        { await updates.ApproveAsync(input.Digest, token); return Results.Accepted(null, updates.Status()); });
+        group.MapDelete("/container-updates/apply", async (ContainerUpdateCoordinator updates, CancellationToken token) =>
+        { await updates.CancelApprovalAsync(token); return Results.Ok(updates.Status()); });
         group.MapPost("/updates", async (HttpContext context, UpdateService updates, CancellationToken token) =>
         {
             var limit = context.Features.Get<IHttpMaxRequestBodySizeFeature>(); if (limit is { IsReadOnly: false }) limit.MaxRequestBodySize = PackageTrust.MaximumArchive;

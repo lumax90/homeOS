@@ -22,6 +22,11 @@ Güncelleme: **2026-10-26**. Güncel yayın **0.46.0 / şema44**, Linux amd64 **
 
 ## Aktif iş kartları
 
+- [ ] BATCH-047 — **2026-10-26 kullanıcı commit/push/yayın yetkisi verdi**. UPDATE-CONSENT-01, 0.47.0 / mevcut şema44 altında yayıma hazırlanıyor; hosted gerçek Docker onaysız/approved-digest/busy/backup/replacement kapısı geçmeden stable taşınmaz. Hane cihaz testleri ve eski Compose verileri korunarak tek helper kurulumu ayrıca kullanıcıyla yapılacak. [Yayın kaydı](../release-047.md).
+
+- [x] UPDATE-CONSENT-01 — OPS-10, OPS-03/04/05/09, CLI-01/05, GAM-19: **2026-10-26 yerel uygulama**; metadata-only otomatik kontrol, owner bildirimi/onay diyalogu, exact digest kalıcı onay/iptal, helper heartbeat, ayrı default-kapalı otomatik kurulum ve mevcut backup/busy sınırı. Pinned Watchtower no-pull/run-once köprüsü eklendi; **21 backend +8 Python +3 Node** odaklı kontrol ve frontend/worker/PWA/localization build geçti. Yayın/hane kurulumu yapılmadı; Linux gerçek bridge/Compose ve cihaz kabul kapıları açık. [Tasarım/durum](../managed-updates.md).
+- [ ] UPDATE-CONSENT-01-DEPLOY — Yeni köprüyü içeren imajı nitelendir/yayımla; mevcut Home Compose verileri/medya bağlamaları/portları/ayarları korunarak helper bir kez eklenecek. **Yayımdaki 0.46.0 yeni köprüyü içermez**; eski imaja yeni entrypoint uygulanmaz. Şema44/ROM/save/paused intent korunumu, exact digest gerçek Docker ve helper restart/health sınırı ayrıca doğrulanmalı.
+
 **2026-10-25 çalışma yönlendirmesi:** Kullanıcı cihaz/oyun/medya denemesini kendisi yapacak ve karşılaştığı sorunları bildirecek; uzun backend/native/protokol test turları ve karşılaştırma benchmark'ları geliştirme sırasında tekrarlanmayacak. İlerleme eksik özelliklerin uygulanması ve odaklı derleme kontrolüyle yapılır. Var olan testler veya güvenlik/veri korunumu sınırları silinmez; cihaz kabulünü beklemek geliştirme engeli değildir. Yayın yetkisi ve bileşen kaynak/lisans kapıları bu yönlendirmeyle kendiliğinden açılmaz.
 
 **0.46 yayın durumu — 2026-10-26:** Aşağıdaki yerel dilim kartlarının hazırlık kayıtları tarihsel kanıttır; DETAIL-MEDIA-01, LIBRARY-SERIES-01/IMPORT-NAME-01, SELKIES-SIGNAL-02, MEDIA-RUNTIME-01/02-A, HOME-RECENT-02, HLS-STARTUP-01, LAN-GAMEPAD-02 ve RADIO-VISUAL-UI-02 artık **0.46.0 stable ile yayımlandı**. Bu, kullanıcı cihazı/kaynağı kabulünün tamamlandığı anlamına gelmez.

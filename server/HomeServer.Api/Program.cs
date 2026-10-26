@@ -48,6 +48,11 @@ if (args is ["--container-update-prepare"] or ["--container-update-complete"] or
     Environment.ExitCode = await ContainerUpdateControl.RunCommandAsync(args[0].Replace("--container-update-", "", StringComparison.Ordinal));
     return;
 }
+if (args is ["--container-update-agent", var payload])
+{
+    Environment.ExitCode = await ContainerUpdateControl.RunAgentCommandAsync(payload);
+    return;
+}
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.Configure<HostOptions>(options=>options.ShutdownTimeout=TimeSpan.FromMinutes(3));
 var settingsFile = Path.Combine(Path.GetFullPath(builder.Configuration["Home:DataPath"] ?? ".data"), "home-settings.json");
@@ -268,6 +273,9 @@ builder.Services.AddSingleton<NetworkConfiguration>();
 builder.Services.AddSingleton<UpdateService>();
 builder.Services.AddSingleton<ContainerRequestGate>();
 builder.Services.AddSingleton<ContainerUpdateCoordinator>();
+builder.Services.AddHttpClient<ContainerReleaseSource>().ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler { AllowAutoRedirect = false });
+builder.Services.AddSingleton<ContainerReleaseChecks>();
+builder.Services.AddHostedService(services => services.GetRequiredService<ContainerReleaseChecks>());
 builder.Services.AddHostedService<ContainerUpdateControl>();
 builder.Services.AddOptions<Microsoft.AspNetCore.Server.Kestrel.Core.KestrelServerOptions>().Configure<HomePaths, IDataProtectionProvider, IConfiguration>(NetworkConfiguration.ConfigureTls);
 builder.Services.AddHostedService<SystemWorker>();

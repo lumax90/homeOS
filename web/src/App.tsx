@@ -38,6 +38,7 @@ import { controllerScope } from './controller/dom';
 import type { SettingsSection } from './settingsModel';
 import { catalogGroups,catalogCardKey,catalogTitle } from './catalogGroups';
 import {LibrarySeries}from'./components/LibrarySeries';
+import {UpdateAvailableBadge}from'./components/ContainerUpdates';
 
 type View = Section;
 type Selection = { item: MediaItem; origin: string };
@@ -321,7 +322,7 @@ function Workspace({ session }: { session: Session }) {
       <header className="app-header">
         <button className="brand-button" onClick={() => navigate('home')} aria-label="Home ana sayfa" aria-current={view === 'home' ? 'page' : undefined}><Brand /></button>
         <MainNavigation view={view} access={session} pageKey={location.pathname} activeJobs={activeJobs.length} onNavigate={navigate}/>
-        <div className="header-right"><button className="server-status" onClick={() => openSettings('about')}><span className={system.error ? 'status-dot offline' : 'status-dot'} />{system.error ? 'Bağlantı bekleniyor' : 'Sunucun çevrimiçi'}</button><ProfileSwitcher /><NotificationBell onSettings={()=>openSettings('notifications')}/><Button isIconOnly className="account-button" aria-label="Ayarlar" onPress={() => openSettings('account')}>{session.displayName?.slice(0, 1).toLocaleUpperCase('tr')}</Button></div>
+        <div className="header-right"><button className="server-status" onClick={() => openSettings('about')}><span className={system.error ? 'status-dot offline' : 'status-dot'} />{system.error ? 'Bağlantı bekleniyor' : 'Sunucun çevrimiçi'}</button>{session.role==='admin'&&<UpdateAvailableBadge onOpen={()=>openSettings('operations')}/>}<ProfileSwitcher /><NotificationBell onSettings={()=>openSettings('notifications')}/><Button isIconOnly className="account-button" aria-label="Ayarlar" onPress={() => openSettings('account')}>{session.displayName?.slice(0, 1).toLocaleUpperCase('tr')}</Button></div>
       </header>
 
       <main className="main-content" onClick={event => {

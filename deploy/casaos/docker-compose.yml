@@ -30,7 +30,7 @@ services:
       HOME: /data
       XDG_CACHE_HOME: /data/cache
       MESA_SHADER_CACHE_MAX_SIZE: 128M
-      Home__Updates__Automatic: "true"
+      Home__Updates__Managed: "true"
     labels:
       com.centurylinklabs.watchtower.enable: "true"
       com.centurylinklabs.watchtower.scope: home
@@ -106,17 +106,19 @@ services:
     read_only: true
     cap_drop: [ALL]
     security_opt: [no-new-privileges:true]
-    entrypoint: ["/app/Watchtower/watchtower"]
-    command: ["--scope", "home", "--label-enable", "--enable-lifecycle-hooks", "--update-on-start", "--interval", "900", "--stop-timeout", "180s", "--rolling-restart", "--use-compose-depends-on=false", "home", "home-updater"]
+    entrypoint: ["/usr/bin/python3", "/app/managed-updater.py"]
+    command: []
+    environment:
+      HOME_UPDATE_CONTAINER: home
+      HOME_UPDATE_SCOPE: home
     healthcheck:
-      test: ["CMD", "/app/Watchtower/watchtower", "--health-check"]
+      test: ["CMD", "/usr/bin/python3", "-c", "import os; assert b'managed-updater.py' in open('/proc/1/cmdline','rb').read()"]
       interval: 30s
       timeout: 5s
       start_period: 10s
       retries: 3
     labels:
-      com.centurylinklabs.watchtower: "true"
-      com.centurylinklabs.watchtower.enable: "true"
+      com.centurylinklabs.watchtower.enable: "false"
       com.centurylinklabs.watchtower.scope: home
     tmpfs:
       - /tmp:rw,nosuid,size=32m

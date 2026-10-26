@@ -6,7 +6,7 @@ using HomeServer.Infrastructure;
 
 namespace HomeServer.Operations;
 
-public sealed class ContainerUpdateCoordinator(HomePaths paths, MediaStore store, BackupService backups,
+public sealed partial class ContainerUpdateCoordinator(HomePaths paths, MediaStore store, BackupService backups,
     ContainerRequestGate requests, IConfiguration configuration, TimeProvider clock, ILogger<ContainerUpdateCoordinator> logger,
     NativeGameManager? native = null, DownloadWorker? downloads = null, bool? supported = null)
 {
@@ -18,10 +18,12 @@ public sealed class ContainerUpdateCoordinator(HomePaths paths, MediaStore store
     private string? _error;
     private string JournalPath => Path.Combine(paths.Data, "updates", "container", "history.json");
     public bool Supported => supported ?? (OperatingSystem.IsLinux() && Environment.GetEnvironmentVariable("DOTNET_RUNNING_IN_CONTAINER") == "true");
-    public bool Configured => Supported && configuration.GetValue<bool>("Home:Updates:Automatic");
+    public bool Configured => Supported && (configuration.GetValue<bool>("Home:Updates:Managed") || configuration.GetValue<bool>("Home:Updates:Automatic"));
     public string? Revision => configuration["HOME_SOURCE_REVISION"] is { Length: 40 } value && value.All(char.IsAsciiHexDigit) ? value : null;
     public bool Enabled => Configured
         && (store.GetSetting(PreferenceKey) is not { } json || JsonSerializer.Deserialize<ContainerUpdatePreferences>(json, Json)?.Enabled == true);
+    public bool AutomaticInstall => Enabled && store.GetSetting(PreferenceKey) is { } json
+        && JsonSerializer.Deserialize<ContainerUpdatePreferences>(json, Json)?.AutomaticInstall == true;
     private static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web);
     public void ControlUnavailable() => _error = "Local automatic-update control is unavailable.";
 
@@ -30,7 +32,9 @@ public sealed class ContainerUpdateCoordinator(HomePaths paths, MediaStore store
         try
         {
             var history = ReadJournal().Attempts;
-            return new { supported = Supported, configured = Configured, enabled = Enabled, preparing = _lease is not null && _until > clock.GetUtcNow(),
+            var available = ReadAvailability();
+            return new { supported = Supported, configured = Configured, enabled = Enabled, automaticInstall = AutomaticInstall,
+                helperConnected = HelperConnected(available), availability = available, preparing = _lease is not null && _until > clock.GetUtcNow(),
                 revision = Revision, channel = "stable", backupRetention = 3, last = history.FirstOrDefault(), error = _error };
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or JsonException or DomainException)
@@ -38,7 +42,7 @@ public sealed class ContainerUpdateCoordinator(HomePaths paths, MediaStore store
     }
     public void Configure(ContainerUpdatePreferences input)
     {
-        if (!Configured) throw new DomainException("Apply the automatic-update Compose configuration before enabling container updates.", 409);
+        if (!Configured) throw new DomainException("Apply the managed-update Compose configuration before enabling container updates.", 409);
         store.SetSetting(PreferenceKey, JsonSerializer.Serialize(input, Json));
     }
     public ContainerUpdateActivity Activity()
@@ -54,7 +58,9 @@ public sealed class ContainerUpdateCoordinator(HomePaths paths, MediaStore store
         try
         {
             ExpireLease();
-            if (!Enabled) return Skip("disabled", "Automatic updates are disabled.");
+            var available = ReadAvailability();
+            if (!Enabled || available.Candidate is null || available.ApprovedDigest != available.Candidate.Digest || available.Phase is not ("ready" or "waiting"))
+                return Skip("disabled", "No downloaded, approved update is ready.");
             if (_lease is not null || backups.PendingRestore() is not null) return Skip("busy", "An update or restore is already pending.");
             var history = ReadJournal();
             if (!Activity().Idle) return Skip("busy", "Home is in use; the update will be retried later.");
@@ -71,10 +77,12 @@ public sealed class ContainerUpdateCoordinator(HomePaths paths, MediaStore store
             var backup = await backups.CreateContainerUpdateAsync(owner, budget.Token);
             unusedBackup = backup.Id;
             if (!Activity().Idle) return Skip("busy", "Activity changed during preparation; Home will remain running.");
-            var attempt = new ContainerUpdateAttempt(owner, clock.GetUtcNow().ToString("O"), BuildInfo.Version, Revision, backup.Id, "prepared");
+            var attempt = new ContainerUpdateAttempt(owner, clock.GetUtcNow().ToString("O"), BuildInfo.Version, Revision, backup.Id, "prepared",
+                TargetDigest: available.Candidate.Digest, TargetRevision: available.Candidate.Revision);
             WriteJournal(new(1, [attempt, .. history.Attempts.Take(2)]));
             unusedBackup = null;
             _lease = owner; _until = clock.GetUtcNow().Add(LeaseDuration); _error = null;
+            WriteAvailability(available with { Phase = "applying" });
             owner = null;
             logger.LogInformation("Automatic container update prepared with a verified application backup.");
             return new(1, 0, "prepared", "Application backup is ready; container update may proceed.", backup.Id);
@@ -87,7 +95,7 @@ public sealed class ContainerUpdateCoordinator(HomePaths paths, MediaStore store
         }
         finally
         {
-            if (owner is not null) { store.EndContainerUpdate(owner); requests.Release(owner); }
+            if (owner is not null) { store.EndContainerUpdate(owner); requests.Release(owner); if (_lease == owner) _lease = null; }
             try
             {
                 if (unusedBackup is not null) await backups.DeleteContainerUpdateAsync(unusedBackup, CancellationToken.None);
@@ -105,8 +113,12 @@ public sealed class ContainerUpdateCoordinator(HomePaths paths, MediaStore store
             var history = ReadJournal();
             if (history.Attempts.FirstOrDefault() is not { State: "prepared" } before) return;
             var changed = before.FromVersion != BuildInfo.Version || before.FromRevision != Revision;
-            var completed = before with { State = changed ? "updated" : "restarted", FinishedAt = clock.GetUtcNow().ToString("O"), ToVersion = BuildInfo.Version, ToRevision = Revision };
+            var expected = before.TargetRevision is null || before.TargetRevision == Revision;
+            var completed = before with { State = changed && expected ? "updated" : changed ? "failed" : "restarted", FinishedAt = clock.GetUtcNow().ToString("O"), ToVersion = BuildInfo.Version, ToRevision = Revision };
             WriteJournal(history with { Attempts = [completed, .. history.Attempts.Skip(1)] });
+            var available = ReadAvailability();
+            WriteAvailability(available with { ApprovedDigest = null, Candidate = changed && expected ? null : available.Candidate,
+                Phase = changed && expected ? "updated" : "failed", Error = changed && expected ? null : "The approved revision did not complete startup. Review the update backup before recovery." });
             logger.LogInformation("Container update startup completed on Home {Version}.", BuildInfo.Version);
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or JsonException or DomainException)
@@ -119,6 +131,8 @@ public sealed class ContainerUpdateCoordinator(HomePaths paths, MediaStore store
         try
         {
             ReleaseLease("deferred");
+            var available = ReadAvailability();
+            if (available.Phase == "applying") WriteAvailability(available with { Phase = "waiting" });
             return new(1, 0, "ready", "The update cycle has finished.");
         }
         finally { _gate.Release(); }
@@ -139,6 +153,10 @@ public sealed class ContainerUpdateCoordinator(HomePaths paths, MediaStore store
             var history = ReadJournal();
             if (history.Attempts.FirstOrDefault() is { } current && current.Id == owner && current.State == "prepared")
                 WriteJournal(history with { Attempts = [current with { State = state, FinishedAt = clock.GetUtcNow().ToString("O") }, .. history.Attempts.Skip(1)] });
+            var available = ReadAvailability();
+            if (available.Phase == "applying") WriteAvailability(available with {
+                Phase = state == "expired" ? "failed" : "waiting", ApprovedDigest = state == "expired" ? null : available.ApprovedDigest,
+                Error = state == "expired" ? "Update preparation expired. The running application and its backup are retained." : available.Error });
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or JsonException or DomainException)
         { _error = "Update history requires review."; }

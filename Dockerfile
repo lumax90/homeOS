@@ -154,6 +154,7 @@ COPY deploy/selkies/write-manifest.py /app/SelkiesRuntime/write-manifest.py
 RUN /opt/selkies/bin/python3 /app/SelkiesRuntime/write-manifest.py /app/SelkiesRuntime /app/NativeRuntime/manifest.json
 COPY --from=updater --chown=0:0 /updater/ /app/Watchtower/
 COPY --chmod=0555 deploy/casaos/prepare-data.sh /app/prepare-data.sh
+COPY --chmod=0555 deploy/casaos/managed-updater.py /app/managed-updater.py
 LABEL org.opencontainers.image.source="https://github.com/lumax90/homeOS" \
     org.opencontainers.image.title="Home" \
     org.opencontainers.image.description="Personal media, Live TV and headless server-run games for your home network"

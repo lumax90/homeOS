@@ -25,8 +25,20 @@ public sealed class ContainerUpdateTests
         clock ??= new(); requests ??= new(clock);
         var config = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?>
         { ["Home:Updates:Automatic"] = "true", ["HOME_SOURCE_REVISION"] = new string(revision, 40) }).Build();
-        return new(home.Paths, home.Store, new(home.Paths, home.Store), requests, config, clock,
+        var coordinator = new ContainerUpdateCoordinator(home.Paths, home.Store, new(home.Paths, home.Store), requests, config, clock,
             NullLogger<ContainerUpdateCoordinator>.Instance, supported: true);
+        // These legacy lifecycle tests explicitly authorize an isolated target.
+        // No implicit automatic-install preference is required by production.
+        if (coordinator.Enabled && coordinator.Availability().ApprovedDigest is null)
+        {
+            var candidate = new ContainerUpdateCandidate(BuildInfo.Version, new string('b', 40), "sha256:" + new string('b', 64), 100, 40);
+            coordinator.ReportCandidateAsync(candidate, null, CancellationToken.None).GetAwaiter().GetResult();
+            coordinator.AgentAsync(new(1, "status"), CancellationToken.None).GetAwaiter().GetResult();
+            coordinator.ApproveAsync(candidate.Digest, CancellationToken.None).GetAwaiter().GetResult();
+            coordinator.AgentAsync(new(1, "downloading", candidate.Digest), CancellationToken.None).GetAwaiter().GetResult();
+            coordinator.AgentAsync(new(1, "ready", candidate.Digest), CancellationToken.None).GetAwaiter().GetResult();
+        }
+        return coordinator;
     }
     private static ContainerUpdateJournal Journal(TestWorkspace home) => JsonSerializer.Deserialize<ContainerUpdateJournal>(
         File.ReadAllText(Path.Combine(home.Paths.Data, "updates", "container", "history.json")), new JsonSerializerOptions(JsonSerializerDefaults.Web))!;

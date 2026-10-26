@@ -76,8 +76,10 @@ class Client:
 try:
     run('image', 'inspect', image)
     recipe = json.loads(run('compose', '-f', str(Path(__file__).resolve().parents[2] / 'deploy/casaos/docker-compose.yml'), 'config', '--format', 'json'))
-    updater_arguments = recipe['services']['home-updater']['command'][:-2]
-    updater_arguments[updater_arguments.index('--scope') + 1] = project
+    assert recipe['services']['home-updater']['entrypoint'] == ['/usr/bin/python3', '/app/managed-updater.py']
+    # Retain the publisher's backup/recreation/self-update regression. The
+    # new consent bridge has separate isolated contract checks.
+    updater_arguments = ['--scope', project, '--label-enable', '--enable-lifecycle-hooks', '--update-on-start', '--interval', '900', '--stop-timeout', '180s', '--rolling-restart', '--use-compose-depends-on=false']
     once_arguments = list(updater_arguments)
     if '--update-on-start' in once_arguments: once_arguments.remove('--update-on-start')
     interval = once_arguments.index('--interval'); del once_arguments[interval:interval + 2]
@@ -99,7 +101,7 @@ try:
     for marker in ['a', 'b']:
         folder = root / marker
         folder.mkdir()
-        (folder / 'Dockerfile').write_text(f'FROM {image}\nENV HOME_SOURCE_REVISION={marker * 40}\nLABEL home.isolated-release={marker}\n')
+        (folder / 'Dockerfile').write_text(f'FROM {image}\nENV HOME_SOURCE_REVISION={marker * 40}\nLABEL home.isolated-release={marker} org.opencontainers.image.revision={marker * 40}\n')
         run('build', '-q', '-t', project + ':' + marker, str(folder))
     run('tag', project + ':a', reference)
     run('push', '--platform', 'linux/amd64', reference)
@@ -144,16 +146,36 @@ try:
     other_id = inspect(other)['Id']
     run('tag', project + ':b', reference)
     run('push', '--platform', 'linux/amd64', reference)
+    target_digest = inspect(project + ':b')['RepoDigests'][0].split('@', 1)[1]
+    # Explicit isolated fixture consent, never a production injection endpoint.
+    availability = {'format': 1, 'candidate': {'version': before['Config']['Labels']['org.opencontainers.image.version'],
+        'revision': 'b' * 40, 'digest': target_digest, 'totalBytes': 100, 'estimatedDownloadBytes': 40},
+        'approvedDigest': target_digest, 'phase': 'approved'}
+    runner = root / 'bridge-fixture.py'
+    runner.write_text("import importlib.util,sys\nspec=importlib.util.spec_from_file_location('bridge','/app/managed-updater.py')\nbridge=importlib.util.module_from_spec(spec);spec.loader.exec_module(bridge)\nbridge.REPOSITORY=sys.argv[1]\nprint(bridge.tick(bridge.Docker(),sys.argv[2],sys.argv[3]))\n")
+    def bridge_once(name):
+        # Only this isolated diagnostic imports a local-registry override. The
+        # production bridge has no arbitrary-repository configuration switch.
+        output = run('run', '--rm', '--label', label, '--network', 'host', '--read-only', '--cap-drop', 'ALL', '--user', '0:0',
+            '--tmpfs', '/tmp:rw,size=32m', '--tmpfs', '/data:rw,size=1m',
+            '--mount', 'type=bind,source=/var/run/docker.sock,target=/var/run/docker.sock,readonly',
+            '--mount', f'type=bind,source={runner},target=/bridge-fixture.py,readonly',
+            '--entrypoint', '/usr/bin/python3', image, '/bridge-fixture.py', reference.rsplit(':', 1)[0], home, project, timeout=360)
+        (root / (name + '.log')).write_text(output)
+        return output
 
     def watch_once(name):
         output = run('run', '--rm', '--label', label, '--label', 'com.centurylinklabs.watchtower=true', '--label', 'com.centurylinklabs.watchtower.scope=' + project, '--network', 'host', '--read-only', '--cap-drop', 'ALL', '--user', '0:0', '--tmpfs', '/tmp:rw,size=32m', '--tmpfs', '/data:rw,size=1m', '--entrypoint', '/app/Watchtower/watchtower', '--mount', 'type=bind,source=/var/run/docker.sock,target=/var/run/docker.sock,readonly', image, '--run-once', *once_arguments, home, timeout=300)
         (root / (name + '.log')).write_text(output)
 
-    watch_once('busy-deferral')
+    assert bridge_once('default-no-consent').endswith('idle')
+    assert inspect(home)['Id'] == before['Id'] and client.call('/operations/backups') == []
+    run('exec', home, '/usr/bin/python3', '-c', "import pathlib,sys; p=pathlib.Path('/data/updates/container/availability.json');p.parent.mkdir(parents=True,exist_ok=True);p.write_text(sys.argv[1])", json.dumps(availability))
+    assert bridge_once('consented-busy-deferral').endswith('waiting')
     assert inspect(home)['Id'] == before['Id'], 'An active game was interrupted.'
     assert client.call('/operations/backups') == [], 'Busy deferral created a backup.'
     client.call('/games/sessions/' + game_id, method='DELETE')
-    watch_once('idle-update')
+    assert bridge_once('consented-idle-update').endswith('updated')
     healthy(home)
     after = inspect(home)
     assert after['Id'] != before['Id']
@@ -193,7 +215,7 @@ try:
     else:
         raise RuntimeError('The scoped updater did not replace itself.')
     assert inspect(other)['Id'] == other_id
-    report = {'checks': ['private-control-socket', 'active-game-deferral', 'automatic-backup-and-replacement', 'same-login-and-paused-transfer-preservation', 'read-only-source-and-data-mount-preservation', 'unrelated-container-exclusion', 'idempotent-scan', 'updater-self-replacement'], 'errors': [], 'userRomExecuted': False, 'internetMediaAcquired': False}
+    report = {'checks': ['private-control-socket', 'default-no-consent-no-replacement', 'consented-bridge-active-game-deferral', 'exact-digest-bridge-backup-and-replacement', 'same-login-and-paused-transfer-preservation', 'read-only-source-and-data-mount-preservation', 'unrelated-container-exclusion', 'idempotent-scan', 'legacy-watchtower-self-replacement'], 'errors': [], 'userRomExecuted': False, 'internetMediaAcquired': False}
     (root / 'result.json').write_text(json.dumps(report, indent=2))
     (root / 'before.json').write_text(json.dumps(before, indent=2))
     (root / 'after.json').write_text(json.dumps(after, indent=2))

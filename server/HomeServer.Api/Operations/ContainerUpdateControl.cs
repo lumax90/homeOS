@@ -13,7 +13,7 @@ public sealed class ContainerUpdateControl(ContainerUpdateCoordinator updates, I
     public const string SocketPath = SocketDirectory + "/control.sock";
     private const int MaximumMessage = 8192;
     private static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web);
-    private sealed record Command(int Protocol, string Action);
+    private sealed record Command(int Protocol, string Action, string? Digest = null);
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
@@ -67,14 +67,18 @@ public sealed class ContainerUpdateControl(ContainerUpdateCoordinator updates, I
                     using var read = CancellationTokenSource.CreateLinkedTokenSource(request.Token);
                     read.CancelAfter(TimeSpan.FromSeconds(5));
                     var command = JsonSerializer.Deserialize<Command>(await ReceiveAsync(socket, read.Token), Json);
-                    ContainerUpdateReply response;
-                    if (command?.Protocol != 1) response = new(1, 75, "invalid", "Unsupported update protocol.");
+                    object response;
+                    if (command?.Protocol != 1) response = new ContainerUpdateReply(1, 75, "invalid", "Unsupported update protocol.");
                     else if (command.Action == "prepare") response = await updates.PrepareAsync(request.Token);
                     else if (command.Action == "cancel") response = await updates.CancelPreparationAsync(request.Token);
-                    else if (command.Action == "complete") response = new(1, 0, "ready", "Home startup completed.");
-                    else response = new(1, 75, "invalid", "Unsupported update command.");
+                    else if (command.Action == "complete") response = new ContainerUpdateReply(1, 0, "ready", "Home startup completed.");
+                    else if (command.Action is "status" or "downloading" or "ready" or "failed")
+                        response = await updates.AgentAsync(new(command.Protocol, command.Action, command.Digest), request.Token);
+                    else response = new ContainerUpdateReply(1, 75, "invalid", "Unsupported update command.");
                     await SendAsync(socket, JsonSerializer.Serialize(response, Json), request.Token);
                 }
+                catch (DomainException)
+                { await SendAsync(socket, "{\"protocol\":1,\"exitCode\":75,\"state\":\"deferred\"}", request.Token); }
                 catch (Exception ex) when (ex is SocketException or IOException or OperationCanceledException or JsonException)
                 { logger.LogDebug("Automatic update control request ended: {ErrorType}", ex.GetType().Name); }
             }
@@ -108,6 +112,25 @@ public sealed class ContainerUpdateControl(ContainerUpdateCoordinator updates, I
             }
         }
         Console.WriteLine("Home update control did not confirm readiness; this update is deferred."); return 75;
+    }
+    public static async Task<int> RunAgentCommandAsync(string payload)
+    {
+        if (!OperatingSystem.IsLinux() || payload.Length > 10000) return 75;
+        try
+        {
+            var text = Encoding.UTF8.GetString(Convert.FromBase64String(payload));
+            var command = JsonSerializer.Deserialize<Command>(text, Json);
+            if (command?.Protocol != 1 || command.Action is not ("status" or "downloading" or "ready" or "failed")) return 75;
+            using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(15));
+            using var socket = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified);
+            await socket.ConnectAsync(new UnixDomainSocketEndPoint(SocketPath), timeout.Token);
+            await SendAsync(socket, JsonSerializer.Serialize(command, Json), timeout.Token);
+            var reply = await ReceiveAsync(socket, timeout.Token);
+            Console.WriteLine(reply);
+            using var value = JsonDocument.Parse(reply);
+            return value.RootElement.TryGetProperty("exitCode", out var code) ? code.GetInt32() : 0;
+        }
+        catch (Exception ex) when (ex is FormatException or JsonException or SocketException or IOException or OperationCanceledException) { return 75; }
     }
     private static async Task<string> ReceiveAsync(Socket socket, CancellationToken token)
     {
