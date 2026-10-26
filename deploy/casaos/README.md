@@ -2,7 +2,7 @@
 
 ## Automatic-update channel
 
-**Published and verified 2026-10-24:** the recipe tracks **`ghcr.io/lumax90/homeos:stable`**, Linux **amd64**, now **0.45.0**. The immutable version and source-commit tags are also available. [Current batch and publication digest](../../docs/playback-streaming-batch-045.md); [automatic-update design and initial transition](../../docs/container-auto-updates-044.md). [Package page](https://github.com/users/lumax90/packages/container/package/homeos).
+**Published and verified 2026-10-26:** the recipe tracks **`ghcr.io/lumax90/homeos:stable`**, Linux **amd64**, now **0.46.0 / schema44**. Immutable version/source tags remain available. This update includes Selkies browser-signalling/HLS startup fixes, series-first browse/episode selection, readable future imports, inline trailer/gallery details and source-built Jellyfin-FFmpeg with retained source/notices. [Current release and digest](../../docs/release-046.md); [automatic-update design and initial transition](../../docs/container-auto-updates-044.md). [Package page](https://github.com/users/lumax90/packages/container/package/homeos).
 
 ## First installation
 

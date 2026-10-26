@@ -1,6 +1,6 @@
 # Home 0.46.0 release batch
 
-Prepared **2026-10-26**, with explicit user approval to commit, push and publish all accumulated changes together. Schema **44**. **Preparation in progress; not yet published.** Household/browser/device acceptance belongs to the user.
+Published and anonymously verified **2026-10-26**, with explicit user approval to commit, push and publish all accumulated changes together. Schema **44**. **0.46.0 is public on GHCR and promoted to `stable`.** Household/browser/device acceptance belongs to the user; publication does not prove that the household server has updated.
 
 ## Included changes
 
@@ -29,7 +29,15 @@ Source qualification completed **2026-10-26**: the pinned core built successfull
 
 ## Publication
 
-Source qualification, frontend/worker/PWA/backend compilation, the focused new-data subset and staged privacy review completed. Source commit/push and successful hosted publication are next. Planned public images: `ghcr.io/lumax90/homeos:0.46.0`, `:stable`, immutable `:sha-{application-commit}`. Do not overwrite older version images.
+Source qualification, frontend/worker/PWA/backend compilation, the focused new-data subset, staged privacy review and hosted publication completed.
+
+- Application change commit **`9c2f06bbfa610448798af874110552a141de4321`**; client-dependency workflow correction/publication source **`e2a37eb2b56490057893ab225d7d06e00a5e13e3`**. Both pushed to `main`.
+- Workflow [40302109156](https://github.com/lumax90/homeOS/actions/runs/40302109156) **succeeded**, publish job **18m50s**. The obsolete first run was deliberately cancelled after the workflow correction.
+- Hosted gates passed **176 backend test executions** plus **61 source-built-runtime native checks**, zero failed/skipped; **45 Node** guards, client/image builds, source archive validation, installation/recreation, movie/live range/access/recovery, automatic-update backup/busy gates and native binary identity checks. The long 21-session Selkies comparison was not rerun.
+- Anonymous `stable`, `0.46.0` and `sha-e2a37eb2b56490057893ab225d7d06e00a5e13e3` all resolve to **`sha256:3a296aaa53a9abdbb849a0af6b219d7e770588945349d5fa9afc8dfea3b6c170`**, Linux amd64, version **0.46.0**, source **e2a37eb**. Configured media paths point to the source-built `MediaRuntime/bin` executables.
+- Immutable **0.45.0** remains **`sha256:89eafd568b5b96c5d43880e14789cae2427e650c7ddd213b373759f5f3e79449`**. Native runtime/core/save identities remain locked.
+- **93 reviewed release files**, staged Gitleaks zero findings. Raw source/build/hosted receipts remain ignored under `artifacts/release-046/`; local verification VM is shut down.
+- Existing updater installations tracking `stable` can receive this image through the idle/backup flow. Version-pinned installations require an explicit image-version change/update. No household mount, database or server was directly changed by this publication.
 
 ## Remaining scope
 
