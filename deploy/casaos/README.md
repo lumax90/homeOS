@@ -19,6 +19,8 @@ A successful `home-data-init` container is **Exited (0)**; `home` and `home-upda
 
 Update the **existing Home app's Compose configuration** to this three-service recipe while Home is idle. Transfer the current data/media mappings, ports and custom environment values into the updated configuration before applying it. The Docker-socket mount belongs only on `home-updater`.
 
+For an existing app, [managed-updates.override.yml](managed-updates.override.yml) adds only the Home update flag/labels and the helper service. Merge it with the original using `docker compose -f ORIGINAL.yml -f managed-updates.override.yml config`; it deliberately does **not** replace Home's volumes, ports, CPU/memory limits, network mode or custom environment. Back up the original file, validate the merged configuration and save that merged result as CasaOS's existing app configuration before restarting services. Use an owner-created application backup and install only after 0.47 publication is verified; do not run `down -v` or discard the existing data directory. The helper image is version-pinned; its protocol is separate from ordinary Home application updates.
+
 This changes a version-pinned image to `stable` where needed, adds the helper and enables Home's update guard. Existing `stable` installations without a helper also require this one-time configuration change. Changing only the image tag does not configure managed updates. After transition to the qualifying 0.47 image, Home shows new releases and requires **Download and update → Confirm** by default. Background checks and optional automatic idle installation are separate preferences.
 
 ## Storage

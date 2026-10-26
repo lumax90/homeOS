@@ -1,0 +1,59 @@
+# Merge this overlay with an existing Home Compose file; do not replace it.
+# Requires the published Home 0.47.0 image or newer for the Home service.
+services:
+  home:
+    environment:
+      Home__Updates__Managed: "true"
+    labels:
+      com.centurylinklabs.watchtower.enable: "true"
+      com.centurylinklabs.watchtower.scope: home
+      com.centurylinklabs.watchtower.lifecycle.pre-update: /app/HomeServer.Api --container-update-prepare
+      com.centurylinklabs.watchtower.lifecycle.pre-update-timeout: "3"
+      com.centurylinklabs.watchtower.lifecycle.post-update: /app/HomeServer.Api --container-update-complete
+      com.centurylinklabs.watchtower.lifecycle.post-update-timeout: "3"
+      com.centurylinklabs.watchtower.lifecycle.post-check: /app/HomeServer.Api --container-update-cancel
+  home-updater:
+    container_name: home-updater
+    image: ghcr.io/lumax90/homeos:0.47.0
+    pull_policy: missing
+    restart: unless-stopped
+    user: "0:0"
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    network_mode: bridge
+    entrypoint: ["/usr/bin/python3", "/app/managed-updater.py"]
+    command: []
+    environment:
+      HOME_UPDATE_CONTAINER: home
+      HOME_UPDATE_SCOPE: home
+    healthcheck:
+      test: ["CMD", "/usr/bin/python3", "-c", "assert b'managed-updater.py' in open('/proc/1/cmdline','rb').read()"]
+      interval: 30s
+      timeout: 5s
+      start_period: 10s
+      retries: 3
+    labels:
+      com.centurylinklabs.watchtower.enable: "false"
+      com.centurylinklabs.watchtower.scope: home
+    tmpfs:
+      - /tmp:rw,nosuid,size=32m
+      - /data:rw,nosuid,size=1m
+    volumes:
+      - type: bind
+        source: /var/run/docker.sock
+        target: /var/run/docker.sock
+        read_only: true
+        bind:
+          create_host_path: false
+    logging:
+      driver: json-file
+      options:
+        max-size: "5m"
+        max-file: "2"
+    x-casaos:
+      volumes:
+        - container: /var/run/docker.sock
+          description:
+            en_US: Docker control for the scoped Home updater.
+            tr_TR: Home güncelleyicisinin Docker bağlantısı.
