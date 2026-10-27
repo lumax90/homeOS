@@ -17,7 +17,7 @@ public sealed class NativeCoreInstaller(HomePaths paths,MediaStore store,RetroAr
     {
         if(!actor.IsAdmin)throw new DomainException("Çekirdek kurulumu sahip hesabını gerektirir.",403);
         var core=catalog.Require(id);if(id=="mgba")throw new DomainException("Mevcut mGBA sürümü korunur; yeniden kurulmaz.",409);
-        var host=NativeRuntimeProfile.Read(paths);var linux=host?.Bundled==true;var block=RetroArchCoreCatalog.AdapterBlock(core,host?.HeadlessGraphics==true||gpu.Prepared,linux);if(block is not null)throw new DomainException(block,409);
+        var host=NativeRuntimeProfile.Read(paths);var linux=host?.Bundled==true;if(linux&&id=="ppsspp")throw new DomainException("PSP çekirdeği ve yardımcı dosyaları Home sürüm paketiyle kurulur; doğrulanmamış nightly ile değiştirilmez.",409);var block=RetroArchCoreCatalog.AdapterBlock(core,host?.HeadlessGraphics==true||gpu.Prepared,linux);if(block is not null)throw new DomainException(block,409);
         if(!linux&&!core.WindowsBuild)throw new DomainException("Bu çekirdeğin Windows paketi resmi katalogda yok.",409);
         if(!input.AcceptedLicense||!input.AcceptedUpstreamBuild)throw new DomainException("Çekirdek lisansı ve upstream derlemesi için açık onay gerekli.",400);
         return store.QueueProductJob("native-core-install",id,new{catalogCommit=RetroArchCoreCatalog.Commit,core.InfoSha256,platform=linux?"linux-x64":"win-x64",acceptedLicense=true,acceptedUpstreamBuild=true},actor);

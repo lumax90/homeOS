@@ -25,8 +25,11 @@ public sealed class RetroArchCoreCatalog
     public RetroArchCore Require(string id)=>Data.Entries.FirstOrDefault(core=>core.Id==id)??throw new DomainException("Emülasyon çekirdeği bulunamadı.",404);
     // A .info capability is not enough to authorize a core that writes firmware/disks or needs special input.
     public static readonly string[] SoftwareAdapters=["mgba","fceumm","nestopia","quicknes","mesen","snes9x","snes9x2010","snes9x2005","snes9x2002","bsnes","bsnes2014_accuracy","bsnes2014_balanced","bsnes2014_performance","genesis_plus_gx","picodrive","pcsx_rearmed","mednafen_psx","mednafen_saturn","mednafen_pce_fast","mednafen_pce","mednafen_supergrafx","stella","stella2014","prosystem","handy","mednafen_lynx","virtualjaguar","mednafen_ngp","mednafen_wswan","mednafen_vb","gearcoleco","pokemini","gambatte","sameboy","gearboy","gearsystem"];
-    public static string? AdapterBlock(RetroArchCore core,bool graphicsReady=false,bool linux=false)
+    public static string? AdapterBlock(RetroArchCore core,bool graphicsReady=false,bool linux=false,bool pspSoftware=false,bool handheld=false)
     {
+        if(linux&&core.Id=="ppsspp"&&pspSoftware)return null; // Only the separately pinned/proven CPU-frame profile.
+        if(linux&&core.Id=="desmume"&&handheld)return null;
+        if(linux&&core.Id=="desmume")return "DS çekirdeği doğrulanmış Home paketinden kurulmalıdır.";
         if(!core.Categories.Contains("Emulator"))return "Bu çekirdek bir emülasyon çekirdeği değil.";
         if(linux&&!NativeBasicSelection.CoreSystems(core.Id).Any()&&core.Id!="citra")return "Bu çekirdeğin Linux sunucu desteği henüz hazır değil.";
         if(!linux&&!core.WindowsBuild&&core.Id!="mgba")return "Bu çekirdeğin Windows paketi resmi katalogda yok.";

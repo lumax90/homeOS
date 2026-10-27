@@ -17,9 +17,12 @@ public sealed partial class MediaStore
         lock(_writeGate)
         {
             var current=GetAccountSecret(actor.Id); if(current is not { Account.Enabled:true }) throw new DomainException("Etkin hesap gerekli.",403);
+            if(kind=="game-install"&&scope is not null&&GameRemovalPending(scope))throw new DomainException("Oyun kaldırma işlemi sürüyor.",409);
             using var db=Open();
             var old=Query(db,ProductJobSelect+" WHERE user_id=$user AND kind=$kind AND scope_id IS $scope AND input_json=$input AND status IN ('queued','running')",ReadProductJob,("$user",actor.Id),("$kind",kind),("$scope",scope),("$input",json)).FirstOrDefault(); if(old is not null)return old;
-            Execute(db,"DELETE FROM product_jobs WHERE status NOT IN ('queued','running','applying') AND updated_at<$old",("$old",DateTimeOffset.UtcNow.AddDays(-30).ToString("O")));
+            // A native uninstall receipt is its re-import tombstone until consumed. Do not
+            // lose retained-save identity/reactivation semantics after routine job cleanup.
+            Execute(db,"DELETE FROM product_jobs WHERE status NOT IN ('queued','running','applying') AND updated_at<$old AND NOT(kind='game-uninstall' AND status='completed' AND json_extract(input_json,'$.kind')='native' AND COALESCE(json_extract(result_json,'$.reimported'),0)=0)",("$old",DateTimeOffset.UtcNow.AddDays(-30).ToString("O")));
             if(Convert.ToInt32(Scalar(db,"SELECT COUNT(*) FROM product_jobs WHERE status IN ('queued','running','applying')"))>=128)throw new DomainException("İş kuyruğu dolu.",429);
             var id=Guid.NewGuid().ToString("N"); Execute(db,"INSERT INTO product_jobs(id,kind,user_id,user_version,scope_id,input_json,status,due_at,created_at,updated_at) VALUES($id,$kind,$user,$version,$scope,$input,'queued',$now,$now,$now)",("$id",id),("$kind",kind),("$user",actor.Id),("$version",current.Version),("$scope",scope),("$input",json),("$now",Now())); return GetProductJob(id)!;
         }

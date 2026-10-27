@@ -47,6 +47,11 @@ public sealed class NativeSelkiesRuntime(IConfiguration configuration)
         if(!manifest.Cores.Any(core=>core.Id==coreId&&core.Sha256==coreHash))
             throw new DomainException("Bu çekirdek Selkies ile henüz doğrulanmadı. Standart yayın yöntemini seç.",409);
     }
+    public bool Supports(NativeRuntimeProfile profile,string coreId,string coreHash)
+    {
+        try{RequireCompatibility(Read(),profile,coreId,coreHash);return true;}
+        catch(Exception error)when(error is DomainException or IOException or UnauthorizedAccessException){return false;}
+    }
     public async Task<NativeSelkiesInstallation> RequireAsync(NativeRuntimeProfile profile,string coreId,string coreHash,CancellationToken token)
     {
         var status=Status();if(!status.Available)throw new DomainException(status.Reason!,409);var manifest=Read();RequireCompatibility(manifest,profile,coreId,coreHash);

@@ -37,6 +37,7 @@ public sealed partial class NativeRomLibrary
             }
             var manifest=new NativeDiscManifest(1,system,entry,files.OrderBy(file=>file.Name,StringComparer.Ordinal).ToArray());await ValidateDiscReferencesAsync(manifest,stage,token);
             var manifestBytes=JsonSerializer.SerializeToUtf8Bytes(manifest,DiscJson);var hash=Convert.ToHexStringLower(SHA256.HashData(manifestBytes));var root=AppFiles.DirectoryIn(paths.State,"games","roms",system,hash);
+            store.RequireRomPublication(system,hash);
             foreach(var file in manifest.Files){await VerifiedFilePublication.StageAsync(Path.Combine(stage,file.Name),root,file.Name,operation,file.Bytes,file.Sha256,token);VerifiedFilePublication.Promote(root,file.Name,operation,file.Bytes,file.Sha256);}
             var descriptor=Path.Combine(stage,"disc.json");await File.WriteAllBytesAsync(descriptor,manifestBytes,token);await VerifiedFilePublication.StageAsync(descriptor,root,"disc.json",operation,manifestBytes.Length,hash,token);store.RequireRomImportActor(actor,login);token.ThrowIfCancellationRequested();VerifiedFilePublication.Promote(root,"disc.json",operation,manifestBytes.Length,hash);
             return store.RegisterGameRom(entry,hash,total,actor,login,system);

@@ -36,7 +36,7 @@ public sealed class RomMetadata(HomePaths paths,MediaStore store,EventHub events
     public static RomMetadataDocument? Read(HomePaths paths,GameRom rom)
     {
         var root=Path.Combine(paths.State,"games","metadata",rom.UserId,rom.Id);if(!File.Exists(Path.Combine(root,"metadata.json")))return null;var path=MediaPaths.ResolveFile(paths.State,Path.GetRelativePath(paths.State,Path.Combine(root,"metadata.json")));if(new FileInfo(path).Length>64*1024)throw new DomainException("Oyun bilgisi kaydı geçersiz.",409);
-        try{var data=JsonSerializer.Deserialize<RomMetadataDocument>(File.ReadAllText(path),Json);return data is{Format:1,Revision:>0}&&data.RomSha256==rom.Sha256?data:null;}catch(JsonException){throw new DomainException("Oyun bilgisi kaydı geçersiz.",409);}
+        try{var data=JsonSerializer.Deserialize<RomMetadataDocument>(File.ReadAllText(path),Json);return data is{Format:1,Revision:>0}&&data.RomSha256==rom.Sha256&&HasheousMetadataClient.PlatformMatches(rom.System,data.Game.Platform)?data:null;}catch(JsonException){throw new DomainException("Oyun bilgisi kaydı geçersiz.",409);}
     }
     private RomMetadataChoices Choices(GameRom rom)
     {if(!File.Exists(Path.Combine(Root(rom),"choices.json")))return new(rom.Sha256,[]);var path=MediaPaths.ResolveFile(paths.State,Path.GetRelativePath(paths.State,Path.Combine(Root(rom),"choices.json")));if(new FileInfo(path).Length>256*1024)throw new DomainException("Oyun eşleşme kaydı geçersiz.",409);var data=JsonSerializer.Deserialize<RomMetadataChoices>(File.ReadAllText(path),Json);return data?.RomSha256==rom.Sha256?data:new(rom.Sha256,[]);}

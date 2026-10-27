@@ -14,9 +14,11 @@ public sealed class RetroArchControl : IAsyncDisposable
     private readonly Process _process;
     private readonly UdpClient _socket;
     private readonly SemaphoreSlim _commands = new(1, 1);
-    public RetroArchControl(Process process, int port)
+    private readonly TimeSpan _queryBudget;
+    public RetroArchControl(Process process, int port,TimeSpan? queryBudget=null)
     {
         if (port is < 1024 or > 65535) throw new DomainException("Yerel oyun komut portu geçersiz.");
+        _queryBudget=queryBudget??TimeSpan.FromSeconds(3);if(_queryBudget<TimeSpan.FromSeconds(1)||_queryBudget>TimeSpan.FromSeconds(30))throw new DomainException("Yerel oyun komut süresi geçersiz.");
         _process = process; _socket = new UdpClient(new IPEndPoint(IPAddress.Loopback, 0)); _socket.Connect(IPAddress.Loopback, port);
     }
     public async Task<string> StatusAsync(CancellationToken token)
@@ -102,13 +104,13 @@ public sealed class RetroArchControl : IAsyncDisposable
     {if(index is <0 or >511||value is <0 or >127)throw new DomainException("Çekirdek ayarı geçersiz.");if(await ReplyAsync($"HOME_OPTION_SET {index} {value}",token)!="OK")throw new DomainException("Çekirdek ayarı değiştirilemedi.",409);}
     private async Task<string> ReplyAsync(string command,CancellationToken token)
     {
-        await _commands.WaitAsync(token);try{while(_socket.Available>0)await _socket.ReceiveAsync(token);await SendAsync(command,token);using var budget=CancellationTokenSource.CreateLinkedTokenSource(token);budget.CancelAfter(TimeSpan.FromSeconds(3));var packet=await _socket.ReceiveAsync(budget.Token);if(packet.Buffer.Length>32768)throw new DomainException("Yerel oyun komut yanıtı çok büyük.",502);return Encoding.UTF8.GetString(packet.Buffer).Trim('\r','\n','\0');}finally{_commands.Release();}
+        await _commands.WaitAsync(token);try{while(_socket.Available>0)await _socket.ReceiveAsync(token);await SendAsync(command,token);using var budget=CancellationTokenSource.CreateLinkedTokenSource(token);budget.CancelAfter(_queryBudget);var packet=await _socket.ReceiveAsync(budget.Token);if(packet.Buffer.Length>32768)throw new DomainException("Yerel oyun komut yanıtı çok büyük.",502);return Encoding.UTF8.GetString(packet.Buffer).Trim('\r','\n','\0');}finally{_commands.Release();}
     }
     private async Task CommandAsync(string command, CancellationToken token)
     { await _commands.WaitAsync(token); try { await SendAsync(command, token); } finally { _commands.Release(); } }
     private async Task<string> QueryAsync(CancellationToken token)
     {
-        using var timeout = CancellationTokenSource.CreateLinkedTokenSource(token); timeout.CancelAfter(TimeSpan.FromSeconds(3));
+        using var timeout = CancellationTokenSource.CreateLinkedTokenSource(token); timeout.CancelAfter(_queryBudget);
         try
         {
             // A connected UDP socket can surface startup ICMP refusal on the

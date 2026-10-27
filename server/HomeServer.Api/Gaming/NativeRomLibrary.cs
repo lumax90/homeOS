@@ -58,8 +58,10 @@ public sealed partial class NativeRomLibrary(HomePaths paths, MediaStore store) 
                 if(header[3]!=0xea||header[0xb2]!=0x96||(byte)(-checksum)!=header[0xbd])throw new DomainException("Dosya standart GBA kartuş başlığı kontrolünü geçemedi. Geçerli bir .gba ROM seç.",422);
             }
             if(system!="gba")ValidateHeader(system,fileName,header,total);
+            if(NativeSystems.Extension(fileName)=="iso")await ValidateIsoSystemAsync(pending,system,token);
             // Integrity is not an emulator/game compatibility verdict. No fake metadata or embedded game/BIOS data.
             var hash = Convert.ToHexStringLower(digest.GetHashAndReset());
+            store.RequireRomPublication(system,hash);
             var root=AppFiles.DirectoryIn(paths.State,"games","roms",system,hash);var content="game."+NativeSystems.Extension(fileName);
             publicationPartial = Path.Combine(root, ".home-publish-" + operation + ".partial");
             await VerifiedFilePublication.StageAsync(pending,root,content,operation,total,hash,token);

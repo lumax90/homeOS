@@ -56,6 +56,21 @@ RUN mkdir /native-source && tar -xzf /native-source.tar.gz -C /native-source \
     && bash /build-frontend.sh /native-source /selkies \
     && cp /build-frontend.sh /selkies/licenses/build-frontend.sh
 
+FROM mcr.microsoft.com/dotnet/sdk:10.0.401-noble@sha256:e70cdb7f80b0348f5cb85f19a8f670fca061f033d57eed12fa003d58b0e06317 AS psp-build
+ARG TARGETARCH
+RUN test "$TARGETARCH" = amd64 && apt-get update && apt-get install -y --no-install-recommends \
+    build-essential cmake ninja-build git pkg-config python3 ca-certificates \
+    libavcodec-dev libavformat-dev libavutil-dev libavdevice-dev libavfilter-dev libswresample-dev libswscale-dev \
+    libgl1-mesa-dev libx11-dev libzstd-dev libpng-dev libfreetype6-dev zlib1g-dev
+COPY deploy/psp/build.sh /build-psp.sh
+COPY deploy/psp/write-manifest.py /write-psp-manifest.py
+COPY deploy/psp/patch-private-memory.py /patch-private-memory.py
+COPY deploy/psp/runtime.json /runtime.json
+COPY server/HomeServer.Api/NativeCoreCatalog/catalog.json /core-catalog.json
+RUN --mount=type=cache,id=home-psp-source-1204,target=/psp-source \
+    --mount=type=cache,id=home-psp-build-1204,target=/psp-build \
+    bash /build-psp.sh
+
 FROM node-tools AS native-runtime-check
 WORKDIR /src
 COPY Dockerfile Dockerfile
@@ -64,6 +79,20 @@ COPY tools/verify-native-runtime-lock.mjs tools/stage-linux-native.mjs tools/pat
 COPY server/HomeServer.Api/NativeCoreCatalog/catalog.json server/HomeServer.Api/NativeCoreCatalog/catalog.json
 COPY --from=native-runtime /app/NativeRuntime/manifest.json runtime-manifest.json
 RUN node tools/verify-native-runtime-lock.mjs > /native-runtime-checked.txt
+
+FROM mcr.microsoft.com/dotnet/sdk:10.0.401-noble@sha256:e70cdb7f80b0348f5cb85f19a8f670fca061f033d57eed12fa003d58b0e06317 AS handheld-build
+ARG TARGETARCH
+RUN test "$TARGETARCH" = amd64 && apt-get update && apt-get install -y --no-install-recommends \
+    build-essential cmake ninja-build git pkg-config python3 ca-certificates \
+    libgl1-mesa-dev libegl1-mesa-dev libpcap-dev libssl-dev libzstd-dev
+COPY deploy/handheld/build.sh /build-handheld.sh
+COPY deploy/handheld/runtime.json /handheld-runtime.json
+COPY deploy/handheld/write-manifest.py /write-handheld-manifest.py
+COPY deploy/handheld/patch-citra-revision.py /patch-citra-revision.py
+COPY server/HomeServer.Api/NativeCoreCatalog/catalog.json /core-catalog.json
+RUN --mount=type=cache,id=home-handheld-source-20261027,target=/handheld-source \
+    --mount=type=cache,id=home-handheld-build-20261027,target=/handheld-build \
+    bash /build-handheld.sh
 
 FROM mcr.microsoft.com/dotnet/sdk:10.0.401-noble@sha256:e70cdb7f80b0348f5cb85f19a8f670fca061f033d57eed12fa003d58b0e06317 AS native-build
 ARG TARGETARCH
@@ -110,7 +139,7 @@ ENV HOME_TEST_FFMPEG=/app/MediaRuntime/bin/ffmpeg \
     HOME_TEST_FFPROBE=/app/MediaRuntime/bin/ffprobe
 RUN --mount=type=cache,id=home-nuget,target=/root/.nuget/packages \
     dotnet test tests/HomeServer.Tests/HomeServer.Tests.csproj -c Release \
-    --filter 'FullyQualifiedName~MediaRuntimeCompatibilityTests|FullyQualifiedName~DolbyVisionBaseLayerTests|FullyQualifiedName~DolbyVisionAnalysisTests|FullyQualifiedName~PlaybackEfficiencyTests|FullyQualifiedName~PlaybackLifecycleTests|FullyQualifiedName~PlaybackWindowTests|FullyQualifiedName~PlaybackQuotaTests' \
+    --filter 'FullyQualifiedName~MediaStillsTests|FullyQualifiedName~MediaRuntimeCompatibilityTests|FullyQualifiedName~DolbyVisionBaseLayerTests|FullyQualifiedName~DolbyVisionAnalysisTests|FullyQualifiedName~PlaybackEfficiencyTests|FullyQualifiedName~PlaybackLifecycleTests|FullyQualifiedName~PlaybackWindowTests|FullyQualifiedName~PlaybackQuotaTests' \
     --logger 'trx;LogFileName=media-runtime.trx' --results-directory /media-runtime-reports --nologo \
     && printf '%s\n' 'Pinned Jellyfin-FFmpeg: native compatibility/base-layer/preservation/lifecycle checks passed.' > /media-runtime-tested.txt
 
@@ -123,11 +152,61 @@ RUN chown -R 1654:1654 /native
 USER 1654:1654
 RUN /native-probe/Home.NativeLinuxProbe --verify-build /native /native-test-binaries/synthetic_gpu.so
 
+FROM psp-build AS psp-source
+RUN sed -i 's/^Types: deb$/Types: deb deb-src/' /etc/apt/sources.list.d/ubuntu.sources && apt-get update
+COPY deploy/psp/package-source.py /package-psp-source.py
+COPY deploy/psp/verify-source.py /verify-psp-source.py
+RUN python3 /package-psp-source.py /app/PspRuntime \
+    && python3 /verify-psp-source.py /app/PspRuntime > /app/PspRuntime/licenses/source-proof.json
+
+FROM psp-source AS psp-proof
+RUN apt-get update && apt-get install -y --no-install-recommends ffmpeg libopengl0 && rm -rf /var/lib/apt/lists/*
+COPY --from=native-runtime /app/NativeRuntime/ /app/NativeRuntime/
+COPY --from=build /native-probe/ /native-probe/
+COPY tests/native/synthetic_psp.py /original-isolated-psp.py
+RUN mkdir /psp-proof && python3 /original-isolated-psp.py /psp-proof/fixture.elf \
+    && chown -R 1654:1654 /app/PspRuntime /psp-proof
+USER 1654:1654
+RUN /native-probe/Home.NativeLinuxProbe --verify-psp /app/NativeRuntime /app/PspRuntime /psp-proof/fixture.elf /psp-proof/evidence
+
+FROM handheld-build AS handheld-source
+RUN sed -i 's/^Types: deb$/Types: deb deb-src/' /etc/apt/sources.list.d/ubuntu.sources && apt-get update
+COPY deploy/handheld/package-source.py /package-handheld-source.py
+COPY deploy/handheld/verify-source.py /verify-handheld-source.py
+RUN python3 /package-handheld-source.py /app/HandheldRuntime \
+    && python3 /verify-handheld-source.py /app/HandheldRuntime > /app/HandheldRuntime/licenses/source-proof.json
+
+FROM handheld-source AS handheld-proof
+RUN apt-get update && apt-get install -y --no-install-recommends ffmpeg xvfb xauth libgl1-mesa-dri && rm -rf /var/lib/apt/lists/*
+COPY --from=native-runtime /app/NativeRuntime/ /app/NativeRuntime/
+COPY --from=build /native-probe/ /native-probe/
+COPY tests/native/synthetic_nds.py tests/native/synthetic_3ds.py /handheld-fixtures/
+RUN mkdir -p /handheld-proof/ds /handheld-proof/3ds \
+    && python3 /handheld-fixtures/synthetic_nds.py /handheld-proof/fixture.nds \
+    && python3 /handheld-fixtures/synthetic_3ds.py /handheld-proof/fixture.3dsx \
+    && chown -R 1654:1654 /app/HandheldRuntime /handheld-proof
+USER 1654:1654
+RUN /native-probe/Home.NativeLinuxProbe --verify-handheld /app/NativeRuntime /app/HandheldRuntime desmume /handheld-proof/fixture.nds /handheld-proof/ds \
+    && /native-probe/Home.NativeLinuxProbe --verify-handheld /app/NativeRuntime /app/HandheldRuntime citra /handheld-proof/fixture.3dsx /handheld-proof/3ds
+
+FROM handheld-proof AS handheld-selkies-proof
+USER 0:0
+COPY --from=selkies-package /selkies.deb /tmp/selkies.deb
+RUN apt-get update && apt-get install -y --no-install-recommends pulseaudio libsdl2-2.0-0 /tmp/selkies.deb && rm -rf /var/lib/apt/lists/* && rm /tmp/selkies.deb
+COPY --from=selkies-build /selkies/ /app/SelkiesRuntime/
+COPY deploy/selkies/runtime.json /app/SelkiesRuntime/source.json
+COPY deploy/selkies/write-manifest.py /app/SelkiesRuntime/write-manifest.py
+RUN /opt/selkies/bin/python3 /app/SelkiesRuntime/write-manifest.py /app/SelkiesRuntime /app/NativeRuntime/manifest.json \
+    && mkdir /handheld-selkies-proof && chown 1654:1654 /handheld-selkies-proof
+USER 1654:1654
+RUN /native-probe/Home.NativeLinuxProbe --verify-handheld-selkies /app/NativeRuntime /app/HandheldRuntime desmume /handheld-proof/fixture.nds /handheld-selkies-proof/ds /app/SelkiesRuntime \
+    && /native-probe/Home.NativeLinuxProbe --verify-handheld-selkies /app/NativeRuntime /app/HandheldRuntime citra /handheld-proof/fixture.3dsx /handheld-selkies-proof/3ds /app/SelkiesRuntime
+
 FROM mcr.microsoft.com/dotnet/runtime-deps:10.0.12-noble AS final
 WORKDIR /app
 COPY --from=selkies-package /selkies.deb /tmp/home-selkies.deb
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    ffmpeg par2 fonts-dejavu-core xvfb xauth libgl1-mesa-dri libgl1 libegl1 libxrandr2 libxinerama1 libxi6 pulseaudio libsdl2-2.0-0 /tmp/home-selkies.deb \
+    ffmpeg par2 fonts-dejavu-core xvfb xauth libgl1-mesa-dri libgl1 libopengl0 libegl1 libxrandr2 libxinerama1 libxi6 libpcap0.8t64 pulseaudio libsdl2-2.0-0 /tmp/home-selkies.deb \
     && mkdir -p /data /app/licenses \
     && ffmpeg -L > /app/licenses/ffmpeg-build.txt 2>&1 \
     && dpkg-query -W > /app/licenses/system-packages.txt \
@@ -136,6 +215,13 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && cp /usr/share/doc/libsdl2-2.0-0/copyright /app/licenses/SDL2-copyright.txt \
     && chown 1654:1654 /data && rm -rf /var/lib/apt/lists/* && rm /tmp/home-selkies.deb
 COPY --from=build /publish/ /app/
+COPY --from=psp-proof --chown=0:0 /app/PspRuntime/ /app/PspRuntime/
+COPY --from=handheld-selkies-proof --chown=0:0 /app/HandheldRuntime/ /app/HandheldRuntime/
+RUN ldd /app/PspRuntime/ppsspp_libretro.so > /app/PspRuntime/licenses/final-linked-libraries.txt \
+    && ! grep -q 'not found' /app/PspRuntime/licenses/final-linked-libraries.txt
+RUN ldd /app/HandheldRuntime/cores/desmume_libretro.so > /app/HandheldRuntime/licenses/desmume-final-linked.txt \
+    && ldd /app/HandheldRuntime/cores/citra_libretro.so > /app/HandheldRuntime/licenses/citra-final-linked.txt \
+    && ! grep -q 'not found' /app/HandheldRuntime/licenses/*-final-linked.txt
 COPY --from=media-build /app/MediaRuntime/ /app/MediaRuntime/
 COPY --from=media-build /media-runtime-dependencies.txt /app/MediaRuntime/licenses/runtime-dependencies.txt
 COPY deploy/media/runtime-dependencies.sh /app/MediaRuntime/runtime-dependencies.sh
@@ -151,7 +237,7 @@ COPY --from=native-runtime-check /native-runtime-checked.txt /app/NativeRuntime/
 COPY --from=selkies-build /selkies/ /app/SelkiesRuntime/
 COPY deploy/selkies/runtime.json /app/SelkiesRuntime/source.json
 COPY deploy/selkies/write-manifest.py /app/SelkiesRuntime/write-manifest.py
-RUN /opt/selkies/bin/python3 /app/SelkiesRuntime/write-manifest.py /app/SelkiesRuntime /app/NativeRuntime/manifest.json
+RUN /opt/selkies/bin/python3 /app/SelkiesRuntime/write-manifest.py /app/SelkiesRuntime /app/NativeRuntime/manifest.json /app/HandheldRuntime/manifest.json
 COPY --from=updater --chown=0:0 /updater/ /app/Watchtower/
 COPY --chmod=0555 deploy/casaos/prepare-data.sh /app/prepare-data.sh
 COPY --chmod=0555 deploy/casaos/managed-updater.py /app/managed-updater.py
@@ -166,6 +252,8 @@ ENV Home__DataPath=/data \
     Home__Par2Path=/usr/bin/par2 \
     Home__Games__NativeRuntimePath=/app/NativeRuntime \
     Home__Games__SelkiesRuntimePath=/app/SelkiesRuntime \
+    Home__Games__PspRuntimePath=/app/PspRuntime \
+    Home__Games__HandheldRuntimePath=/app/HandheldRuntime \
     Home__Network__BindAddress=0.0.0.0 \
     Home__Network__HttpPort=8080 \
     URLS=http://0.0.0.0:8080 \

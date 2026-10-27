@@ -240,6 +240,38 @@ public sealed class NativeGameTests
         foreach (var (header, property) in new[] { ("X-CSRF-TOKEN", "csrfToken"), ("X-Home-User", "userId"), ("X-Home-Session", "sessionId") }) { client.DefaultRequestHeaders.Remove(header); if (session.GetProperty(property).ValueKind == JsonValueKind.String) client.DefaultRequestHeaders.Add(header, session.GetProperty(property).GetString()); }
     }
     [Fact]
+    public async Task SupportedSystemsApiIsAuthenticatedReadOnlyAndDoesNotPresentTheCoreCatalogAsSupport()
+    {
+        using var home=new TestWorkspace();await using var app=new Factory(home,true);using var client=app.CreateClient();
+        Assert.Equal(HttpStatusCode.Unauthorized,(await client.GetAsync("/api/games/supported-systems")).StatusCode);
+        await Csrf(client);(await client.PostAsJsonAsync("/api/setup",new Credentials("Owner","isolated-password-2026"))).EnsureSuccessStatusCode();await Csrf(client);
+        var result=await client.GetFromJsonAsync<GamingSupportView>("/api/games/supported-systems");Assert.NotNull(result);
+        Assert.True(result.Items.Length<30);Assert.Equal("unsupported",result.Items.Single(item=>item.Id=="ps3").State);Assert.False(result.Items.Single(item=>item.Id=="3ds").Ready);
+        Assert.Empty(home.Store.GetProductJobs(home.Store.GetAccount("1")!));Assert.Empty(home.Store.GetActiveGameSessions());
+    }
+    [Fact]
+    public async Task ConfirmedUninstallApiChecksCsrfOwnerScopeAndActiveSessionsAndSupportsPreApplyCancellation()
+    {
+        using var home=new TestWorkspace();await using var app=new Factory(home,true);using var client=app.CreateClient();
+        Assert.Equal(HttpStatusCode.Unauthorized,(await client.PostAsJsonAsync("/api/games/rom-foreign/uninstall",new GameUninstallCommand(true))).StatusCode);
+        await Csrf(client);(await client.PostAsJsonAsync("/api/setup",new Credentials("Owner","isolated-password-2026"))).EnsureSuccessStatusCode();await Csrf(client);
+        var actor=home.Store.GetAccount("1")!;var login=home.Store.CreateLoginSession("1",home.Store.GetAccountSecret("1")!.Version,"uninstall-api-fixture");
+        using var roms=new NativeRomLibrary(home.Paths,home.Store);var rom=await Import(roms,FixtureRom(),actor,login);
+        var path=Path.Combine(home.Paths.State,"games","roms","gba",rom.Sha256,"game.gba");
+        client.DefaultRequestHeaders.Remove("X-CSRF-TOKEN");Assert.Equal(HttpStatusCode.BadRequest,(await client.PostAsJsonAsync($"/api/games/{rom.Id}/uninstall",new GameUninstallCommand(true))).StatusCode);await Csrf(client);
+        Assert.Equal(HttpStatusCode.BadRequest,(await client.PostAsJsonAsync($"/api/games/{rom.Id}/uninstall",new GameUninstallCommand())).StatusCode);
+        Assert.Equal(HttpStatusCode.BadRequest,(await client.PostAsJsonAsync($"/api/games/{rom.Id}/uninstall",new GameUninstallCommand(true,false))).StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound,(await client.PostAsJsonAsync("/api/games/rom-foreign/uninstall",new GameUninstallCommand(true))).StatusCode);
+        var game=new GameManifest(rom.Id,rom.Title,"","","","","preserved-fixture-build","","user-supplied","native","16/9",[],["native-save.json"],[],"native");
+        var session=home.Store.StartGameSession(game,new(Guid.NewGuid().ToString("N"),new string('a',64)),actor,login.Id);
+        Assert.Equal(HttpStatusCode.Conflict,(await client.PostAsJsonAsync($"/api/games/{rom.Id}/uninstall",new GameUninstallCommand(true))).StatusCode);home.Store.CloseGameSession(session.Id,actor,login.Id);
+        var response=await client.PostAsJsonAsync($"/api/games/{rom.Id}/uninstall",new GameUninstallCommand(true));Assert.Equal(HttpStatusCode.Accepted,response.StatusCode);
+        var queued=(await response.Content.ReadFromJsonAsync<ProductJob>())!;Assert.True(File.Exists(path));var claimed=home.Store.ClaimProductJob(["game-uninstall"])!;
+        home.Store.CancelProductJob(queued.Id,claimed.Revision,actor);
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(()=>app.Services.GetRequiredService<GameRemoval>().RunAsync(claimed,CancellationToken.None));
+        Assert.True(File.Exists(path));Assert.True(home.Store.GetGameStates(actor.Id).Single().InLibrary);
+    }
+    [Fact]
     public async Task ScopedSettingsApiChecksActorCsrfRevisionAndGameOwnershipWithoutExecutingACore()
     {
         using var home=new TestWorkspace();await using var app=new Factory(home,true);using var client=app.CreateClient();Assert.Equal(HttpStatusCode.Unauthorized,(await client.GetAsync("/api/games/rom-original/settings")).StatusCode);await Csrf(client);(await client.PostAsJsonAsync("/api/setup",new Credentials("Owner","isolated-password-2026"))).EnsureSuccessStatusCode();await Csrf(client);

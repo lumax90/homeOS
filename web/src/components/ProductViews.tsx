@@ -9,7 +9,7 @@ import { AutomationHistory, AutomationPanel } from './Automation';
 import { CollectionsView, PersonalContentPanel } from './PersonalCatalog';
 import { CatalogIdentityPanel, CatalogSourceLinks, EpisodeNumberingPanel, MoviePartsPanel } from './CatalogControls';
 import { ContentPeople,PeopleBrowser } from './CatalogFeeds';
-import {ContentMedia}from'./ContentMedia';
+import {ContentMedia,TrailerAction}from'./ContentMedia';
 import { appUrl } from '../base';
 import './title-page.css';
 import { usePageTitle } from '../usePageTitle';
@@ -76,7 +76,8 @@ function ContentBody({ selected, onSearch, onPlay, notify }: ContentActions & { 
         {!!metadata.genres.length && <div className="genre-list">{metadata.genres.map(genre => <span key={genre}>{genre}</span>)}</div>}
         <div className="title-main-actions">{playable && <Button className="play-button" onPress={() => onPlay(playable)}><Play size={18} fill="currentColor" />{playable.positionSeconds > 0 && !playable.isWatched ? 'Kaldığın yerden devam et' : 'Oynat'}</Button>}
           {!saved?.requested && account.canRequest && <Button className={playable ? 'secondary-button' : 'play-button'} onPress={() => add.mutate()} isDisabled={add.isPending}>{add.isPending ? <LoaderCircle className="spin" size={16} /> : <Plus size={17} />} İçeriği iste</Button>}
-          {saved?.requested && account.canAcquire && <Button variant="ghost" className="title-source-button" onPress={() => onSearch({ entry: searchEntry! })}><Search size={17} /> Kaynaklarda ara</Button>}
+           {saved?.requested && account.canAcquire && <Button variant="ghost" className="title-source-button" onPress={() => onSearch({ entry: searchEntry! })}><Search size={17} /> Kaynaklarda ara</Button>}
+           <TrailerAction key={`${metadata.provider}:${metadata.kind}:${metadata.providerId}`} metadata={metadata}/>
         </div>
         <span className="title-library-state">{playable ? 'Kütüphanende' : saved?.requested ? saved.requestStatus === 'pending' ? 'Onay bekliyor' : 'Takipte' : 'Henüz kütüphanende yok'}</span>
         <PersonalContentPanel placement="hero" metadata={metadata} contentId={saved?.id} onSaved={value => { client.setQueryData(['content-details', selected.provider, selected.kind, selected.providerId], { metadata, saved: value }); }} />
@@ -88,7 +89,7 @@ function ContentBody({ selected, onSearch, onPlay, notify }: ContentActions & { 
       <CatalogSourceLinks metadata={metadata} />
       </section>
        <ContentPeople metadata={metadata} expanded/>
-       <ContentMedia key={`${metadata.provider}:${metadata.kind}:${metadata.providerId}`} metadata={metadata}/>
+       <ContentMedia key={`${metadata.provider}:${metadata.kind}:${metadata.providerId}`} metadata={metadata} mediaId={playable?.id}/>
       {details.error && <p className="form-error" role="alert">{details.error.message}</p>}
       <div className="content-availability"><span className={saved?.fileCount ? 'status-dot' : 'status-dot offline'} /><strong>{saved?.fileCount ? `${saved.fileCount} dosya kütüphanende` : files.data?.length ? 'Kayıtlı dosyalara şu anda erişilemiyor' : 'Henüz kütüphanende yok'}</strong>{saved?.requested && <span>{saved.requestStatus === 'pending' ? 'Onay bekliyor' : 'Takipte'}</span>}</div>
       <details className="title-management"><summary>Takip ve edinme tercihleri</summary><div className="title-management-body"><div className="content-preferences">

@@ -7,7 +7,7 @@ import {Artwork}from'./Artwork';
 import {usePageTitle}from'../usePageTitle';
 import {catalogTitle}from'../catalogGroups';
 import {ContentPeople}from'./CatalogFeeds';
-import {ContentMedia}from'./ContentMedia';
+import {ContentMedia,TrailerAction}from'./ContentMedia';
 import './title-page.css';
 
 /** Local, access-filtered series episodes; opening a saved show needs no provider request. */
@@ -24,7 +24,8 @@ export function LibrarySeries({id,onBack,onPlay}:{id:string;onBack:()=>void;onPl
         <div className="title-identity"><div className="title-poster"><Artwork item={item} eager/></div><section><p className="eyebrow">DİZİ · {item.libraryName}</p>
           <h1 data-page-heading tabIndex={-1}>{catalogTitle(item)}</h1><div className="title-facts"><span>{item.catalogGroup?.episodeCount??page?.total??0} bölüm</span><span>{page?.seasons.length??0} sezon</span></div>
           {item.content?.overview&&<p className="detail-description">{item.content.overview}</p>}
-          {item.content&&<a className="content-source" href={appUrl(`/title/${item.content.provider}/show/${item.content.providerId}`)}>Dizi bilgileri</a>}
+           {item.content&&<a className="content-source" href={appUrl(`/title/${item.content.provider}/show/${item.content.providerId}`)}>Dizi bilgileri</a>}
+           {item.content&&<div className="title-main-actions"><TrailerAction key={item.content.id} metadata={item.content}/></div>}
         </section></div></div>
       <div className="title-page-body"><section className="episode-section"><div className="section-heading"><h2><Tv size={18}/> Bölümler</h2>
         <select aria-label="Sezon filtresi" value={season} onChange={event=>setSeason(event.target.value)}><option value="">Tüm sezonlar</option>{page?.seasons.map(value=><option key={value} value={value}>{value===0?'Özel bölümler':`${value}. sezon`}</option>)}</select></div>
@@ -35,6 +36,6 @@ export function LibrarySeries({id,onBack,onPlay}:{id:string;onBack:()=>void;onPl
         </div>)}
         {query.hasNextPage&&<div className="load-more"><Button variant="ghost" onPress={()=>query.fetchNextPage()} isDisabled={query.isFetchingNextPage}>Diğer bölümleri göster</Button></div>}
         {query.error&&<p className="form-error" role="alert">{query.error.message}</p>}
-      </section>{item.content&&<><ContentPeople metadata={item.content} expanded/><ContentMedia key={item.content.id} metadata={item.content}/></>}</div></>}
+      </section>{item.content&&<ContentPeople metadata={item.content} expanded/>}<ContentMedia title={catalogTitle(item)} mediaId={episodes.find(row=>row.file.available)?.file.id}/></div></>}
   </article>;
 }

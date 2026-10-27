@@ -7,10 +7,10 @@ namespace HomeServer.Metadata;
 
 public sealed partial class MetadataProvider
 {
-    public async Task<CatalogMedia> MediaAsync(string provider,string kind,int id,CancellationToken token)
+    public async Task<CatalogMedia> MediaAsync(string provider,string kind,int id,CancellationToken token,bool trailersOnly=false)
     {
         Validate(provider,kind);if(id<=0)throw new DomainException("İçerik kimliği geçersiz.");
-        var key=$"content-media:{provider}:{kind}:{id}:{settings.Language}";
+        var key=$"content-media:{provider}:{kind}:{id}:{settings.Language}:{trailersOnly}";
         if(cache.TryGetValue<CatalogMedia>(key,out var cached))return cached!;
         CatalogTrailer[] trailers=[];CatalogImage[] images=[];string? trailerError=null,imageError=null;
         if(provider=="tmdb")
@@ -25,7 +25,7 @@ public sealed partial class MetadataProvider
             }
             catch(DomainException error){trailerError=error.Message;}
         }
-        try
+        if(!trailersOnly)try
         {
             using var gallery=await GetAsync(provider,provider=="tmdb"?$"{(kind=="movie"?"movie":"tv")}/{id}/images":$"shows/{id}/images",token);
             images=ReadGallery(provider,gallery.RootElement,id);

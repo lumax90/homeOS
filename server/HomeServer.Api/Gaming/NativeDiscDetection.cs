@@ -14,9 +14,16 @@ internal static class NativeDiscDetection
             var pvd=Read(16L*stride+payloadOffset,2048,false);if(pvd is null||pvd[0]!=1||!pvd.AsSpan(1,5).SequenceEqual("CD001"u8)||pvd[6]!=1||BinaryPrimitives.ReadUInt16LittleEndian(pvd.AsSpan(128))!=2048)continue;
             var root=pvd.AsSpan(156);if(root[0]<34)continue;var extent=BinaryPrimitives.ReadUInt32LittleEndian(root[2..]);var bytes=BinaryPrimitives.ReadUInt32LittleEndian(root[10..]);
             if(bytes is <34 or >32768)return null;var directory=Logical(extent,(int)bytes);if(directory is null)return null;
+            var pspGame=false;var umdData=false;
             for(var at=0;at<directory.Length;)
             {
-                var length=directory[at];if(length==0){at=(at/2048+1)*2048;continue;}if(length<34||at+length>directory.Length)return null;var record=directory.AsSpan(at,length);var nameLength=record[32];
+                 var length=directory[at];if(length==0){at=(at/2048+1)*2048;continue;}if(length<34||at+length>directory.Length)return null;var record=directory.AsSpan(at,length);var nameLength=record[32];
+                if(nameLength>0&&33+nameLength<=length)
+                {
+                    var name=Encoding.ASCII.GetString(record.Slice(33,nameLength)).Split(';')[0];
+                    if(name.Equals("PSP_GAME",StringComparison.OrdinalIgnoreCase)&&(record[25]&2)!=0)pspGame=true;
+                    if(name.Equals("UMD_DATA.BIN",StringComparison.OrdinalIgnoreCase)&&(record[25]&2)==0)umdData=true;
+                }
                 if(nameLength>0&&33+nameLength<=length&&(record[25]&2)==0&&Encoding.ASCII.GetString(record.Slice(33,nameLength)).Equals("SYSTEM.CNF;1",StringComparison.OrdinalIgnoreCase))
                 {
                     var block=BinaryPrimitives.ReadUInt32LittleEndian(record[2..]);var count=BinaryPrimitives.ReadUInt32LittleEndian(record[10..]);if(count is <1 or >16384)return null;var boot=Logical(block,(int)count);if(boot is null)return null;var text=Encoding.ASCII.GetString(boot).TrimStart('\0','\ufeff');
@@ -25,7 +32,7 @@ internal static class NativeDiscDetection
                 }
                 at+=length;
             }
-            return null;
+            return pspGame&&umdData?"psp":null;
 
             byte[]? Logical(uint block,int count)
             {

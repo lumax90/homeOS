@@ -16,6 +16,7 @@ public sealed partial class GameInstaller(GameStore store, GameCatalog catalog, 
     public ProductJob Queue(string id, Account actor)
     {
         var game = store.Require(id); RequireInstallAccount(actor);
+        if(database.GameRemovalPending(id))throw new DomainException("Oyun kaldırma işlemi sürüyor.",409);
         return database.QueueProductJob("game-install", id, new { game.Version, game.Commit }, actor);
     }
     public async Task RunAsync(ProductJob job, CancellationToken token)

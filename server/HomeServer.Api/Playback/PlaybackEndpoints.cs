@@ -10,6 +10,22 @@ public static class PlaybackEndpoints
 {
     public static void MapPlayback(this RouteGroupBuilder api)
     {
+        api.MapGet("/media/{id}/stills", async (string id, CurrentAccount actor, MediaStore store, MediaStills stills, HttpContext context, CancellationToken token) =>
+        {
+            actor.RequireMedia(id);var gallery=await stills.DescribeAsync(id,actor.User,token);
+            var current=actor.SessionId is{} login?store.ValidateLoginSession(login,actor.User.Id):null;
+            if(current is null||store.GetMedia(id,current) is null)throw new DomainException("Oturum veya kütüphane erişimi sona erdi.",401);
+            context.Response.Headers.CacheControl="private, no-store";return Results.Ok(gallery);
+        });
+        api.MapGet("/media/{id}/stills/{index}.jpg", async (string id, int index, string fingerprint, CurrentAccount actor, MediaStore store, MediaStills stills, HttpContext context, CancellationToken token) =>
+        {
+            actor.RequireMedia(id);
+            var file = await stills.GetAsync(id, index, fingerprint, actor.User, token);
+            var current = actor.SessionId is { } login ? store.ValidateLoginSession(login, actor.User.Id) : null;
+            if (current is null || store.GetMedia(id, current) is null) throw new DomainException("Oturum veya kütüphane erişimi sona erdi.", 401);
+            context.Response.Headers.CacheControl = "private, no-store";
+            return Results.File(file, "image/jpeg");
+        });
         api.MapGet("/media/{id}/tracks", async (string id, bool? allowUnprobed, CurrentAccount actor, MediaAnalysisService analysis, SubtitleService subtitles, CancellationToken token) =>
         {
             actor.RequireMedia(id);

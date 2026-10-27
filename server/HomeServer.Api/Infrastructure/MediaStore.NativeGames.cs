@@ -39,9 +39,19 @@ public sealed partial class MediaStore
         lock (_writeGate)
         {
             RequireRomImportActor(actor, loginId);
+            RequireRomPublication(system,hash);
             using var db = Open();
             var existing=Query(db,RomSelect+" WHERE user_id=$user AND system=$system AND sha256=$hash",ReadRom,("$user",actor.Id),("$system",system),("$hash",hash)).FirstOrDefault();
-            if (existing is not null) return existing;
+            if (existing is not null)
+            {
+                var removal=Scalar(db,"SELECT id FROM product_jobs WHERE user_id=$user AND kind='game-uninstall' AND scope_id=$game AND status='completed' AND COALESCE(json_extract(result_json,'$.reimported'),0)=0 ORDER BY updated_at DESC LIMIT 1",("$user",actor.Id),("$game",existing.Id)) as string;
+                if(removal is not null)
+                {
+                    var state=GetGameStates(actor.Id).FirstOrDefault(item=>item.GameId==existing.Id);SetGamePreference(existing.Id,new(true,state?.Favorite??false),actor);
+                    Execute(db,"UPDATE product_jobs SET result_json=json_set(COALESCE(result_json,'{}'),'$.reimported',json('true')) WHERE id=$id",("$id",removal));
+                }
+                return existing;
+            }
             if (Convert.ToInt32(Scalar(db, "SELECT COUNT(*) FROM game_roms WHERE user_id=$user", ("$user", actor.Id))) >= 1000)
                 throw new DomainException("Bu profilde en fazla 1000 ROM tutulabilir.", 409);
             var id="rom-"+Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(actor.Id+"\0"+system+"\0"+hash)))[..48];

@@ -12,6 +12,8 @@ import {GameCoreSelector} from './NativeCoreSettings';
 import {RomMetadataCard} from './RomMetadataCard';
 import {ConsoleArt,consoleStyle} from './ConsoleArt';
 import {systemName} from './libraryModel';
+import {GameUninstallAction}from'./GameUninstallAction';
+import {PspSystemCorrectionAction}from'./PspSystemCorrectionAction';
 import './games-refresh.css';
 
 export function RomGameDetails({game,onBack,onOpen,onCover}:{game:Game;onBack:()=>void;onOpen?:(path:string)=>void;onCover:()=>void}){
@@ -27,7 +29,7 @@ export function RomGameDetails({game,onBack,onOpen,onCover}:{game:Game;onBack:()
         <div className="rom-game-copy"><p className="eyebrow">{game.systemLabel??systemName(game.system)}</p><h1>{game.title}</h1><div className="rom-game-facts">{game.metadata?.game.year&&<span>{game.metadata.game.year}</span>}{game.publisher&&<span>{game.publisher}</span>}{game.metadata?.game.regions?.length?<span>{game.metadata.game.regions.join(' · ')}</span>:null}<span>{bytes(game.sizeBytes)}</span></div>
           <div className="rom-game-actions"><Button className="play-button" isDisabled={!canPlay} onPress={()=>onOpen?.(`/games/${game.id}/play`)}><Play size={18} fill="currentColor"/>{hasGameCheckpoint(game)?t('Devam et'):t('Oyna')}</Button><GameSettingsButton game={game}/><Button isIconOnly variant="secondary" aria-label={game.state.favorite?t('Favorilerimden çıkar'):t('Favorilere ekle')} aria-pressed={game.state.favorite} isDisabled={favorite.isPending} onPress={()=>favorite.mutate()}><Heart size={19} fill={game.state.favorite?'currentColor':'none'}/></Button></div>
           {!canPlay&&(availability.data?.reason||game.blockReason)&&<p className="rom-game-blocked">{runtimeText(availability.data?.reason??game.blockReason)}</p>}
-          <div className="rom-game-utility"><Button variant="ghost" size="sm" onPress={onCover}><ImagePlus size={15}/> Kapağı düzenle</Button><Button variant="ghost" size="sm" onPress={()=>{setTitle(game.title);setCategory(game.category??'');setEditing(true);}}><Pencil size={15}/> Bilgileri düzenle</Button></div>
+          <div className="rom-game-utility"><Button variant="ghost" size="sm" onPress={onCover}><ImagePlus size={15}/> Kapağı düzenle</Button><Button variant="ghost" size="sm" onPress={()=>{setTitle(game.title);setCategory(game.category??'');setEditing(true);}}><Pencil size={15}/> Bilgileri düzenle</Button><PspSystemCorrectionAction game={game}/><GameUninstallAction game={game} onRemoved={onBack}/></div>
         </div>
       </div>
     </section>

@@ -1,0 +1,36 @@
+{
+  "format": 1,
+  "reviewedAt": "2026-10-27",
+  "name": "PPSSPP",
+  "version": "1.20.4",
+  "repository": "https://github.com/hrydgard/ppsspp.git",
+  "sourceCommit": "fa50bb1976065c4f8b1b47af227d367fe9771555",
+  "sourceUrl": "https://github.com/hrydgard/ppsspp/tree/fa50bb1976065c4f8b1b47af227d367fe9771555",
+  "license": "GPL-3.0-or-later linked profile; PPSSPP upstream GPL-2.0-or-later; dependencies/assets retain their own notices",
+  "profile": "libretro-software-native-1x",
+  "memoryAdapter": "linux-anonymous-memfd-v1",
+  "submodules": [
+    "libretro/libretro-common",
+    "ext/armips",
+    "ext/glslang",
+    "ext/SPIRV-Cross",
+    "ext/lua",
+    "ext/rcheevos",
+    "ext/cpu_features",
+    "ext/libchdr",
+    "ext/zstd",
+    "ext/aemu_postoffice",
+    "ext/OpenXR-SDK",
+    "ext/rapidjson",
+    "ext/miniupnp",
+    "ext/naett",
+    "ext/freetype",
+    "ext/nanosvg",
+    "ext/discord-rpc"
+  ],
+  "distribution": {
+    "sourceVerified": true,
+    "runtimeVerified": true,
+    "note": "2026-10-27 native software video/audio/input/state and exact corresponding-source closure passed: 101 Ubuntu source identities, 99 source descriptors, 59 indexed upstream notices. Final image/release approval and real-game/device acceptance remain separate gates. Existing seven-system runtime is unchanged."
+  }
+}

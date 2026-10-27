@@ -16,7 +16,7 @@ import { SegmentEditor } from './PlaybackSegments';
 import { ReceiverPanel } from './Receivers';
 import { OfflineDownloadAction } from './Offline';
 import {ContentPeople}from'./CatalogFeeds';
-import {ContentMedia}from'./ContentMedia';
+import {ContentMedia,TrailerAction}from'./ContentMedia';
 import './title-page.css';
 import { usePageTitle } from '../usePageTitle';
 
@@ -45,7 +45,7 @@ export function MediaDetails({ selection = null, mediaId, onClose, onPlay, onSet
   return <article className="title-page"><Button className="title-back" variant="ghost" onPress={onClose}><ArrowLeft size={18} /> Geri</Button>
     {!item && (live.error ? <div className="search-empty" role="alert"><CircleAlert size={28} /><h1>İçerik açılamadı.</h1><p>{live.error.message}</p><Button onPress={() => live.refetch()}>Yeniden dene</Button></div> : <div className="title-page-skeleton home-skeleton" role="status" aria-label="İçerik bilgileri" />)}
     {item && (matching ? <div className="title-page-body"><MetadataMatchPanel key={item.id} item={item} onDone={updated} onBack={() => setMatching(false)} onSettings={onSettings} /></div> : <>
-      <div className="title-hero"><div className="title-backdrop"><Artwork item={item} eager mode="backdrop" /></div><div className="title-shade" /><div className="title-identity"><div className="title-poster"><Artwork item={item} eager /></div><section><span className="eyebrow">{item.isDemo ? 'ÖRNEK DOSYA · ' : ''}{content ? `${content.kind === 'movie' ? 'FİLM' : 'DİZİ'} · ${content.releaseDate?.slice(0, 4) || ''}` : item.libraryName.toLocaleUpperCase('tr')}</span><h1 data-page-heading tabIndex={-1}>{item.title}</h1><div className="title-facts"><span>{duration(item.durationSeconds)}</span><span>{resolution(item)}</span></div><div className="title-main-actions"><Button className="play-button" onPress={() => onPlay(item)} isDisabled={!item.available}><Play size={18} fill="currentColor" />{item.positionSeconds > 0 && !item.isWatched ? 'Kaldığın yerden devam et' : 'Oynat'}</Button></div>
+      <div className="title-hero"><div className="title-backdrop"><Artwork item={item} eager mode="backdrop" /></div><div className="title-shade" /><div className="title-identity"><div className="title-poster"><Artwork item={item} eager /></div><section><span className="eyebrow">{item.isDemo ? 'ÖRNEK DOSYA · ' : ''}{content ? `${content.kind === 'movie' ? 'FİLM' : 'DİZİ'} · ${content.releaseDate?.slice(0, 4) || ''}` : item.libraryName.toLocaleUpperCase('tr')}</span><h1 data-page-heading tabIndex={-1}>{item.title}</h1><div className="title-facts"><span>{duration(item.durationSeconds)}</span><span>{resolution(item)}</span></div><div className="title-main-actions"><Button className="play-button" onPress={() => onPlay(item)} isDisabled={!item.available}><Play size={18} fill="currentColor" />{item.positionSeconds > 0 && !item.isWatched ? 'Kaldığın yerden devam et' : 'Oynat'}</Button>{content&&<TrailerAction key={content.id} metadata={content}/>}</div>
         {content && <PersonalContentPanel placement="hero" key={content.id} metadata={entry.data?.metadata ?? content as ProviderContent} contentId={content.id} />}
       </section></div></div>
       <div className="detail-body"><div className="detail-meta"><span className="quality-badge">{resolution(item)}</span><span>{duration(item.durationSeconds)}</span><span>{bytes(item.sizeBytes)}</span><span className={item.available ? 'available-tag' : 'unavailable-tag'}>{item.available ? 'Dosya erişilebilir' : 'Dosya erişilemiyor'}</span></div>
@@ -53,7 +53,8 @@ export function MediaDetails({ selection = null, mediaId, onClose, onPlay, onSet
         {content?.genres.length ? <div className="genre-list">{content.genres.slice(0, 4).map(genre => <span key={genre}>{genre}</span>)}</div> : null}
         <p className="detail-description">{content ? content.episodeOverview || content.overview || 'Sağlayıcıda açıklama bulunmuyor.' : 'Kendi kütüphanendeki bu içerik sunucundan oynatılır. Ses, altyazı ve medya bilgileri dosyanın kendisinden okunur.'}</p>
         {content && <a className="content-source" href={content.providerUrl} target="_blank" rel="noreferrer">Bilgiler: {content.provider === 'tvmaze' ? 'TVmaze · CC BY-SA' : 'TMDB'} <ExternalLink size={12} /></a>}
-        {content&&<><ContentPeople key={content.id+'-people'} metadata={content} expanded/><ContentMedia key={content.id+'-media'} metadata={content}/></>}
+        {content&&<ContentPeople key={content.id+'-people'} metadata={content} expanded/>}
+        {item.kind==='video'&&<ContentMedia key={item.id+'-stills'} title={item.title} mediaId={item.available?item.id:null}/>}
         {entry.data && <CatalogSourceLinks metadata={entry.data.metadata} />}
         {item.isDemo && content && <p className="demo-match-note">Bu oynatılabilir dosya bir örnektir; eşleştirilen yapımın tam videosu değildir.</p>}
         <div className="detail-actions"><Button className="play-button detail-play" onPress={() => onPlay(item)} isDisabled={!item.available}><Play size={17} fill="currentColor" />{item.positionSeconds > 0 && !item.isWatched ? 'Kaldığın yerden devam et' : 'Oynat'}</Button>{account.role === 'admin' && item.kind === 'video' && <Button className="metadata-match-button" variant="ghost" onPress={() => setMatching(true)}><Sparkles size={16} />{content ? 'Eşleştirmeyi değiştir' : 'Bilgileri eşleştir'}</Button>}</div>

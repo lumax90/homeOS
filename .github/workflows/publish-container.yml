@@ -22,6 +22,8 @@ on:
       - "deploy/native/**"
       - "deploy/selkies/**"
       - "deploy/media/**"
+      - "deploy/psp/**"
+      - "deploy/handheld/**"
       - "deploy/casaos/prepare-data.sh"
       - "deploy/casaos/managed-updater.py"
       - "docs/licenses/**"
@@ -57,6 +59,11 @@ jobs:
 
       - name: Verify approval bridge without Docker or network access
         run: python3 tests/unit/test_managed_updater.py
+
+      - name: Verify PSP source closure and game-removal boundaries
+        run: |
+          python3 tests/unit/test_psp_source.py
+          dotnet test tests/HomeServer.Tests/HomeServer.Tests.csproj -c Release --filter 'FullyQualifiedName~PspImportAndRemovalTests|FullyQualifiedName~ConfirmedUninstallApi|FullyQualifiedName~ManagedWebUninstall|FullyQualifiedName~GamingSupportedSystemsTests|FullyQualifiedName~SupportedSystemsApi' --nologo
 
       - name: Locate hosted FFmpeg verification tools
         timeout-minutes: 10
@@ -96,6 +103,10 @@ jobs:
 
       - name: Set up Buildx
         uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+        with:
+          buildkitd-config-inline: |
+            [worker.oci]
+              max-parallelism = 2
 
       - name: Log in to GHCR
         uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
@@ -146,7 +157,7 @@ jobs:
           docker run --rm --network none \
             --mount "type=bind,source=$GITHUB_WORKSPACE,target=/src,readonly" --workdir /src \
             node:24-bookworm-slim@sha256:55fb5f5a527ea2c5c4a95f963e48ef90aa38c7b346054fdc8ee9957a2b55d205 \
-            node --test tests/unit/container-updates.test.ts tests/unit/playback-transport.test.ts tests/unit/playback-capabilities.test.ts tests/unit/movie-hls-config.test.ts tests/unit/catalog-groups.test.ts tests/unit/content-media.test.ts tests/unit/media-runtime.test.mjs tests/unit/live-tv.test.ts tests/unit/live-recovery.test.ts tests/unit/radio-visual.test.ts tests/unit/music-experience.test.ts tests/unit/native-streaming.test.ts
+            node --test tests/unit/supported-systems.test.mjs tests/unit/psp-and-removal.test.mjs tests/unit/container-updates.test.ts tests/unit/playback-transport.test.ts tests/unit/playback-capabilities.test.ts tests/unit/movie-hls-config.test.ts tests/unit/catalog-groups.test.ts tests/unit/content-media.test.ts tests/unit/media-runtime.test.mjs tests/unit/live-tv.test.ts tests/unit/live-recovery.test.ts tests/unit/radio-visual.test.ts tests/unit/music-experience.test.ts tests/unit/native-streaming.test.ts
 
       - name: Verify pinned media runtime and movie/live protocol boundaries
         env:
@@ -168,12 +179,18 @@ jobs:
           "$RUNNER_TEMP/home-stream-protocol-env/bin/pip" install aiortc==1.15.0 aiohttp==3.14.5
           python3 tools/verification/verify-selkies-container.py "$RELEASE_IMAGE" "$RUNNER_TEMP/home-selkies-verification" --python "$RUNNER_TEMP/home-stream-protocol-env/bin/python"
 
-      - name: Require complete media-runtime corresponding source before publication
+      - name: Require complete media and PSP corresponding source before publication
         run: |
           python3 - <<'PY'
           import json
           pin = json.load(open('deploy/media/runtime.json'))
           assert pin['distribution']['correspondingSourceVerified'], 'Media runtime source/licence publication gate remains open.'
+          psp = json.load(open('deploy/psp/runtime.json'))
+          assert psp['distribution']['sourceVerified'], 'PSP corresponding-source/notices publication gate remains open.'
+          assert psp['distribution']['runtimeVerified'], 'PSP runtime publication qualification remains open.'
+          handheld = json.load(open('deploy/handheld/runtime.json'))
+          assert handheld['distribution']['sourceVerified'], 'DS/3DS corresponding-source publication gate remains open.'
+          assert handheld['distribution']['runtimeVerified'], 'DS/3DS runtime publication gate remains open.'
           PY
 
       - name: Publish candidate and promote the verified stable channel
@@ -187,7 +204,7 @@ jobs:
           docker push --platform linux/amd64 "$RELEASE_IMAGE"
           git fetch --no-tags --depth=1 origin main
           current="$(git rev-parse FETCH_HEAD)"
-          if [[ "$GITHUB_REF" == refs/heads/main || "$GITHUB_REF_TYPE" == tag ]] && git diff --quiet "$GITHUB_SHA" "$current" -- Dockerfile .dockerignore Directory.Build.props 'package*.json' server web tools deploy/native deploy/selkies deploy/media deploy/casaos/prepare-data.sh deploy/casaos/managed-updater.py docs/licenses tests .github/workflows/publish-container.yml; then
+          if [[ "$GITHUB_REF" == refs/heads/main || "$GITHUB_REF_TYPE" == tag ]] && git diff --quiet "$GITHUB_SHA" "$current" -- Dockerfile .dockerignore Directory.Build.props 'package*.json' server web tools deploy/native deploy/selkies deploy/media deploy/psp deploy/handheld deploy/casaos/prepare-data.sh deploy/casaos/managed-updater.py docs/licenses tests .github/workflows/publish-container.yml; then
             node tools/verify-container-channel.mjs "$IMAGE" "$VERSION"
             if ! docker buildx imagetools inspect "$IMAGE:$VERSION" >/dev/null 2>&1; then
               docker tag "$RELEASE_IMAGE" "$IMAGE:$VERSION"

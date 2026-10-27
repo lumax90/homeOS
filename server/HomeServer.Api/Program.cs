@@ -96,6 +96,9 @@ builder.Services.AddSingleton<NativeEmulationSettings>();
 builder.Services.AddSingleton<RetroArchCoreCatalog>();
 builder.Services.AddSingleton<NativeFirmwareLibrary>();
 builder.Services.AddSingleton<NativeCoreRegistry>();
+builder.Services.AddSingleton<NativePspRuntime>();
+builder.Services.AddSingleton<NativeHandheldRuntime>();
+builder.Services.AddSingleton<GamingSupportedSystems>();
 builder.Services.AddSingleton<NativeGpuRuntime>();
 builder.Services.AddSingleton<NativeCoreOptions>();
 builder.Services.AddSingleton<NativeGameSettings>();
@@ -111,6 +114,8 @@ builder.Services.AddSingleton<IProductWorkHandler>(services=>services.GetRequire
 builder.Services.AddHostedService(services=>services.GetRequiredService<NativeGameManager>());
 builder.Services.AddSingleton<IGamePackageSource, GamePackageSource>();
 builder.Services.AddSingleton<GameInstaller>();
+builder.Services.AddSingleton<GameRemoval>();
+builder.Services.AddSingleton<IProductWorkHandler>(services=>services.GetRequiredService<GameRemoval>());
 builder.Services.AddSingleton<IProductWorkHandler>(services => services.GetRequiredService<GameInstaller>());
 builder.Services.AddSingleton(services => new AppDataLease(Path.GetFullPath(services.GetRequiredService<IConfiguration>()["Home:DataPath"] ?? ".data")));
 builder.Services.AddSingleton<EventHub>();
@@ -244,6 +249,7 @@ builder.Services.AddHttpClient("web-push", client => { client.Timeout = TimeSpan
     .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler { AllowAutoRedirect = false, UseCookies = false, MaxResponseHeadersLength = 16 });
 builder.Services.AddSingleton<IMediaProbe>(services => services.GetRequiredService<MediaTools>());
 builder.Services.AddSingleton<MediaAnalysisService>();
+builder.Services.AddSingleton<MediaStills>();
 builder.Services.AddSingleton<EpisodeBoundaryService>();
 builder.Services.AddHostedService(services => services.GetRequiredService<EpisodeBoundaryService>());
 builder.Services.AddSingleton<EncodingSupport>();

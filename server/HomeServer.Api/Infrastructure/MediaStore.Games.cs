@@ -21,6 +21,9 @@ public sealed partial class MediaStore
         lock (_writeGate)
         {
             RequireGameAccount(actor);
+            if(GameRemovalPending(gameId))throw new DomainException("Oyun kaldırma işlemi sürüyor.",409);
+            if(input.InLibrary&&gameId.StartsWith("rom-",StringComparison.Ordinal)&&GetGameRom(gameId,actor) is{} rom)
+            {RequireRomPublication(rom.System,rom.Sha256);if(!RomPayloadPresent(rom))throw new DomainException("Oyun kopyası kaldırılmış. ROM'u yeniden ekle; kayıtların korunuyor.",409);}
             using var db = Open();
             Execute(db, """
                 INSERT INTO game_user_state(user_id,game_id,in_library,favorite) VALUES($user,$game,$library,$favorite)
@@ -42,6 +45,7 @@ public sealed partial class MediaStore
         lock (_writeGate)
         {
             RequireContainerWorkAllowed();
+            if(GameRemovalPending(game.Id))throw new DomainException("Oyun kaldırma işlemi sürüyor.",409);
             var account = RequireGameAccount(actor);
             if (ValidateLoginSession(loginId, actor.Id) is null) throw new DomainException("Oturum gerekli.", 401);
             using var db = Open();

@@ -97,6 +97,7 @@ public sealed class NativeGameManager(MediaStore store, HomePaths paths, NativeR
         try
         {
             var resolution=cores?.Resolve(rom);var profile=resolution?.Host??NativeRuntimeProfile.Read(paths)??throw new DomainException("Yerel oyun bileşenleri henüz etkinleştirilmedi.",409);
+            if(store.GameRemovalPending(rom.Id))throw new DomainException("Oyun kaldırma işlemi sürüyor.",409);
             if(resolution is null){if(rom.System!="gba")throw new DomainException("Bu oyun için emülasyon çekirdeğini kur.",409);profile.Verify();}
             if (_active is { } existing)
             {
@@ -109,6 +110,7 @@ public sealed class NativeGameManager(MediaStore store, HomePaths paths, NativeR
                     throw new DomainException("Yerel oyun prototipinin bağlantı portu zaten kullanılıyor.",409);
             var hostRoot = AppFiles.DirectoryIn(paths.State,"games");
             var game=resolution?.Game(rom)??profile.Game(rom);var coreId=resolution?.Definition.Id??"mgba";var binary=resolution?.Binary??profile.Core;var coreInfo=resolution?.Info??profile.CoreInfo;
+            if(profile.Bundled&&coreId=="ppsspp"&&streamingBackend!="standard")throw new DomainException("PSP bu sürümde Standart yayın kullanır; Selkies PSP profili henüz doğrulanmadı.",409);
             NativeSelkiesInstallation? installation=null;
             if(streamingBackend=="selkies")installation=await (selkiesRuntime??throw new DomainException("Selkies paketi bu sunucuda kurulu değil.",409)).RequireAsync(profile,coreId,binary.Sha256,token);
             var hostLock = new FileStream(Path.Combine(hostRoot,"native-host.lock"),FileMode.OpenOrCreate,FileAccess.ReadWrite,FileShare.None);
@@ -121,21 +123,21 @@ public sealed class NativeGameManager(MediaStore store, HomePaths paths, NativeR
                 var root = AppFiles.DirectoryIn(paths.State,"games","native-work",AppFiles.Id(session.Id));
                 await File.WriteAllTextAsync(Path.Combine(root,".home-native-work"),"Home.Native.Work.v1",token);
                 var engineRoot = AppFiles.DirectoryIn(root,"engine"); var mediaRoot = AppFiles.DirectoryIn(root,"media");
-                var privateHost=profile.LoopbackOnly||resolution?.ModernHost==true;var graphics=privateHost&&resolution?.Definition.Hardware==true;var width=rom.System=="3ds"?400:640;var height=480;var inputPort=privateHost?62420:62401;
+                var privateHost=profile.LoopbackOnly||resolution?.ModernHost==true;var graphics=privateHost&&resolution?.Definition.Hardware==true;var width=rom.System=="3ds"?400:rom.System=="nds"?256:640;var height=rom.System=="nds"?384:480;var inputPort=privateHost?62420:62401;
                 if(privateHost&&IPGlobalProperties.GetIPGlobalProperties().GetActiveUdpListeners().Any(endpoint=>endpoint.Port>=62420&&endpoint.Port<=62423))throw new DomainException("Oyun kumanda bağlantısı zaten kullanılıyor.",409);
                 var renderer=resolution is null?null:NativeGpuRuntime.Renderer(resolution.Definition);
                 var engineConfiguration=installation is not null?RetroArchHostConfiguration.CreateSelkies(engineRoot,inputPort,62406,renderer,width,height):privateHost?RetroArchHostConfiguration.CreatePrivateHost(engineRoot,inputPort,62406,renderer,width,height):RetroArchHostConfiguration.Create(engineRoot,inputPort,62406);
                 await File.WriteAllTextAsync(Path.Combine(engineRoot,"retroarch.cfg"),engineConfiguration+_settings.ControllerConfiguration(actor.Id,coreId,binary.Sha256,rom.Id),token);
                 var options=NativeEmulationSettings.Read(paths);options=options with{Quality=_settings.Quality(actor.Id,coreId,binary.Sha256,rom.Id)??options.Quality};
                 await File.WriteAllTextAsync(Path.Combine(engineRoot,"record.cfg"),graphics?NativeEmulationSettings.Recording(options,width,height)+RetroArchHostConfiguration.LowDelayMux:NativeEmulationSettings.Recording(options)+(profile.LoopbackOnly||resolution?.Gpu?.LoopbackOnly==true?RetroArchHostConfiguration.LowDelayMux:""),token);
-                await File.WriteAllTextAsync(Path.Combine(engineRoot,"core-options.cfg"),(coreId=="mgba"?NativeEmulationSettings.CoreOptions(options):NativeCoreConfiguration.Options(coreId))+_settings.Configuration(actor.Id,coreId,binary.Sha256,rom.Id)+NativeCoreConfiguration.RequiredOptions(coreId),token);
+                await File.WriteAllTextAsync(Path.Combine(engineRoot,"core-options.cfg"),(coreId=="mgba"?NativeEmulationSettings.CoreOptions(options):NativeCoreConfiguration.Options(coreId))+_settings.Configuration(actor.Id,coreId,binary.Sha256,rom.Id)+NativeCoreConfiguration.RequiredOptions(coreId,profile.Bundled&&coreId=="ppsspp",profile.Bundled&&coreId=="desmume"&&cores?.Installed(coreId)?.Channel=="bundled-handheld"),token);
                 NativeCoreConfiguration.PrepareSaveDirectories(coreId,Path.Combine(engineRoot,"saves"));
                 var content=await roms.StageContentAsync(rom,engineRoot,token,canonicalizeCueTracks:true);File.SetAttributes(Path.Combine(engineRoot,content),FileAttributes.ReadOnly);
                 var coreFile=Path.Combine(engineRoot,"cores",coreId+"_libretro"+profile.CoreExtension);
                 File.Copy(binary.Path,coreFile,false);File.Copy(coreInfo.Path,Path.Combine(engineRoot,"info",coreId+"_libretro.info"),false);
                 var restored = await saves.RestoreAsync(checkpoint,actor.Id,game.Id,game.Version,Path.Combine(engineRoot,"saves"),token);
                 content=await roms.PrepareWritableContentAsync(rom,engineRoot,content,token);
-                if(resolution is not null&&firmware is not null)await firmware.StageAsync(resolution.Definition,rom,Path.Combine(engineRoot,"system"),token);
+                if(resolution is not null){if(firmware is not null)await firmware.StageAsync(resolution.Definition,rom,Path.Combine(engineRoot,"system"),token);cores?.StageBundledAssets(coreId,Path.Combine(engineRoot,"system"));}
                 var secret = Guid.NewGuid().ToString("N")+Guid.NewGuid().ToString("N"); var path = "game-"+session.Id;
                 Task<string>? mediaOut=null,mediaError=null;
                 if(installation is not null)
@@ -161,7 +163,7 @@ public sealed class NativeGameManager(MediaStore store, HomePaths paths, NativeR
                     engine=MediaProcess.Start(frontend,arguments,workingDirectory:engineRoot,environment:selkies?.Environment??linuxDisplay?.Environment);
                 }
                 await OwnedNativeProcess.RecordAsync(engineRoot,engine,token,frontend);
-                var control=startingControl=new RetroArchControl(engine,62406);var pad=startingPad=new UdpClient(new IPEndPoint(IPAddress.Loopback,0));pad.Connect(IPAddress.Loopback,inputPort);
+                var control=startingControl=new RetroArchControl(engine,62406,coreId=="citra"?TimeSpan.FromSeconds(15):null);var pad=startingPad=new UdpClient(new IPEndPoint(IPAddress.Loopback,0));pad.Connect(IPAddress.Loopback,inputPort);
                 var engineOut=startingOutput=gpuProcess is null?MediaProcess.ReadErrorTailAsync(engine.StandardOutput):gpuProcess.ReadLogAfterExitAsync(gpuProcess.OutputLog);
                 var engineError=startingError=gpuProcess is null?MediaProcess.ReadErrorTailAsync(engine.StandardError):gpuProcess.ReadLogAfterExitAsync(gpuProcess.ErrorLog);
                 if(selkies is not null)

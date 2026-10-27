@@ -1,0 +1,37 @@
+{
+  "format": 1,
+  "reviewedAt": "2026-10-27",
+  "platform": "linux-x64",
+  "frontend": "preserved RetroArch 1.22.2; standard/optional Selkies",
+  "cores": [
+    {
+      "id": "desmume",
+      "system": "nds",
+      "name": "DeSmuME",
+      "version": "0.9.13-libretro-pinned",
+      "repository": "https://github.com/libretro/desmume.git",
+      "sourceCommit": "95b4d798731caa809125b6c3c11d17cc332ff6ef",
+      "sourceUrl": "https://github.com/libretro/desmume/tree/95b4d798731caa809125b6c3c11d17cc332ff6ef",
+      "license": "GPL-2.0-or-later; dependent files retain notices",
+      "profile": "software-native-dual-screen"
+    },
+    {
+      "id": "citra",
+      "system": "3ds",
+      "name": "Citra libretro",
+      "version": "libretro-pinned-2026-09-20",
+      "repository": "https://github.com/libretro/citra.git",
+      "sourceCommit": "a0483e9abe8134ae6b290cdca7d49cb77689f05b",
+      "sourceUrl": "https://github.com/libretro/citra/tree/a0483e9abe8134ae6b290cdca7d49cb77689f05b",
+      "license": "GPL-2.0-or-later; dependent files retain notices",
+      "profile": "opengl-native-dual-screen",
+      "experimental": true,
+      "note": "Requires decrypted user-supplied content. Mii/system data, when a game needs it, must come from the user's own console. Prior Windows Citra save/core identities are not replaced."
+    }
+  ],
+  "distribution": {
+    "sourceVerified": true,
+    "runtimeVerified": true,
+    "note": "2026-10-27 source closure (10 source identities/13 linked packages/84 notices), Standard and Selkies native video/button/stylus/save checks passed. Citra SCM lookup is fixed for same-revision state restore. Release approval and user game/device acceptance remain separate."
+  }
+}

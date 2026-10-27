@@ -39,6 +39,18 @@ public sealed partial class GameCatalog
         lock (_gate) { if (_games.Count >= 32 && !_games.ContainsKey(id)) throw new DomainException("Oyun paketi sınırı aşıldı."); _games[id] = manifest; _locations[id] = directory; }
     }
     public bool Installed(string id) { lock (_gate) return _games.ContainsKey(id); }
+    public void Forget(string id){lock(_gate){_games.Remove(id);_locations.Remove(id);}}
+    public GameRemovalPlan RemovalPlan(string id)
+    {
+        lock(_gate)
+        {
+            if(!_games.TryGetValue(id,out var manifest))return new("web",null,null,null,[]);
+            var directory=_locations[id];var relative=Path.GetRelativePath(_paths.State,directory).Replace('\\','/');
+            if(!relative.StartsWith("games/library/"+id+"/",StringComparison.Ordinal))return new("web",null,null,null,[]); // Immutable shipped package, profile removal only.
+            var path=MediaPaths.ResolveFile(directory,"manifest.json");var bytes=File.ReadAllBytes(path);
+            return new("web",null,null,relative,manifest.Files.Select(file=>new GameRemovalFile(file.Path,file.Size,file.Sha256)).Append(new("manifest.json",bytes.Length,Convert.ToHexStringLower(SHA256.HashData(bytes)))).ToArray());
+        }
+    }
     public IReadOnlyList<GameEntry> List(MediaStore store, Account actor)
     {
         if (!Allowed(actor)) return [];
@@ -52,10 +64,20 @@ public sealed partial class GameCatalog
             var version=profile?.Version??rom.System+"-"+rom.Sha256;
             if(_cores is not null)try{coreId=_cores.Selection(rom).CoreId;if(coreId!="mgba"&&profile is not null&&_cores.Installed(coreId) is{} installed)version=_cores.CurrentVersion(profile,coreId,installed.Binary.Sha256);}catch(Exception error)when(error is DomainException or IOException or JsonException){reason="Çekirdek dosyaları kullanılamıyor; ROM ve kayıtlar korundu.";}
             var presentation=RomArtwork.ReadPresentation(_paths,rom);
+            var removal=store.GetProductJobs(actor,"game-uninstall",rom.Id).FirstOrDefault();
+            var removing=removal?.Status is "queued" or "running" or "applying";
+            var present=File.Exists(Path.Combine(_paths.State,"games","roms",rom.System,rom.Sha256,NativeSystems.Extension(rom.FileName) is "cue" or "m3u" or "gdi"?"disc.json":NativeSystems.ContentName(rom)));
+            if(removing)reason="Oyun kaldırma işlemi sürüyor.";else if(!present)reason="Oyun kopyası kaldırılmış. ROM'u yeniden ekle; kayıtların korunuyor.";
             RomMetadataDocument? metadata=null;try{metadata=RomMetadata.Read(_paths,rom);}catch(Exception error)when(error is DomainException or IOException or UnauthorizedAccessException){}var title=presentation.TitleEdited||presentation.Title!=rom.Title?presentation.Title:metadata?.Game.Name??presentation.Title;
-            return new GameEntry(rom.Id,title,metadata?.Game.Publisher??"","","","",version,"RetroArch / "+coreId,"user-supplied","native","16/9",[],rom.SizeBytes,states.GetValueOrDefault(rom.Id)??EmptyState(rom.Id) with{InLibrary=true},Runtime:"native",Playable:actor.IsAdmin&&reason is null,System:rom.System,BlockReason:reason,RomSha256:rom.Sha256,HasArtwork:RomArtwork.CoverExists(_paths,rom),Category:presentation.Category,ImportedAt:rom.ImportedAt,ArtworkStatus:store.GetProductJobs(actor,"rom-artwork",rom.Id).FirstOrDefault()?.Status,CoreId:coreId,CoreName:coreId=="mgba"?"mGBA 0.10.5":_cores?.Name(coreId)??coreId,SystemLabel:NativeSystems.Require(rom.System).Name,Metadata:metadata);
+            return new GameEntry(rom.Id,title,metadata?.Game.Publisher??"","","","",version,"RetroArch / "+coreId,"user-supplied","native","16/9",[],rom.SizeBytes,states.GetValueOrDefault(rom.Id)??EmptyState(rom.Id) with{InLibrary=true},Installed:present,Runtime:"native",Playable:actor.IsAdmin&&reason is null,System:rom.System,BlockReason:reason,RomSha256:rom.Sha256,HasArtwork:RomArtwork.CoverExists(_paths,rom),Category:presentation.Category,ImportedAt:rom.ImportedAt,ArtworkStatus:store.GetProductJobs(actor,"rom-artwork",rom.Id).FirstOrDefault()?.Status,CoreId:coreId,CoreName:coreId=="mgba"?"mGBA 0.10.5":_cores?.Name(coreId)??coreId,SystemLabel:NativeSystems.Require(rom.System).Name,Metadata:metadata,UninstallStatus:removal?.Status,UninstallProgress:removal?.Progress??0,UninstallMessage:removal?.Message);
         }));
-        return entries;
+        return entries.Select(entry=>
+        {
+            if(entry.Kind=="native")return entry;
+            var removal=store.GetProductJobs(actor,"game-uninstall",entry.Id).FirstOrDefault();
+            return entry with{UninstallStatus=removal?.Status,UninstallProgress=removal?.Progress??0,UninstallMessage=removal?.Message,
+                Playable=entry.Playable&&removal?.Status is not("queued" or "running" or "applying")};
+        }).ToArray();
     }
     public GameEntry RequireEntry(string id, MediaStore store, Account actor) => List(store, actor).FirstOrDefault(game => game.Id == id) ?? throw new DomainException("Oyun bulunamadı veya profil kapsamı dışında.", 404);
     private GameEntry StoreEntry(GameStoreDefinition game, GameUserState state, ProductJob? job)

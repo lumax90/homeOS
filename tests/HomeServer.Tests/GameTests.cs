@@ -11,6 +11,7 @@ using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace HomeServer.Tests;
 
@@ -163,6 +164,30 @@ public sealed class GameTests
         var names = new[] { "index.html", "index.js", "index.wasm", "index.pck", "home-game.js", "cover.png", "backdrop.png", "licenses/Game.txt" };
         var files = names.Select(name => { var bytes = new byte[] { 0, 1, 2, 3 }; File.WriteAllBytes(Path.Combine(folder, name), bytes); return new GameAsset(name, bytes.Length, Convert.ToHexString(SHA256.HashData(bytes))); }).ToArray();
         File.WriteAllText(Path.Combine(folder, "manifest.json"), JsonSerializer.Serialize(Definition() with { Files = files })); return root;
+    }
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task ManagedWebUninstallKeepsSourceAndCheckpointAndRecoversAfterAtomicTrashMove(bool interrupted)
+    {
+        using var home=new TestWorkspace();var(actor,login)=Login(home);var source=CreatePackage(home);var managed=AppFiles.DirectoryIn(home.Paths.State,"games","library","fixture-game","original");
+        foreach(var input in Directory.EnumerateFiles(Path.Combine(source,"fixture-game"),"*",SearchOption.AllDirectories))
+        {var target=Path.Combine(managed,Path.GetRelativePath(Path.Combine(source,"fixture-game"),input));Directory.CreateDirectory(Path.GetDirectoryName(target)!);File.Copy(input,target);}
+        var environment=new TestEnvironment(home.Root);var config=new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string,string?>{{"Home:Games:PackagePath",Path.Combine(home.Root,"empty-packages")},{"Home:Games:StorePath",Path.Combine(home.Root,"empty-store")}}).Build();
+        var catalog=new GameCatalog(environment,config,home.Paths,new GameStore(environment,config));catalog.Register(managed,"fixture-game");var game=catalog.Require("fixture-game",actor);
+        var session=home.Store.StartGameSession(game,Start(),actor,login.Id);home.Store.EndGameSession(session.Id,game,new(false,0,new(){{"home-progress.json","{\"map\":11}"}}),actor,login.Id);home.Store.SetGamePreference(game.Id,new(true,true),actor);
+        using var roms=new NativeRomLibrary(home.Paths,home.Store);var events=new EventHub();var native=new NativeGameManager(home.Store,home.Paths,roms,new(home.Paths),events,NullLogger<NativeGameManager>.Instance);var removal=new GameRemoval(home.Paths,home.Store,catalog,roms,native,events);
+        var queued=removal.Queue(game.Id,new(true),actor);var job=home.Store.ClaimProductJob(["game-uninstall"])!;
+        if(interrupted)
+        {
+            var trashParent=AppFiles.DirectoryIn(home.Paths.State,"games","removal-trash");
+            Assert.Throws<IOException>(()=>home.Store.ApplyGameRemoval(job,null,()=>{Directory.Move(managed,Path.Combine(trashParent,job.Id));throw new IOException("Original isolated interruption after atomic rename");}));
+            home.Store.RecoverProductJobs(["game-uninstall"]);job=home.Store.ClaimProductJob(["game-uninstall"])!;
+        }
+        await removal.RunAsync(job,CancellationToken.None);
+        Assert.False(catalog.Installed(game.Id));Assert.False(File.Exists(Path.Combine(managed,"manifest.json")));Assert.True(File.Exists(Path.Combine(source,"fixture-game","manifest.json")));
+        var state=home.Store.GetGameStates(actor.Id).Single();Assert.False(state.InLibrary);Assert.True(state.Favorite);Assert.True(state.HasSave);
+        Assert.Equal("{\"map\":11}",home.Store.GetGameCheckpoint(game.Id,game.Version,actor.Id).Files["home-progress.json"]);Assert.Equal("completed",home.Store.GetProductJob(queued.Id)!.Status);
     }
     private static async Task Csrf(HttpClient client)
     { var session = await client.GetFromJsonAsync<JsonElement>("/api/session"); client.DefaultRequestHeaders.Remove("X-CSRF-TOKEN"); client.DefaultRequestHeaders.Add("X-CSRF-TOKEN", session.GetProperty("csrfToken").GetString()); foreach (var (header, property) in new[] { ("X-Home-User", "userId"), ("X-Home-Session", "sessionId") }) { client.DefaultRequestHeaders.Remove(header); if (session.GetProperty(property).ValueKind == JsonValueKind.String) client.DefaultRequestHeaders.Add(header, session.GetProperty(property).GetString()); } }

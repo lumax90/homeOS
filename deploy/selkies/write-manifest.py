@@ -32,7 +32,20 @@ value = {"format": 1, "version": pin["version"], "baseFrontendSha256": base["fro
          "frontend": asset(root / "retroarch", True), "python": sys.executable,
          "pythonTarget": os.path.realpath(sys.executable), "webRoot": str(web),
          "cores": [{"id": core["id"], "sha256": core["binary"]["sha256"]} for core in base["cores"]],
-         "dependencies": list({item["path"]: item for item in dependencies}.values())}
+          "dependencies": list({item["path"]: item for item in dependencies}.values())}
+if len(sys.argv) > 3:
+    handheld_path=Path(sys.argv[3]).resolve()
+    handheld=json.loads(handheld_path.read_text())
+    assert handheld['platform']=='linux-x64'
+    for core in handheld['cores']:
+        assert core['id'] in ('desmume','citra')
+        proof_path=handheld_path.parent/(core['id']+'-selkies-proof.json')
+        proof=json.loads(proof_path.read_text())
+        assert proof['coreSha256']==core['binary']['sha256']
+        assert proof['baseFrontendSha256']==value['baseFrontendSha256']
+        assert proof['frontendSha256']==value['frontend']['sha256'] and proof['selkiesVersion']==value['version']
+        assert proof['error'] is None and all(proof[key] for key in ('videoFrames','inputVerified','touchVerified','saveRestore','publisherHealthy'))
+        value['cores'].append({'id':core['id'],'sha256':core['binary']['sha256']})
 (root / "manifest.json").write_text(json.dumps(value, indent=2) + "\n")
 licenses = root / "licenses"
 licenses.mkdir(exist_ok=True)

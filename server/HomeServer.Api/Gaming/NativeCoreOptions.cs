@@ -15,15 +15,16 @@ public sealed class NativeCoreOptions(HomePaths paths)
     private static readonly JsonSerializerOptions Json=new(JsonSerializerDefaults.Web);
     private static bool Managed(string key)=>key.Contains("save_path",StringComparison.OrdinalIgnoreCase)||key.Contains("save_location",StringComparison.OrdinalIgnoreCase)||key.Contains("libretro_save",StringComparison.OrdinalIgnoreCase)||key.Contains("gdbstub",StringComparison.OrdinalIgnoreCase)||key is "cemu_wua_output_dir" or "cemu_convert_to_wua";
     public static bool IsManaged(string key)=>Managed(key)||key.Contains("gdb_stub",StringComparison.OrdinalIgnoreCase);
+    private bool HostManaged(string key)=>IsManaged(key)||paths.NativeRuntimePath is not null&&(NativeCoreConfiguration.PspProfileManaged(key)||NativeCoreConfiguration.DsProfileManaged(key));
     private string Root(string user,string core)=>Path.Combine(paths.State,"games","core-options",user,core);
     public string Configuration(string user,string core,string hash)
     {
         var path=Path.Combine(Root(user,core),"values.json");if(!File.Exists(path))return "";path=MediaPaths.ResolveFile(Root(user,core),"values.json");if(new FileInfo(path).Length>128*1024)throw new DomainException("Çekirdek ayar dosyası geçersiz.",409);
         var value=JsonSerializer.Deserialize<SavedNativeCoreOptions>(File.ReadAllText(path),Json)??throw new DomainException("Çekirdek ayar dosyası geçersiz.",409);if(value.BinarySha256!=hash)return "";
         ValidateValues(value.Values);
-        return string.Join('\n',value.Values.Where(pair=>!Managed(pair.Key)).Select(pair=>pair.Key+" = "+RetroArchHostConfiguration.Quote(pair.Value)))+"\n";
+        return string.Join('\n',value.Values.Where(pair=>!HostManaged(pair.Key)).Select(pair=>pair.Key+" = "+RetroArchHostConfiguration.Quote(pair.Value)))+"\n";
     }
-    public NativeCoreOption[] Decorate(NativeCoreOption[] options)=>options.Select(option=>option with{Managed=Managed(option.Key)}).ToArray();
+    public NativeCoreOption[] Decorate(NativeCoreOption[] options)=>options.Select(option=>option with{Managed=HostManaged(option.Key)}).ToArray();
     public static bool NeedsRestart(NativeCoreOption option)=>option.Label.Contains("restart",StringComparison.OrdinalIgnoreCase)||new[]{"resolution","enhancement","layout","renderer","graphics","screen","scale","render_3d"}.Any(part=>option.Key.Contains(part,StringComparison.OrdinalIgnoreCase));
     private static void ValidateValues(Dictionary<string,string>? values)
     {if(values is null||values.Count>512||values.Any(pair=>pair.Key.Length is <1 or >128||pair.Key.Any(c=>!char.IsAsciiLetterOrDigit(c)&&c is not('_' or '-'))||pair.Value is null||pair.Value.Length>512||pair.Value.Any(c=>char.IsControl(c)||c=='"')))throw new DomainException("Çekirdek ayar dosyası geçersiz.",409);}

@@ -14,14 +14,17 @@ public sealed record NativeCoreResolution(NativeRuntimeProfile Host,RetroArchCor
     public bool GraphicsReady=>Gpu is not null||Host.HeadlessGraphics;
     public GameManifest Game(GameRom rom)=>new(rom.Id,rom.Title,"","","",Definition.Id=="mgba"?Host.CoreCommit:Binary.Sha256,Version,"RetroArch / "+Definition.Name,"user-supplied","native","16/9",[],["native-save.json"],[],"native");
 }
-public sealed class NativeCoreRegistry(HomePaths paths,RetroArchCoreCatalog catalog,NativeFirmwareLibrary firmware,NativeGpuRuntime? gpu=null)
+public sealed class NativeCoreRegistry(HomePaths paths,RetroArchCoreCatalog catalog,NativeFirmwareLibrary firmware,NativeGpuRuntime? gpu=null,NativePspRuntime? psp=null,NativeHandheldRuntime? handheld=null)
 {
     private static readonly JsonSerializerOptions Json=new(JsonSerializerDefaults.Web);
     public NativeCoreSelection Selection(GameRom rom)
     {
         var path=Path.Combine(paths.State,"games","core-selections",rom.UserId,rom.Id,"selection.json");if(!File.Exists(path))return new(NativeSystems.Require(rom.System).Core);
         path=MediaPaths.ResolveFile(paths.State,$"games/core-selections/{rom.UserId}/{rom.Id}/selection.json");if(new FileInfo(path).Length>4096)throw new DomainException("Çekirdek seçimi geçersiz.",409);
-        var selection=JsonSerializer.Deserialize<NativeCoreSelection>(File.ReadAllText(path),Json)??throw new DomainException("Çekirdek seçimi geçersiz.",409);if(selection.Revision<0)throw new DomainException("Çekirdek seçimi geçersiz.",409);catalog.Require(selection.CoreId);return selection;
+        var selection=JsonSerializer.Deserialize<NativeCoreSelection>(File.ReadAllText(path),Json)??throw new DomainException("Çekirdek seçimi geçersiz.",409);if(selection.Revision<0)throw new DomainException("Çekirdek seçimi geçersiz.",409);var core=catalog.Require(selection.CoreId);
+        // A corrected stable-id PSP record may survive a crash before its selection
+        // receipt is replaced. Never route its ISO or PS1 states into the old core.
+        return rom.System=="psp"&&!Compatible(rom.System,core)?selection with{CoreId="ppsspp"}:selection;
     }
     public NativeCoreSelection Select(GameRom rom,NativeCoreSelection input)
     {
@@ -36,6 +39,12 @@ public sealed class NativeCoreRegistry(HomePaths paths,RetroArchCoreCatalog cata
     public string Name(string id)=>catalog.Require(id).Name;
     public InstalledNativeCore? Installed(string id)
     {
+        if(id is "desmume" or "citra"&&paths.NativeRuntimePath is not null)
+        {
+            var legacy=Path.Combine(paths.State,"games","native-cores-linux-x64",id,"installed.json");
+            if(!File.Exists(legacy)&&handheld?.Installed(id) is{} installed)return installed; // Explicitly preserve prior user-installed versions.
+        }
+        if(id=="ppsspp"&&paths.NativeRuntimePath is not null)return psp?.Installed();
         var core=catalog.Require(id);
         if(NativeRuntimeBundle.Read(paths)?.Cores.FirstOrDefault(core=>core.Id==id) is{} bundled)return new(1,id,RetroArchCoreCatalog.Commit,"bundled","",bundled.SourceUrl,bundled.Binary.Sha256,NativeRuntimeBundle.File(paths,bundled.Binary),NativeRuntimeBundle.File(paths,bundled.Info));
         var linux=paths.NativeRuntimePath is not null;var root=Path.Combine(paths.State,"games",linux?"native-cores-linux-x64":"native-cores",core.Id);var path=Path.Combine(root,"installed.json");if(!File.Exists(path))return null;
@@ -50,12 +59,18 @@ public sealed class NativeCoreRegistry(HomePaths paths,RetroArchCoreCatalog cata
         if(host?.Enabled!=true)return "Oynamak için sunucu emülasyonunu etkinleştir.";if(!host.InputReady)return NativeRuntimeProfile.InputBlockReason;
         try
         {
-            var graphics=host.HeadlessGraphics||gpu?.Prepared==true;var core=catalog.Require(Selection(rom).CoreId);var adapter=RetroArchCoreCatalog.AdapterBlock(core,graphics,host.Bundled);if(adapter is not null)return adapter;
+            var graphics=host.HeadlessGraphics||gpu?.Prepared==true;var core=catalog.Require(Selection(rom).CoreId);
+            var bundledHandheld=core.Id is "desmume" or "citra"&&Installed(core.Id)?.Channel=="bundled-handheld";
+            if(bundledHandheld&&handheld?.BlockReason(core.Id,host) is{} handheldBlock)return handheldBlock;
+            var pspSoftware=host.Bundled&&core.Id=="ppsspp";
+            if(pspSoftware&&psp?.BlockReason(host) is{} pspBlock)return pspBlock;
+            if(pspSoftware&&psp is null)return "PSP paketi bu sunucuda kurulu değil.";
+            var adapter=RetroArchCoreCatalog.AdapterBlock(core,graphics,host.Bundled,pspSoftware,bundledHandheld);if(adapter is not null)return adapter;
             if(!Compatible(rom.System,core))return "Çekirdek bu oyun sistemiyle eşleşmiyor.";
-            if(!NativeSystems.Require(rom.System).Digital&&!graphics)return "Bu sistemin analog, dokunmatik veya özel giriş entegrasyonu henüz hazır değil.";
+            if(!NativeSystems.Require(rom.System).Digital&&!graphics&&!pspSoftware)return "Bu sistemin analog, dokunmatik veya özel giriş entegrasyonu henüz hazır değil.";
             if(core.Id!="mgba"&&Installed(core.Id) is null)return "Bu oyun için emülasyon çekirdeğini kur.";
             if(!core.Extensions.Contains(NativeSystems.Extension(rom.FileName)))return "Çekirdek bu oyun biçimini desteklemiyor.";
-            if(firmware.Missing(core,rom).Length>0)return "Bu oyun için BIOS dosyaları eksik. Emülasyon ayarlarına ekle.";
+            if(!pspSoftware&&firmware.Missing(core,rom).Length>0)return "Bu oyun için BIOS dosyaları eksik. Emülasyon ayarlarına ekle.";
             return null;
         }
         catch(Exception error)when(error is DomainException or IOException or JsonException){return "Çekirdek dosyaları kullanılamıyor; ROM ve kayıtlar korundu.";}
@@ -64,6 +79,8 @@ public sealed class NativeCoreRegistry(HomePaths paths,RetroArchCoreCatalog cata
     {
         var host=NativeRuntimeProfile.Read(paths)??throw new DomainException("Yerel oyun bileşenleri henüz etkinleştirilmedi.",409);var reason=BlockReason(rom,host);if(reason is not null)throw new DomainException(reason,409);host.Verify();
         var core=catalog.Require(Selection(rom).CoreId);
+        if(host.Bundled&&core.Id=="ppsspp")core=core with{Hardware=false,HardwareApi="",Firmware=[],Version="1.20.4"};
+        if(host.Bundled&&core.Id=="desmume"&&Installed(core.Id)?.Channel=="bundled-handheld")core=core with{Hardware=false,HardwareApi=""};
         if(core.Id=="mgba")return new(host,core,host.Core,host.CoreInfo,host.Version,!host.Bundled&&gpu?.Prepared==true?gpu.Verify():null);
         var installed=Installed(core.Id)??throw new DomainException("Bu oyun için emülasyon çekirdeğini kur.",409);VerifiedFilePublication.Require(installed.Binary.Path,installed.Binary.Bytes,installed.Binary.Sha256);VerifiedFilePublication.Require(installed.Info.Path,installed.Info.Bytes,installed.Info.Sha256);
         var graphics=!host.Bundled&&gpu?.Prepared==true?gpu.Verify():null;
@@ -71,4 +88,11 @@ public sealed class NativeCoreRegistry(HomePaths paths,RetroArchCoreCatalog cata
     }
     public static string Version(NativeRuntimeProfile host,string id,string hash,string? gpuHash=null)=>"native-core-"+Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(id+hash+(gpuHash??host.RetroArch.Sha256)+host.MediaMtx.Sha256)))[..40];
     public string CurrentVersion(NativeRuntimeProfile host,string id,string hash)=>Version(host,id,hash);
+    public string? AdapterReason(RetroArchCore core,NativeRuntimeProfile? host,bool graphics)
+    {
+        if(host?.Bundled==true&&core.Id=="ppsspp")return psp?.BlockReason(host)??(psp is null?"PSP paketi bu sunucuda kurulu değil.":null);
+        if(host?.Bundled==true&&core.Id is "desmume" or "citra"&&Installed(core.Id)?.Channel=="bundled-handheld")return handheld?.BlockReason(core.Id,host);
+        return RetroArchCoreCatalog.AdapterBlock(core,graphics,host?.Bundled==true);
+    }
+    public void StageBundledAssets(string core,string destination){if(core=="ppsspp"&&paths.NativeRuntimePath is not null)(psp??throw new DomainException("PSP paketi yok.",409)).StageAssets(destination);}
 }

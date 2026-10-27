@@ -78,7 +78,7 @@ public static class RetroArchHostConfiguration
     public const string ExtraControllerPorts="\ninput_max_users = \"4\"\nnetwork_remote_enable_user_p2 = \"true\"\nnetwork_remote_enable_user_p3 = \"true\"\nnetwork_remote_enable_user_p4 = \"true\"\n";
     public static string CreateSelkies(string workspace,int remotePadPort,int commandPort,string? renderer,int width,int height)=>
         CreatePrivateHost(workspace,remotePadPort,commandPort,renderer??"glcore",width,height)
-            .Replace("video_driver = \"glcore\"","video_driver = \"sdl2\"",StringComparison.Ordinal)
+            .Replace("video_driver = \"glcore\"",renderer is null?"video_driver = \"sdl2\"":"video_driver = \"glcore\"",StringComparison.Ordinal)
             .Replace("audio_driver = \"null\"","audio_driver = \"pulse\"",StringComparison.Ordinal)
             .Replace("audio_enable = \"false\"","audio_enable = \"true\"",StringComparison.Ordinal)
             .Replace("audio_sync = \"false\"","audio_sync = \"true\"",StringComparison.Ordinal)

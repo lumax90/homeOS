@@ -58,7 +58,7 @@ public sealed class NativeGameSettings(HomePaths paths)
             if(schema is not null&&(schema.Format!=1||schema.BinarySha256!=hash||schema.Options.Length>512))throw new DomainException("Çekirdek ayar tanımı geçersiz.",409);
             var options=(schema?.Options??[]).Select(option=>
             {
-                var inherited=baseline.Values.GetValueOrDefault(option.Key,option.Value);var value=game.Values.GetValueOrDefault(option.Key,inherited);var group=Group(option.Key);return new NativeSettingView(option.Key,option.Label,option.Info,option.Values,value,inherited,game.Values.ContainsKey(option.Key)?"game":baseline.Values.ContainsKey(option.Key)?"core":"default",group,Common(core,option.Key),option.Managed||NativeCoreOptions.IsManaged(option.Key));
+                var inherited=baseline.Values.GetValueOrDefault(option.Key,option.Value);var value=game.Values.GetValueOrDefault(option.Key,inherited);var group=Group(option.Key);return new NativeSettingView(option.Key,option.Label,option.Info,option.Values,value,inherited,game.Values.ContainsKey(option.Key)?"game":baseline.Values.ContainsKey(option.Key)?"core":"default",group,Common(core,option.Key),option.Managed||NativeCoreOptions.IsManaged(option.Key)||paths.NativeRuntimePath is not null&&(core=="ppsspp"&&NativeCoreConfiguration.PspProfileManaged(option.Key)||core=="desmume"&&NativeCoreConfiguration.DsProfileManaged(option.Key)));
             }).ToArray();
             return new(rom.Id,core,name,hash,game.Revision,baseline.Revision,schema is not null,options,schema?.Controllers??[],baseline.Controllers??[],game.Controllers??[],baseline.Display??new(),game.Display??new(),restart);
         }
@@ -99,6 +99,9 @@ public sealed class NativeGameSettings(HomePaths paths)
         "fceumm"=>new[]{"fceumm_palette","fceumm_overscan","fceumm_region","fceumm_sndquality"}.Contains(key),
         "snes9x"=>new[]{"snes9x_region","snes9x_overscan","snes9x_hires_blend","snes9x_gfx_hires","snes9x_audio_interpolation"}.Contains(key),
         "genesis_plus_gx"=>new[]{"genesis_plus_gx_region_detect","genesis_plus_gx_aspect_ratio","genesis_plus_gx_overscan","genesis_plus_gx_audio_filter"}.Contains(key),
+        "ppsspp"=>new[]{"ppsspp_cpu_core","ppsspp_frameskip","ppsspp_auto_frameskip"}.Contains(key),
+        "desmume"=>new[]{"desmume_cpu_mode","desmume_frameskip","desmume_pointer_colour"}.Contains(key),
+        "citra"=>new[]{"citra_resolution_factor","citra_layout_option","citra_swap_screen","citra_touch_touchscreen","citra_is_new_3ds"}.Contains(key),
         _=>false
     };
 }

@@ -10,7 +10,7 @@ public sealed record GameEntry(string Id, string Title, string Publisher, string
     string SourceCommit, string Version, string Engine, string License, string Kind, string Aspect,
     string[] Genres, long SizeBytes, GameUserState State, bool Installed = true, bool InStore = false,
     string Runtime = "godot", string? InstallJobId = null, string? InstallStatus = null, int InstallProgress = 0, string? InstallMessage = null,
-    bool Playable=true,string? System=null,string? BlockReason=null,string? RomSha256=null,bool HasArtwork=false,string? Category=null,string? ImportedAt=null,string? ArtworkStatus=null,string? CoreId=null,string? CoreName=null,string? SystemLabel=null,RomMetadataDocument? Metadata=null);
+    bool Playable=true,string? System=null,string? BlockReason=null,string? RomSha256=null,bool HasArtwork=false,string? Category=null,string? ImportedAt=null,string? ArtworkStatus=null,string? CoreId=null,string? CoreName=null,string? SystemLabel=null,RomMetadataDocument? Metadata=null,string? UninstallStatus=null,int UninstallProgress=0,string? UninstallMessage=null);
 public sealed record GamePreference(bool InLibrary, bool Favorite);
 public sealed record GameStart(string ClientId, string Ticket);
 public sealed record GamePulse(bool Running, int? SaveRevision = null, Dictionary<string, string>? Files = null);

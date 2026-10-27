@@ -3,7 +3,7 @@ set -euo pipefail
 test "$(hostname)" = home-linux-verification
 stamp="${1:?source snapshot required}"
 target="${2:-final}"
-[[ "$target" == final || "$target" == media-build ]]
+[[ "$target" == final || "$target" == media-build || "$target" == psp-build || "$target" == psp-source || "$target" == psp-proof || "$target" == handheld-build ]]
 [[ "$stamp" =~ ^[a-f0-9]{16}$ ]]
 root="$HOME/home-media-source-$stamp"
 test ! -e "$root"

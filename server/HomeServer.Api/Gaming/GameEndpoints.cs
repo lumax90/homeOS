@@ -8,6 +8,7 @@ public static class GameEndpoints
 {
     public static void MapGames(this WebApplication app, RouteGroupBuilder api)
     {
+        api.MapGet("/games/supported-systems",(GamingSupportedSystems support,CurrentAccount actor)=>Results.Ok(support.Read(actor.User)));
         api.MapGet("/games/native/runtime", (NativeGamingRuntime runtime) => Results.Ok(runtime.Status()));
         api.MapPost("/games/roms/detect",async(CurrentAccount actor,HttpContext context,MediaStore store,RetroArchCoreCatalog catalog,CancellationToken token)=>
         {
@@ -48,7 +49,22 @@ public static class GameEndpoints
         api.MapPut("/games/{id}/preference", (string id, GamePreference input, GameCatalog games, MediaStore store, CurrentAccount actor, EventHub events, HttpContext context) =>
         { RequireCommandActor(actor, context); games.RequireEntry(id, store, actor.User); var state = store.SetGamePreference(id, input, actor.User); events.Publish("games.changed"); return Results.Ok(state); }).RequireRateLimiting("watch-command");
         api.MapPost("/games/{id}/install", (string id, GameInstaller installer, GameCatalog games, MediaStore store, CurrentAccount actor, EventHub events, HttpContext context) =>
-        { RequireCommandActor(actor, context); games.RequireEntry(id, store, actor.User); var job = installer.Queue(id, actor.User); events.Publish("games.changed"); return Results.Ok(job); }).RequireRateLimiting("watch-command");
+         { RequireCommandActor(actor, context); games.RequireEntry(id, store, actor.User); var job = installer.Queue(id, actor.User); events.Publish("games.changed"); return Results.Ok(job); }).RequireRateLimiting("watch-command");
+        api.MapPost("/games/{id}/uninstall",(string id,GameUninstallCommand input,GameRemoval removal,CurrentAccount actor,HttpContext context)=>
+        {RequireCommandActor(actor,context);return Results.Accepted(null,removal.Queue(id,input,actor.User));}).RequireRateLimiting("watch-command");
+        api.MapPut("/games/{id}/system",async(string id,GameSystemCorrection input,NativeRomLibrary roms,NativeGameManager native,NativeCoreRegistry registry,MediaStore store,RomMetadata metadata,GameLibraryPreferences preferences,CurrentAccount actor,HttpContext context,EventHub events,CancellationToken token)=>
+        {
+            RequireCommandActor(actor,context);if(!actor.User.IsAdmin||!input.Confirmed||input.System!="psp")throw new DomainException("PSP sistem düzeltmesi için sahip onayı gerekli.",403);
+            GameRom? corrected=null;
+            await roms.WithContentLockAsync(async cancellation=>await native.ConfigureIdleRuntimeAsync(async _=>
+            {
+                var rom=store.GetGameRom(id,actor.User)??throw new DomainException("ROM bulunamadı.",404);var selection=registry.Selection(rom);
+                corrected=await roms.CorrectPspSystemAsync(rom,actor.User,actor.SessionId??"",cancellation);
+                registry.Select(corrected,new("ppsspp",selection.Revision));events.Publish("games.changed");
+            },cancellation),token);
+            if(corrected is not null&&preferences.Read(actor.User.Id).AutomaticMetadata)try{metadata.Queue(corrected,actor.User,refresh:true,automatic:true);}catch(DomainException error)when(error.StatusCode==429){}
+            return Results.Ok(corrected);
+        }).RequireRateLimiting("watch-command");
         api.MapPost("/games/{id}/install/cancel", (string id, GameCatalog games, MediaStore store, CurrentAccount actor, EventHub events, HttpContext context) =>
         { RequireCommandActor(actor, context); games.RequireEntry(id, store, actor.User); var job = store.GetProductJobs(actor.User, "game-install", id).FirstOrDefault() ?? throw new DomainException("Oyun kurulum işi bulunamadı.", 404); store.CancelProductJob(job.Id, job.Revision, actor.User); events.Publish("games.changed"); return Results.NoContent(); }).RequireRateLimiting("watch-command");
         api.MapGet("/games/{id}/artwork/{asset}", (string id, string asset, GameCatalog games, GameStore catalog, MediaStore store, CurrentAccount actor,RomArtwork artwork) =>

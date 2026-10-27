@@ -33,7 +33,7 @@ function loadReader() {
 }
 export function NativeGamePlayer({ game, onExit }: { game: Game; onExit: () => void }) {
   const session=useSession();const [display,setDisplay]=useState(()=>nativeDisplayPreferences(session.userId??''));const [integerSize,setIntegerSize]=useState<{width:number;height:number}|null>(null);
-  const [requestedBackend]=useState(()=>nativeStreamingBackend(session.userId??'')),[viewerUrl,setViewerUrl]=useState('');const selkiesFrame=useRef<HTMLIFrameElement>(null),stage=useRef<HTMLDivElement>(null);
+  const [requestedBackend]=useState(()=>game.system==='psp'&&game.coreId==='ppsspp'?'standard':nativeStreamingBackend(session.userId??'')),[viewerUrl,setViewerUrl]=useState('');const selkiesFrame=useRef<HTMLIFrameElement>(null),stage=useRef<HTMLDivElement>(null);
   const settingView=useQuery({queryKey:['games','settings',game.id],queryFn:()=>request<GameSettingsView>(`/games/${game.id}/settings`),staleTime:0});
   useUiLanguage();const cache=useQueryClient(),controller=useController();const video=useRef<HTMLVideoElement>(null),root=useRef<HTMLElement>(null),menu=useRef<HTMLDivElement>(null);
   const [ready,setReady]=useState(false),[paused,setPaused]=useState(true),[error,setError]=useState(''),[busy,setBusy]=useState(false),[saved,setSaved]=useState(false),[waiting,setWaiting]=useState(false),[muted,setMuted]=useState(true);

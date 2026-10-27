@@ -13,6 +13,12 @@ using HomeServer.Gaming;
 using HomeServer.Infrastructure;
 
 var json=new JsonSerializerOptions(JsonSerializerDefaults.Web){WriteIndented=true};
+if(args is ["--verify-handheld",var handheldFrontend,var handheldPackage,var handheldCore,var handheldFixture,var handheldOutput])
+{await HandheldProbe.RunAsync(handheldFrontend,handheldPackage,handheldCore,handheldFixture,handheldOutput);return;}
+if(args is ["--verify-handheld-selkies",var hsFrontend,var hsPackage,var hsCore,var hsFixture,var hsOutput,var hsRuntime])
+{await HandheldProbe.RunAsync(hsFrontend,hsPackage,hsCore,hsFixture,hsOutput,hsRuntime);return;}
+if(args is ["--verify-psp",var pspFrontend,var pspPackage,var pspFixture,var pspOutput])
+{await PspProbe.RunAsync(pspFrontend,pspPackage,pspFixture,pspOutput);return;}
 if(args is ["--prepare-debug",var debugRoot])
 {
     Directory.CreateDirectory(debugRoot);await File.WriteAllTextAsync(Path.Combine(debugRoot,"retroarch.cfg"),RetroArchHostConfiguration.CreatePrivateHost(debugRoot,62420,62406,null));await File.WriteAllTextAsync(Path.Combine(debugRoot,"record.cfg"),RetroArchHostConfiguration.Recording+RetroArchHostConfiguration.LowDelayMux);await File.WriteAllTextAsync(Path.Combine(debugRoot,"core-options.cfg"),RetroArchHostConfiguration.CoreOptions);await File.WriteAllBytesAsync(Path.Combine(debugRoot,"game.gba"),SyntheticGba.Create(true));return;
