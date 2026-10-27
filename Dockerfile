@@ -160,14 +160,16 @@ RUN python3 /package-psp-source.py /app/PspRuntime \
     && python3 /verify-psp-source.py /app/PspRuntime > /app/PspRuntime/licenses/source-proof.json
 
 FROM psp-source AS psp-proof
-RUN apt-get update && apt-get install -y --no-install-recommends ffmpeg libopengl0 && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y --no-install-recommends ffmpeg libopengl0 libxrandr2 libxinerama1 libxi6 && rm -rf /var/lib/apt/lists/*
 COPY --from=native-runtime /app/NativeRuntime/ /app/NativeRuntime/
+RUN ldd /app/NativeRuntime/retroarch > /tmp/frontend-linked.txt && ! grep -q 'not found' /tmp/frontend-linked.txt
 COPY --from=build /native-probe/ /native-probe/
 COPY tests/native/synthetic_psp.py /original-isolated-psp.py
 RUN mkdir /psp-proof && python3 /original-isolated-psp.py /psp-proof/fixture.elf \
     && chown -R 1654:1654 /app/PspRuntime /psp-proof
 USER 1654:1654
-RUN /native-probe/Home.NativeLinuxProbe --verify-psp /app/NativeRuntime /app/PspRuntime /psp-proof/fixture.elf /psp-proof/evidence
+RUN /native-probe/Home.NativeLinuxProbe --verify-psp /app/NativeRuntime /app/PspRuntime /psp-proof/fixture.elf /psp-proof/evidence \
+    || { cat /psp-proof/evidence/engine.log; exit 1; }
 
 FROM handheld-build AS handheld-source
 RUN sed -i 's/^Types: deb$/Types: deb deb-src/' /etc/apt/sources.list.d/ubuntu.sources && apt-get update
@@ -177,8 +179,9 @@ RUN python3 /package-handheld-source.py /app/HandheldRuntime \
     && python3 /verify-handheld-source.py /app/HandheldRuntime > /app/HandheldRuntime/licenses/source-proof.json
 
 FROM handheld-source AS handheld-proof
-RUN apt-get update && apt-get install -y --no-install-recommends ffmpeg xvfb xauth libgl1-mesa-dri && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y --no-install-recommends ffmpeg xvfb xauth libgl1-mesa-dri libxrandr2 libxinerama1 libxi6 && rm -rf /var/lib/apt/lists/*
 COPY --from=native-runtime /app/NativeRuntime/ /app/NativeRuntime/
+RUN ldd /app/NativeRuntime/retroarch > /tmp/frontend-linked.txt && ! grep -q 'not found' /tmp/frontend-linked.txt
 COPY --from=build /native-probe/ /native-probe/
 COPY tests/native/synthetic_nds.py tests/native/synthetic_3ds.py /handheld-fixtures/
 RUN mkdir -p /handheld-proof/ds /handheld-proof/3ds \

@@ -23,6 +23,7 @@ Local component checks have passed: PSP and DS/3DS real native frame/input/stylu
 User PC/TV/real-game acceptance, previous unresolved radio/game/3DS device issues, full DV/HWA/media parity, alternate architectures/distribution and the overall product license remain separate open gates. Do not call the entire product complete.
 
 - Source commit/workflow/digest: **pending successful publication**.
+- Initial source `5bf408f` / [workflow 40577535638](https://github.com/lumax90/homeOS/actions/runs/40577535638) passed hosted backend checks but stopped before publishing: the minimal PSP proof image lacked the preserved frontend's `libXinerama.so.1`. The final application image already included it. Proof-stage dependencies now explicitly match the frontend; `ldd` admission catches missing libraries before native startup. PSP/handheld binary/save identities are unchanged; stable was not promoted by the failed run.
 - Raw operational receipts: ignored `artifacts/release-048/`, `artifacts/psp-01/`, `artifacts/handheld-01/`.
 
 References/status: [PSP/removal](psp-and-game-removal.md), [DS/3DS/support](ds-3ds-supported-systems.md), [scene/trailer](scene-stills-trailer-modal.md), [update policy](managed-updates.md), [product board](product/execution.md).

@@ -35,3 +35,8 @@ test('native PSP proof stages the core info exactly as Home does before querying
   assert.match(probe,/"-L",stagedCore/);
   assert.match(runtime,/File\.Copy\(coreInfo\.Path,Path\.Combine\(engineRoot,"info"/);
 });
+test('minimal PSP proof image declares the preserved frontend display dependencies before executing it',()=>{
+  const docker=read('Dockerfile');const stage=docker.slice(docker.indexOf('FROM psp-source AS psp-proof'),docker.indexOf('FROM handheld-build AS handheld-source'));
+  assert.match(stage,/libxrandr2 libxinerama1 libxi6/);assert.match(stage,/ldd \/app\/NativeRuntime\/retroarch/);
+  assert.match(stage,/cat \/psp-proof\/evidence\/engine\.log/);
+});
